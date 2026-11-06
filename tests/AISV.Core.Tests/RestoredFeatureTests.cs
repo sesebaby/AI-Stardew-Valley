@@ -284,7 +284,7 @@ public class RestoredFeatureTests
 		peek.Update(16, unread, true);
 		peek.Update(MessagePeek.SlideMs, unread, true);
 		Assert.True(peek.Update(MessagePeek.BannerMs, unread, true));
-		Assert.Equal("Haley", peek.Current!.Npc);
+		Assert.Equal("Haley", peek.Current!.Thread);
 		Assert.Equal(PeekPhase.Banner, peek.Phase);
 	}
 
@@ -304,6 +304,22 @@ public class RestoredFeatureTests
 	}
 
 	[Fact]
+	public void PeekSameChatKeepsOnlyTheNewest()
+	{
+		MessagePeek peek = new MessagePeek();
+		peek.Post(new PeekNote("group", "一", "Sam"));
+		peek.Post(new PeekNote("group", "二", "Alex"));
+		Assert.True(peek.Update(16, _ => true, true));
+		Assert.Equal("二", peek.Current!.Text);
+		peek.Update(MessagePeek.SlideMs, _ => true, true);
+		peek.Update(MessagePeek.BannerMs - 100, _ => true, true);
+		peek.Post(new PeekNote("group", "三", "Haley"));
+		Assert.Equal("三", peek.Current!.Text);
+		peek.Update(200, _ => true, true);
+		Assert.Equal(PeekPhase.Banner, peek.Phase);
+	}
+
+	[Fact]
 	public void PeekQueueIsBounded()
 	{
 		MessagePeek peek = new MessagePeek();
@@ -312,6 +328,6 @@ public class RestoredFeatureTests
 			peek.Post(new PeekNote("N" + i, "x"));
 		}
 		peek.Update(16, _ => true, true);
-		Assert.Equal("N3", peek.Current!.Npc);
+		Assert.Equal("N3", peek.Current!.Thread);
 	}
 }

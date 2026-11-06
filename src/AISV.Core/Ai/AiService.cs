@@ -350,12 +350,21 @@ public sealed class AiService : IAiSender
 		{
 			return true;
 		}
-		if (UsesServer && !_account.IsLoggedIn)
+		return NeedsLogin || IsGatewayOffline;
+	}
+
+	/// <summary>要用服务器但还没登录。</summary>
+	public bool NeedsLogin => _config().AiOn && UsesServer && !_account.IsLoggedIn;
+
+	/// <summary>没登录时请界面弹登录窗口。返回 true 表示现在用不了，这次操作先别往下走。</summary>
+	public bool AskLoginIfNeeded(bool playerAsked = false)
+	{
+		if (!NeedsLogin)
 		{
-			_account.RequestLogin();
-			return true;
+			return false;
 		}
-		return IsGatewayOffline;
+		_account.RequestLogin(playerAsked);
+		return true;
 	}
 
 	/// <summary>最后一次失败的时间（UTC）。</summary>

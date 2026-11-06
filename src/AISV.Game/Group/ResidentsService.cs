@@ -85,8 +85,17 @@ public sealed class ResidentsService
 
 	public bool IsAiAvailable => _config().AiOn && !_ai.IsDialogueUnavailable();
 
+	/// <summary>没看的新消息条数。</summary>
+	public int Unread { get; private set; }
+
+	/// <summary>有人接手提示新消息（屏幕下方的小手机）；没有时用左下角提示。</summary>
+	public Action<string, string>? ShowArrival { get; set; }
+
+	public void MarkRead() => Unread = 0;
+
 	public void Reset()
 	{
+		Unread = 0;
 		_inFlight = null;
 		_scheduled.Clear();
 		LastPostFailed = false;
@@ -302,6 +311,12 @@ public sealed class ResidentsService
 		if (IsViewing?.Invoke() ?? false)
 		{
 			Game1.playSound("dwop");
+			return;
+		}
+		Unread++;
+		if (ShowArrival != null)
+		{
+			ShowArrival(line.Speaker, line.Text);
 			return;
 		}
 		string text = line.Text.Length <= 40 ? line.Text : line.Text.Substring(0, 40) + "…";

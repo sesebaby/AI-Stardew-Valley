@@ -165,6 +165,17 @@ public sealed partial class ConversationController
 
 	// ---------------- 点村民 ----------------
 
+	/// <summary>点了 AI 村民但还没登录：先弹登录窗口，不管他在走路还是还有没说完的话。送礼和过场不拦；今天点过"稍后"就说原来的台词。</summary>
+	private bool WantsLogin(NPC npc, Farmer who)
+	{
+		if (!_ai.NeedsLogin || !npc.IsVillager || npc.IsInvisible || who.ActiveObject != null || !_npcs.IsEnabled(npc) || (Game1.eventUp && Festivals?.Active == null))
+		{
+			return false;
+		}
+		_ai.AskLoginIfNeeded();
+		return _account?.LoginRequested == true;
+	}
+
 	/// <summary>Harmony 前缀调用。返回 null 表示交给游戏原来的 checkAction；否则是 checkAction 的返回值。</summary>
 	public bool? OnCheckAction(NPC npc, Farmer? who, GameLocation location)
 	{
@@ -173,6 +184,10 @@ public sealed partial class ConversationController
 			if (who == null || _executingVanilla)
 			{
 				return null;
+			}
+			if (WantsLogin(npc, who))
+			{
+				return false;
 			}
 			// 过场事件交给游戏；节日上另走一条路。
 			if (Game1.eventUp || Game1.currentLocation?.currentEvent != null)

@@ -38,7 +38,7 @@ internal sealed class AiStatusPage : ShellPage
 
 	private void Test()
 	{
-		if (_testing || Ctx.Ai == null)
+		if (_testing || Ctx.Ai == null || Ctx.Ai.AskLoginIfNeeded(playerAsked: true))
 		{
 			return;
 		}

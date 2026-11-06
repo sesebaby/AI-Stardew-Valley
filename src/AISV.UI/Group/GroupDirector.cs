@@ -289,7 +289,10 @@ public sealed class GroupDirector
 		string key = KeyLabel().Trim();
 		if (key.Length > 0 && Enum.TryParse(key, true, out SButton button) && button == e.Button)
 		{
-			OnGroupKey();
+			if (!_ai.AskLoginIfNeeded(playerAsked: true))
+			{
+				OnGroupKey();
+			}
 		}
 		else if (e.Button.IsActionButton() && TryInterject(e.Cursor.AbsolutePixels))
 		{

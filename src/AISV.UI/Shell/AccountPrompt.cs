@@ -4,7 +4,7 @@ using StardewValley;
 
 namespace AISV.UI.Shell;
 
-/// <summary>有 AI 请求因为没登录发不出去：玩家能行动时打开账号页。点“稍后”当天不再弹。</summary>
+/// <summary>有 AI 请求因为没登录发不出去：外壳开着就在里面打开账号页，否则等玩家能行动时打开。</summary>
 public sealed class AccountPrompt
 {
 	private readonly ShellContext _ctx;
@@ -26,7 +26,13 @@ public sealed class AccountPrompt
 			account.ConsumeLoginRequest();
 			return;
 		}
-		if (!Context.IsPlayerFree || Game1.eventUp || Game1.activeClickableMenu != null)
+		if (Game1.activeClickableMenu is ShellMenu open)
+		{
+			account.ConsumeLoginRequest();
+			open.PromptAccount();
+			return;
+		}
+		if (!Context.IsPlayerFree)
 		{
 			return;
 		}

@@ -30,6 +30,8 @@ internal sealed class AccountPage : ShellPage
 
 	private readonly bool _prompted;
 
+	private readonly bool _inPlace;
+
 	private FieldSet _fields = new FieldSet();
 
 	private TextArea[] _inputs = Array.Empty<TextArea>();
@@ -46,9 +48,10 @@ internal sealed class AccountPage : ShellPage
 
 	private string _lastName = "";
 
-	public AccountPage(ShellContext ctx, bool prompted = false) : base(ctx)
+	public AccountPage(ShellContext ctx, bool prompted = false, bool inPlace = false) : base(ctx)
 	{
 		_prompted = prompted;
+		_inPlace = inPlace;
 		Show(ctx.Account?.IsLoggedIn == true ? View.Status : View.Enter);
 		if (_view == View.Status)
 		{
@@ -227,7 +230,7 @@ internal sealed class AccountPage : ShellPage
 		_finished = true;
 		if (_prompted)
 		{
-			Game1.activeClickableMenu?.exitThisMenu();
+			Leave();
 			return;
 		}
 		Show(View.Status);
@@ -270,11 +273,23 @@ internal sealed class AccountPage : ShellPage
 		}
 		if (_prompted)
 		{
-			Game1.activeClickableMenu?.exitThisMenu();
+			Leave();
 		}
 		else
 		{
 			Host.Back();
+		}
+	}
+
+	private void Leave()
+	{
+		if (_inPlace)
+		{
+			Host.Back();
+		}
+		else
+		{
+			Game1.activeClickableMenu?.exitThisMenu();
 		}
 	}
 

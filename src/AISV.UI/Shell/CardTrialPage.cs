@@ -53,7 +53,7 @@ internal sealed class CardTrialPage : ShellPage
 	private void Send()
 	{
 		string text = _input.Text.Trim();
-		if (text.Length == 0 || _waiting || Ctx.TryChat == null)
+		if (text.Length == 0 || _waiting || Ctx.TryChat == null || Ctx.Ai?.AskLoginIfNeeded(playerAsked: true) == true)
 		{
 			return;
 		}

@@ -144,10 +144,10 @@ public sealed class ServerAccount
 
 	// ---- 登录窗口 ----
 
-	/// <summary>没登录时 AI 请求不发；今天没点过"稍后"就请界面弹登录窗口。</summary>
-	public void RequestLogin()
+	/// <summary>请界面弹登录窗口。今天点过"稍后"就不再自动弹，除非是玩家明确要用 AI（发消息、测试连接等）。</summary>
+	public void RequestLogin(bool playerAsked = false)
 	{
-		if (_deferredDay != Today())
+		if (playerAsked || _deferredDay != Today())
 		{
 			LoginRequested = true;
 		}

@@ -545,6 +545,15 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 		((IShellHost)this).Push(new AccountPage(_ctx, prompted));
 	}
 
+	/// <summary>正在用外壳里的功能时要登录：账号页盖在当前页上，办完回到这一页。</summary>
+	public void PromptAccount()
+	{
+		if (Page is not AccountPage)
+		{
+			((IShellHost)this).Push(new AccountPage(_ctx, prompted: true, inPlace: true));
+		}
+	}
+
 	public void OpenAiStatus()
 	{
 		Open(Tab.Settings);

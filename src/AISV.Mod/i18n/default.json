@@ -2185,7 +2185,7 @@
   "compat.scope.all": "所有 NPC mod",
   "shell.settings.aiStatusNote": "现在好不好用、今天用了多少、最近为什么失败",
   "shell.settings.npcCompatNote": "哪些村民用 AI，为什么；关掉谁、用哪些 mod 的村民",
-  "peek.unread": "{{n}} 人有新消息",
+  "peek.unread": "{{n}} 个聊天有新消息",
   "peek.app": "信使",
   "vdiary.title": "{{name}}的日记",
   "vdiary.mood": "今天心情：{{word}}",
@@ -2316,5 +2316,6 @@
   "compat.why.notPicked": "{{name}}所在的 mod 没有勾选。",
   "compat.why.unknown": "查不到{{name}}来自哪个 mod，来路不明的村民没有打开。",
   "compat.why.absent": "{{name}}现在不在这个世界里。",
-  "compat.why.other": "{{name}}不是能聊天的村民。"
+  "compat.why.other": "{{name}}不是能聊天的村民。",
+  "peek.residents": "居民群"
 }

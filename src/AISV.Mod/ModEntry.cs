@@ -363,7 +363,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_shell.Messenger = _messenger;
 			_shell.Awareness = _awareness;
 			_shell.ModName = id => helper.ModRegistry.Get(id)?.Manifest.Name ?? id;
-			_phonePeek = new PhonePeek(_messenger, _npcs, OpenChat);
+			_phonePeek = new PhonePeek(_messenger, _residents, _npcs, OpenChat);
 			_phonePeek.Attach(helper);
 			_villagerTexts = new VillagerTextService(() => _config, store, _messenger, new MessengerAi(_ai, _templates, PromptLanguage), _npcs, relationships, _log) { Social = _social };
 			_awareness.SendText = _villagerTexts.TryRequestText;
@@ -559,7 +559,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_news.ShowBeyond = () => _promo.Enabled;
 			_shell.Promo = _promo;
 			_shell.Log = _log;
-			_phone = new AISV.Game.Phone.PhoneItem(helper.DirectoryPath, helper.Input, _log, () => OpenChat(_messenger.LatestUnread));
+			_phone = new AISV.Game.Phone.PhoneItem(helper.DirectoryPath, helper.Input, _log, () => _phonePeek.OpenCurrent());
 			helper.ConsoleCommands.Add("aisv_phone", "手机物品调试。\n用法：aisv_phone dump | give | hold | lose", (_, args) => _log.Info(Context.IsWorldReady ? _phone.Command(args) : "先进存档。"));
 			_ime = new ImeCandidateWindow(() => _config, SaveConfig, _log);
 			_ime.Apply();
@@ -882,12 +882,17 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private static bool Matches(string? key, SButton pressed) => !string.IsNullOrWhiteSpace(key) && Enum.TryParse(key.Trim(), true, out SButton b) && b == pressed;
 
-	/// <summary>打开这个人的聊天；没有要看的就打开外壳。</summary>
+	/// <summary>打开这条聊天（村民或居民群）；没有要看的就打开外壳。</summary>
 	private void OpenChat(string? npc)
 	{
 		if (string.IsNullOrWhiteSpace(npc))
 		{
 			OpenShell("");
+			return;
+		}
+		if (npc == PhonePeek.ResidentsThread)
+		{
+			OpenShell("residents");
 			return;
 		}
 		ShellMenu.PreselectChat(npc);

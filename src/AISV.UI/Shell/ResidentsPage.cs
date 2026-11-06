@@ -110,6 +110,10 @@ internal sealed class ResidentsPage : ShellPage
 		{
 			return;
 		}
+		if (Ctx.Ai?.AskLoginIfNeeded(playerAsked: true) == true)
+		{
+			return;
+		}
 		ResidentsBlock block = service.Send(_box.Text);
 		if (block == ResidentsBlock.None)
 		{
@@ -137,6 +141,7 @@ internal sealed class ResidentsPage : ShellPage
 	public override void Draw(SpriteBatch b, Rectangle area, Hits hits)
 	{
 		_drawnTick = Game1.ticks;
+		Service?.MarkRead();
 		Tick(Game1.currentGameTime?.ElapsedGameTime.TotalMilliseconds ?? 16.7);
 		ResidentsService? service = Service;
 		Rectangle header = new Rectangle(area.X, area.Y, area.Width, 72);
@@ -308,7 +313,7 @@ internal sealed class ResidentsPage : ShellPage
 		string count = _box.Text.Length + "/" + ResidentsGroup.MaxPostChars;
 		Vector2 cs = Game1.smallFont.MeasureString(count) * 0.7f;
 		AisvTheme.DrawText(b, count, new Vector2(_box.Bounds.Right - cs.X - 12, _box.Bounds.Bottom - cs.Y - 6), AisvTheme.TextFaint, 0.7f);
-		bool canSend = service != null && ResidentsGroup.Check(_box.Text, service.IsAiAvailable, service.IsBusy, service.PostsLeft, _members.Count) == ResidentsBlock.None;
+		bool canSend = service != null && ResidentsGroup.Check(_box.Text, service.IsAiAvailable, service.IsBusy, service.PostsLeft, _members.Count) == ResidentsBlock.None || Ctx.Ai?.NeedsLogin == true;
 		AisvTheme.Button(b, send, Tr.Get("reply.send", "发送"), primary: true, hover: AisvTheme.Hover(send), disabled: !canSend);
 		hits.Add(_box.Bounds, () => _box.Focus());
 		hits.Add(send, Send);

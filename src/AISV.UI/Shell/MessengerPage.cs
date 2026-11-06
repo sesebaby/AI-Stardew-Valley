@@ -348,6 +348,10 @@ internal sealed class MessengerPage : ShellPage
 		{
 			return;
 		}
+		if (Ctx.Ai?.AskLoginIfNeeded(playerAsked: true) == true)
+		{
+			return;
+		}
 		SendBlock block = service.Send(_selected, _box.Text, _keepSecret);
 		if (block == SendBlock.None)
 		{
@@ -868,7 +872,7 @@ internal sealed class MessengerPage : ShellPage
 		string count = _box.Text.Length + "/" + MessengerRules.MaxMessageChars;
 		Vector2 cs = Game1.smallFont.MeasureString(count) * 0.7f;
 		AisvTheme.DrawText(b, count, new Vector2(_box.Bounds.Right - cs.X - 12, _box.Bounds.Bottom - cs.Y - 6), AisvTheme.TextFaint, 0.7f);
-		bool canSend = service.Check(c.NpcName, _box.Text) == SendBlock.None;
+		bool canSend = service.Check(c.NpcName, _box.Text) == SendBlock.None || Ctx.Ai?.NeedsLogin == true;
 		AisvTheme.Button(b, send, Tr.Get("reply.send", "发送"), primary: true, hover: AisvTheme.Hover(send), disabled: !canSend);
 		hits.Add(_box.Bounds, () => _box.Focus());
 		hits.Add(send, Send);

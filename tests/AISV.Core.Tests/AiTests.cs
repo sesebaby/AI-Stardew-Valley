@@ -275,6 +275,28 @@ public class AiTests
 	}
 
 	[Fact]
+	public void CheckingAvailabilityNeverAsksForLogin()
+	{
+		(AiService ai, _, ServerAccount account, _) = Server();
+		Assert.True(ai.NeedsLogin);
+		Assert.True(ai.IsDialogueUnavailable());
+		Assert.False(account.LoginRequested);
+		Assert.True(ai.AskLoginIfNeeded());
+		Assert.True(account.LoginRequested);
+	}
+
+	[Fact]
+	public void LaterStopsAutomaticPromptsButNotWhenThePlayerAsks()
+	{
+		(AiService ai, _, ServerAccount account, _) = Server();
+		account.DeferLoginToday();
+		Assert.True(ai.AskLoginIfNeeded());
+		Assert.False(account.LoginRequested);
+		Assert.True(ai.AskLoginIfNeeded(playerAsked: true));
+		Assert.True(account.LoginRequested);
+	}
+
+	[Fact]
 	public async Task SessionInvalidClearsTokenAndAsksForLogin()
 	{
 		(AiService ai, FakeHttp http, ServerAccount account, MemoryAccountStore store) = Server();

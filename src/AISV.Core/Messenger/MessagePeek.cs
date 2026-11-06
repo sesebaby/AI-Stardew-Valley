@@ -13,7 +13,8 @@ public enum PeekPhase
 	Leaving
 }
 
-public sealed record PeekNote(string Npc, string Text);
+/// <summary>一条提示：哪个聊天（村民名或群）、谁说的、说了什么。</summary>
+public sealed record PeekNote(string Thread, string Text, string Speaker = "");
 
 /// <summary>来消息时屏幕下方滑出的小手机：升起、亮一会儿横幅、缩成露头的一小截，消息读了或被收起就退下去。</summary>
 public sealed class MessagePeek
@@ -26,7 +27,7 @@ public sealed class MessagePeek
 
 	public const float TabShare = 0.28f;
 
-	private readonly Queue<PeekNote> _waiting = new Queue<PeekNote>();
+	private readonly List<PeekNote> _waiting = new List<PeekNote>();
 
 	private double _elapsed;
 
@@ -57,12 +58,23 @@ public sealed class MessagePeek
 		}
 	}
 
+	/// <summary>同一个聊天的新消息顶掉旧的，一口气来好几条也只亮最新的。</summary>
 	public void Post(PeekNote note)
 	{
-		_waiting.Enqueue(note);
+		if (Current != null && Current.Thread == note.Thread && Phase is PeekPhase.Rising or PeekPhase.Banner)
+		{
+			Current = note;
+			if (Phase == PeekPhase.Banner)
+			{
+				_elapsed = 0;
+			}
+			return;
+		}
+		_waiting.RemoveAll(w => w.Thread == note.Thread);
+		_waiting.Add(note);
 		while (_waiting.Count > MaxWaiting)
 		{
-			_waiting.Dequeue();
+			_waiting.RemoveAt(0);
 		}
 	}
 
@@ -88,7 +100,7 @@ public sealed class MessagePeek
 	public bool Update(double elapsedMs, Func<string, bool> isUnread, bool anyUnread)
 	{
 		_elapsed += Math.Max(0, elapsedMs);
-		if (Phase is PeekPhase.Rising or PeekPhase.Banner && Current != null && !isUnread(Current.Npc))
+		if (Phase is PeekPhase.Rising or PeekPhase.Banner && Current != null && !isUnread(Current.Thread))
 		{
 			Start(PeekPhase.Leaving, Shown);
 			return false;
@@ -144,8 +156,9 @@ public sealed class MessagePeek
 	{
 		while (_waiting.Count > 0)
 		{
-			PeekNote note = _waiting.Dequeue();
-			if (isUnread(note.Npc))
+			PeekNote note = _waiting[0];
+			_waiting.RemoveAt(0);
+			if (isUnread(note.Thread))
 			{
 				return note;
 			}
