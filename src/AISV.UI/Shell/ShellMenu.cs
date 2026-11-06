@@ -172,7 +172,7 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 		yPositionOnScreen = 0;
 		width = vw;
 		height = vh;
-		_sizePercent = _ctx.Config().ShellSizePercent;
+		_sizePercent = _ctx.Config().WindowPercent;
 		int w = Math.Min(vw - 48, 1440 * _sizePercent / 100), h = Math.Min(vh - 48, 940 * _sizePercent / 100);
 		_outer = new Rectangle((vw - w) / 2, (vh - h) / 2, w, h);
 		_page = AisvTheme.Inflate(_outer, -AisvTheme.WindowBorder);
@@ -257,7 +257,7 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 	public override void update(GameTime time)
 	{
 		base.update(time);
-		if (_ctx.Config().ShellSizePercent != _sizePercent)
+		if (_ctx.Config().WindowPercent != _sizePercent)
 		{
 			Layout();
 		}

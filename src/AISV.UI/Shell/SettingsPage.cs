@@ -141,7 +141,7 @@ internal sealed class SettingsPage : ShellPage
 				}),
 				(Tr.Get("shell.settings.uiGroup", "界面"), new List<Row>
 				{
-					new ChoiceRow(Tr.Get("shell.settings.windowSize", "窗口大小"), Tr.Get("shell.settings.windowSizeNote", "调整这个界面的窗口；文字大小跟着游戏的界面缩放"), WindowSizes.Select(n => n + "%").ToArray(), c => Nearest(WindowSizes, c.ShellSizePercent), (c, i) => c.ShellSizePercent = WindowSizes[i]),
+					new ChoiceRow(Tr.Get("shell.settings.windowSize", "窗口大小"), Tr.Get("shell.settings.windowSizeNote", "只改变窗口，字的大小不变"), WindowSizes.Select(n => n + "%").ToArray(), c => Nearest(WindowSizes, c.WindowPercent), (c, i) => c.WindowPercent = WindowSizes[i]),
 					new LinkRow(Tr.Get("apps.manage.title", "显示哪些应用"), Tr.Get("shell.settings.appsNote", "把用不上的应用从应用页收起来"), ctx => new AISV.UI.Apps.AppShelfPage(ctx))
 				}),
 				(Tr.Get("shell.settings.profiles", "设定"), new List<Row>

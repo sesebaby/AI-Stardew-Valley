@@ -34,6 +34,9 @@ public sealed class ShellContext
 
 	public AISV.Core.Ai.ServerAccount? Account { get; set; }
 
+	/// <summary>这个 mod 的文件夹。</summary>
+	public string ModFolder { get; set; } = "";
+
 	public AISV.Core.Ai.AiService? Ai { get; set; }
 
 	/// <summary>这个版本带不带内置服务器。</summary>

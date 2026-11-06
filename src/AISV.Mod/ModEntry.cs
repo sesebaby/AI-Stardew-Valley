@@ -212,7 +212,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			TalkPatch.Handler = _conversations.OnCheckAction;
 			TalkPatch.Apply(harmony, _log);
 			_social = new SocialSystem(() => _config, store, _ai, _templates, PromptLanguage, log, relationships, _npcs, _log);
-			_shell = new ShellContext(_social, _npcs, relationships, log, () => _config, SaveConfig) { Store = store };
+			_shell = new ShellContext(_social, _npcs, relationships, log, () => _config, SaveConfig) { Store = store, ModFolder = helper.DirectoryPath };
 			_profilePrompt = new ProfilePrompt(_shell);
 			_shell.Account = _account;
 			_shell.UsesServer = () => _ai.UsesServer;

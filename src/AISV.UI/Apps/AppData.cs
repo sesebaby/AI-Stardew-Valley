@@ -301,6 +301,55 @@ internal static class AppData
 		}
 	}
 
+	public static KinRegister Kin(ShellContext ctx)
+	{
+		try
+		{
+			List<NPC> people = Utility.getAllVillagers().Where(n => n is not StardewValley.Characters.Child && !string.IsNullOrWhiteSpace(n.Name)).ToList();
+			return Kinship.Build(new KinSources
+			{
+				Villagers = people.ConvertAll(n => n.Name),
+				Away = people.Where(n => !n.CanSocialize).Select(n => n.Name).ToList(),
+				Declared = people.SelectMany(DeclaredRelatives).ToList(),
+				Moods = Map(ctx).Ties.Select(t => new KinMood(t.A, t.B, t.Bond)).ToList(),
+				Farmer = Game1.player == null ? null : HomeOf(Game1.player)
+			});
+		}
+		catch (Exception ex)
+		{
+			ctx.Log.Warn("家谱读不出来：" + ex.Message);
+			return new KinRegister();
+		}
+	}
+
+	private static IEnumerable<(string, string, string)> DeclaredRelatives(NPC npc)
+	{
+		Dictionary<string, string>? relatives = null;
+		if (Game1.characterData?.TryGetValue(npc.Name, out var data) == true)
+		{
+			relatives = data?.FriendsAndFamily;
+		}
+		return relatives?.Select(r => (npc.Name, r.Key, r.Value)) ?? Enumerable.Empty<(string, string, string)>();
+	}
+
+	private static FarmerHome HomeOf(Farmer farmer)
+	{
+		ILookup<FriendshipStatus, string> byStatus = farmer.friendshipData.Keys.ToLookup(npc => farmer.friendshipData[npc].Status);
+		string? partner = byStatus[FriendshipStatus.Married].FirstOrDefault();
+		if (partner == null && farmer.team.GetSpouse(farmer.UniqueMultiplayerID) is long id)
+		{
+			string? name = Game1.GetPlayer(id)?.Name;
+			partner = string.IsNullOrEmpty(name) ? null : Kinship.Outsider(name);
+		}
+		return new FarmerHome
+		{
+			Spouse = partner,
+			Fiance = byStatus[FriendshipStatus.Engaged].FirstOrDefault(),
+			Sweethearts = byStatus[FriendshipStatus.Dating].ToList(),
+			Children = farmer.getChildren().ConvertAll(c => Kinship.Outsider(c.Name))
+		};
+	}
+
 	public static MapModel Map(ShellContext ctx)
 	{
 		try

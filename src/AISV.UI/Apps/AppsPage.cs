@@ -37,6 +37,7 @@ internal sealed class AppsPage : ShellPage
 			new App("pelican", AppIcons.Pelican, new Color(238, 230, 248), Tr.Get("apps.pelican", "鹈鹕图"), PelicanSummary, () => Host.Push(new PelicanPage(Ctx))),
 			new App("gossip", AppIcons.Gossip, new Color(222, 240, 234), Tr.Get("apps.gossip", "八卦树"), GossipSummary, () => Host.Push(new GossipTreePage(Ctx))),
 			new App("web", AppIcons.Web, new Color(252, 230, 238), Tr.Get("apps.web", "村庄关系网"), WebSummary, () => Host.Push(new VillageMapPage(Ctx))),
+			new App("family", AppIcons.Family, new Color(234, 242, 218), Tr.Get("apps.family", "家谱"), FamilySummary, () => Host.Push(new KinshipPage(Ctx))),
 			new App("reviews", AppIcons.Reviews, new Color(255, 242, 212), Tr.Get("apps.reviews", "评价"), ReviewsSummary, () => Host.Push(new ReviewsPage(Ctx))),
 			new App("year", AppIcons.Year, new Color(252, 232, 222), Tr.Get("apps.year", "年度回顾"), YearSummaryLine, () => Host.Push(new YearReviewPage(Ctx))),
 			new App("agenda", AppIcons.Agenda, new Color(226, 236, 248), Tr.Get("apps.agenda", "日程"), AgendaSummary, () => Host.Push(new AgendaPage(Ctx))),
@@ -216,6 +217,11 @@ internal sealed class AppsPage : ShellPage
 		return best == null
 			? Tr.Get("apps.web.count", "牵着 {{count}} 个人", ("count", map.Ties.Count))
 			: Tr.Get("apps.web.line", "{{count}} 段关系，最要好的是{{a}}和{{b}}", ("count", map.Ties.Count), ("a", Ctx.Display(best.A)), ("b", Ctx.Display(best.B)));
+	}
+
+	private string FamilySummary()
+	{
+		return Tr.Get("apps.family.line", "镇上有 {{count}} 家人", ("count", AppData.Kin(Ctx).Trees.Count(t => !t.IsFarmers)));
 	}
 
 	private string ReviewsSummary()

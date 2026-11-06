@@ -58,7 +58,10 @@ internal sealed class DiaryBook : ShellPage
 
 	private bool _album;
 
-	private List<AISV.Core.Messenger.PhotoRecord> _photos = new List<AISV.Core.Messenger.PhotoRecord>();
+	/// <summary>相册里的一张：信使的照片或夹在日记里的画，按日期排。</summary>
+	private sealed record AlbumItem(int TotalDay, Func<Texture2D?> Image, string Caption, bool Taped);
+
+	private List<AlbumItem> _items = new List<AlbumItem>();
 
 	private const int PhotosPerPage = 2;
 
@@ -68,14 +71,18 @@ internal sealed class DiaryBook : ShellPage
 
 	public override string Title => Tr.Get("shell.book.title", "日记本");
 
-	private int PageCount => _album ? Math.Max(1, (_photos.Count + PhotosPerPage - 1) / PhotosPerPage) : _pages.Count;
+	private int PageCount => _album ? Math.Max(1, (_items.Count + PhotosPerPage - 1) / PhotosPerPage) : _pages.Count;
 
 	private int LastSpread => Math.Max(0, (PageCount + 1) / 2 - 1);
 
 	public override void Reload()
 	{
-		_photos = Ctx.Messenger?.Photos.All().ToList() ?? new List<AISV.Core.Messenger.PhotoRecord>();
 		List<DiaryEntry> entries = Ctx.Social.Diary.All();
+		IEnumerable<AlbumItem> photos = (Ctx.Messenger?.Photos.All() ?? Array.Empty<AISV.Core.Messenger.PhotoRecord>())
+			.Select(r => new AlbumItem(new AISV.Core.Dialogue.GameDate(r.Day, r.Season, r.Year).TotalDays, () => Ctx.Messenger?.Photos.Image(r.Id), DiaryPictures.PhotoCaption(Ctx, r), true));
+		IEnumerable<AlbumItem> sketches = DiarySketches.Pin(entries, Ctx.Display)
+			.Select(p => new AlbumItem(new AISV.Core.Dialogue.GameDate(p.Entry.Day, p.Entry.Season, p.Entry.Year).TotalDays, () => DiaryPictures.Sketch(Ctx, p.Sketch.File), DiaryPictures.SketchCaption(Ctx, p), false));
+		_items = photos.Concat(sketches).OrderBy(i => i.TotalDay).ToList();
 		if (entries.Count != _entries.Count || !entries.Select(e => e.Text).SequenceEqual(_entries.Select(e => e.Text)))
 		{
 			_entries = entries;
@@ -211,11 +218,11 @@ internal sealed class DiaryBook : ShellPage
 		}
 	}
 
-	/// <summary>相册的一页：两张贴着胶带的照片，下面手写是谁拍的、在哪、哪天。</summary>
+	/// <summary>相册的一页：两张照片或画，下面手写说明。</summary>
 	private void DrawAlbumPage(SpriteBatch b, Rectangle page, int index, bool isLeft)
 	{
 		Sheet(b, page, isLeft);
-		if (_photos.Count == 0)
+		if (_items.Count == 0)
 		{
 			if (index == 0)
 			{
@@ -227,12 +234,12 @@ internal sealed class DiaryBook : ShellPage
 		for (int k = 0; k < PhotosPerPage; k++)
 		{
 			int i = index * PhotosPerPage + k;
-			if (i >= _photos.Count)
+			if (i >= _items.Count)
 			{
 				break;
 			}
-			AISV.Core.Messenger.PhotoRecord r = _photos[i];
-			Texture2D? image = Ctx.Messenger?.Photos.Image(r.Id);
+			AlbumItem item = _items[i];
+			Texture2D? image = item.Image();
 			int maxW = page.Width - 120, maxH = slotH - 70;
 			int w = maxW, h = w * 9 / 16;
 			if (image != null)
@@ -256,11 +263,12 @@ internal sealed class DiaryBook : ShellPage
 			{
 				AisvTheme.Fill(b, new Rectangle(px, py, w, h), PaperEdge);
 			}
-			AisvTheme.Fill(b, new Rectangle(frame.X - 12, frame.Y - 6, 44, 16), new Color(240, 226, 170) * 0.85f);
-			AisvTheme.Fill(b, new Rectangle(frame.Right - 32, frame.Y - 6, 44, 16), new Color(240, 226, 170) * 0.85f);
-			string who = Ctx.Display(r.Sender);
-			string caption = ShellText.Date(r.Day, r.Season, r.Year) + " · " + (r.LocationDisplay.Length > 0 ? r.LocationDisplay : r.LocationName) + " · "
-				+ (string.Equals(r.Subject, r.Sender, StringComparison.OrdinalIgnoreCase) ? Tr.Get("shell.book.selfie", "{{name}}的自拍", ("name", who)) : Tr.Get("shell.book.shotBy", "{{name}}拍的", ("name", who)));
+			if (item.Taped)
+			{
+				AisvTheme.Fill(b, new Rectangle(frame.X - 12, frame.Y - 6, 44, 16), new Color(240, 226, 170) * 0.85f);
+				AisvTheme.Fill(b, new Rectangle(frame.Right - 32, frame.Y - 6, 44, 16), new Color(240, 226, 170) * 0.85f);
+			}
+			string caption = item.Caption;
 			AisvTheme.DrawText(b, AisvTheme.Truncate(caption, page.Width - 80, 0.82f), new Vector2(page.Center.X - Math.Min(page.Width - 80, AisvTheme.Width(caption, 0.82f)) / 2f, frame.Bottom + 10), Ink, 0.82f);
 		}
 		string number = (index + 1).ToString();

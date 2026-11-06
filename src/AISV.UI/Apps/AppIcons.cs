@@ -10,6 +10,8 @@ internal static class AppIcons
 {
 	private static readonly Dictionary<char, Color> P = PixelGlyph.Palette(('l', new Color(178, 220, 128)), ('q', new Color(255, 196, 214)), ('h', new Color(150, 200, 240)), ('e', new Color(250, 246, 236)), ('m', new Color(170, 176, 190)), ('z', new Color(120, 126, 140)), ('u', new Color(110, 160, 230)));
 
+	public static readonly PixelGlyph Family = new PixelGlyph(P, "................", ".....kkkkkk.....", "....kGGGGGGk....", "...kGGlGGlGGk...", "..kGGGGGGGGGGk..", "..kGlGGGGGGlGk..", "..kGGGGGGGGGGk..", "...kDGGGGGGDk...", "....kkkkkkkk....", ".......kk.......", "...kkkkkkkkkk...", "...k...kk...k...", "..kqk.kuuk.kqk..", "..kkk.kkkk.kkk..", "................", "................");
+
 	public static readonly PixelGlyph Messenger = new PixelGlyph(P, "................", "..kkkkkkkkkkkk..", ".kGGGGGGGGGGGGk.", "kGllGGGGGGGGGGGk", "kGlGGGGGGGGGGGGk", "kGGGwwGGwwGGwwGk", "kGGGwwGGwwGGwwGk", "kGGGGGGGGGGGGGGk", "kDGGGGGGGGGGGGDk", ".kDDGGGGGGGGDDk.", "..kkkkGGDkkkkk..", ".....kGDk.......", ".....kDk........", ".....kk.........", "................", "................");
 
 	public static readonly PixelGlyph Where = new PixelGlyph(P, "................", "......kkkk......", ".....kRRRRk.....", "....kRRwwRRk....", "....kRRwwRRk....", "....kRRRRRRk....", ".....kRRRRk.....", "..kkkkkRRkkkkk..", ".kGGGGkRRkuuuuk.", ".kGlGGGkkuuuuuk.", ".kGGGlGGuuuuuuk.", ".kGGGGGuuuuGGGk.", ".kuuuuuuuGGlGGk.", ".kuuuuuGGGGGGGk.", "..kkkkkkkkkkkk..", "................");

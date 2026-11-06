@@ -6,6 +6,7 @@ using AISV.UI.Theme;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using StardewValley;
 
 namespace AISV.UI.Shell;
 
@@ -35,6 +36,8 @@ internal sealed class DiaryPage : ShellPage
 
 	private Rectangle _feed;
 
+	private bool _exported;
+
 	public DiaryPage(ShellContext ctx) : base(ctx)
 	{
 	}
@@ -58,6 +61,28 @@ internal sealed class DiaryPage : ShellPage
 		}
 	}
 
+	private void Export()
+	{
+		Game1.playSound("smallSelect");
+		try
+		{
+			string path = DiaryPrinter.Export(Ctx);
+			_exported = true;
+			Host.Notice(Tr.Get("shell.diary.exported", "已导出：{{file}}", ("file", System.IO.Path.GetFileName(path))));
+		}
+		catch (Exception ex)
+		{
+			Ctx.Log.Warn("日记导出失败：" + ex.Message);
+			Host.Notice(Tr.Get("shell.diary.exportFailed", "导出失败，详情见 SMAPI 日志"));
+		}
+	}
+
+	private void OpenFolder()
+	{
+		Game1.playSound("smallSelect");
+		AISV.Game.Promo.ExternalLink.Open(DiaryPrinter.ExportFolder(Ctx), Ctx.Log);
+	}
+
 	public override void Scroll(int direction) => _scroll.Wheel(direction);
 
 	public override bool KeyPress(Keys key) => _scroll.PageKeys(key, _feed.Height - 60);
@@ -71,7 +96,15 @@ internal sealed class DiaryPage : ShellPage
 		{
 			Build(colW);
 		}
-		Kit.Header(b, header, Tr.Get("shell.diary.title", "日记"), _entries.Count > 0 ? Tr.Get("shell.diary.count", "共 {{n}} 篇", ("n", _entries.Count)) : "", Tr.Get("shell.diary.openBook", "翻开日记本"), hits, () => Host.Push(new DiaryBook(Ctx)));
+		Rectangle open = Kit.Header(b, header, Tr.Get("shell.diary.title", "日记"), _entries.Count > 0 ? Tr.Get("shell.diary.count", "共 {{n}} 篇", ("n", _entries.Count)) : "", Tr.Get("shell.diary.openBook", "翻开日记本"), hits, () => Host.Push(new DiaryBook(Ctx)));
+		if (_entries.Count > 0)
+		{
+			string label = _exported ? Tr.Get("shell.diary.openFolder", "打开文件夹") : Tr.Get("shell.diary.export", "导出 PDF");
+			int bw = (int)AisvTheme.Width(label, 0.85f) + 40;
+			Rectangle export = new Rectangle(open.X - 12 - bw, open.Y, bw, open.Height);
+			AisvTheme.Button(b, export, label, hover: AisvTheme.Hover(export), scale: 0.85f);
+			hits.Add(export, _exported ? OpenFolder : Export);
+		}
 		AisvTheme.BeginClip(b, _feed);
 		int x = _feed.X + (_feed.Width - colW) / 2, w = colW;
 		int y = _feed.Y + 14 - _scroll.Offset;

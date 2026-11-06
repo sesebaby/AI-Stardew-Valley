@@ -32,7 +32,7 @@ public class SettingsAndAppsTests
 	[InlineData(400, 150)]
 	public void WindowSizeStaysInRange(int value, int expected)
 	{
-		Assert.Equal(expected, new ModConfig { ShellSizePercent = value }.Normalize().ShellSizePercent);
+		Assert.Equal(expected, new ModConfig { WindowPercent = value }.Normalize().WindowPercent);
 	}
 
 	[Fact]

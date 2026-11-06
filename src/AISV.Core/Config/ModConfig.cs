@@ -473,8 +473,8 @@ public sealed class ModConfig
 	/// <summary>应用页不显示的应用。</summary>
 	public List<string> HiddenApps { get; set; } = new List<string>();
 
-	/// <summary>界面窗口的最大尺寸（70～150%）。文字大小跟着游戏的界面缩放。</summary>
-	public int ShellSizePercent { get; set; } = 100;
+	/// <summary>窗口上限的百分比（70～150）。只影响窗口，不影响字。</summary>
+	public int WindowPercent { get; set; } = 100;
 
 	public Compat.NpcModActivationMode ModVillagerScope { get; set; } = Compat.NpcModActivationMode.AllNpcMods;
 
@@ -575,7 +575,7 @@ public sealed class ModConfig
 		ModVillagerPicks = CleanIds(ModVillagerPicks);
 		ModVillagerExtras = CleanIds(ModVillagerExtras);
 		HiddenApps = CleanIds(HiddenApps);
-		ShellSizePercent = System.Math.Clamp(ShellSizePercent, 70, 150);
+		WindowPercent = System.Math.Clamp(WindowPercent, 70, 150);
 		return this;
 	}
 
