@@ -22,29 +22,29 @@ internal sealed class DiaryBook : ShellPage
 		Note
 	}
 
-	private static readonly Color Cover = new Color(120, 66, 42);
+	internal static readonly Color Cover = new Color(120, 66, 42);
 
-	private static readonly Color Paper = new Color(250, 242, 222);
+	internal static readonly Color Paper = new Color(250, 242, 222);
 
-	private static readonly Color PaperEdge = new Color(205, 182, 150);
+	internal static readonly Color PaperEdge = new Color(205, 182, 150);
 
-	private static readonly Color Rule = new Color(150, 178, 210) * 0.45f;
+	internal static readonly Color Rule = new Color(150, 178, 210) * 0.45f;
 
-	private static readonly Color Margin = new Color(220, 110, 110) * 0.55f;
+	internal static readonly Color Margin = new Color(220, 110, 110) * 0.55f;
 
-	private static readonly Color Ink = new Color(52, 46, 78);
+	internal static readonly Color Ink = new Color(52, 46, 78);
 
-	private static readonly Color DateInk = new Color(150, 78, 32);
+	internal static readonly Color DateInk = new Color(150, 78, 32);
 
-	private static readonly Color Faded = new Color(120, 110, 120);
+	internal static readonly Color Faded = new Color(120, 110, 120);
 
-	private static readonly Color Ribbon = new Color(178, 42, 48);
+	internal static readonly Color Ribbon = new Color(178, 42, 48);
 
 	private static readonly Rectangle FrameSource = new Rectangle(403, 373, 9, 9);
 
-	private static readonly Rectangle LeftArrow = new Rectangle(352, 495, 12, 11);
+	internal static readonly Rectangle LeftArrow = new Rectangle(352, 495, 12, 11);
 
-	private static readonly Rectangle RightArrow = new Rectangle(365, 495, 12, 11);
+	internal static readonly Rectangle RightArrow = new Rectangle(365, 495, 12, 11);
 
 	private List<DiaryEntry> _entries = new List<DiaryEntry>();
 
@@ -155,11 +155,7 @@ internal sealed class DiaryBook : ShellPage
 	public override void Draw(SpriteBatch b, Rectangle area, Hits hits)
 	{
 		_lineH = AisvTheme.LineHeight() + 6;
-		int w = Math.Min(area.Width - 80, 1180), h = Math.Min(area.Height - 76, 760);
-		Rectangle cover = new Rectangle(area.Center.X - w / 2, area.Center.Y - h / 2 + 18, w, h);
-		int pageW = (cover.Width - 36 - 28) / 2;
-		Rectangle left = new Rectangle(cover.X + 18, cover.Y + 18, pageW, cover.Height - 36);
-		Rectangle right = new Rectangle(left.Right + 28, left.Y, pageW, left.Height);
+		(Rectangle cover, Rectangle left, Rectangle right) = Layout(area);
 		Rectangle leftText = TextArea(left), rightText = TextArea(right);
 		if (_builtFor != cover)
 		{
@@ -167,7 +163,7 @@ internal sealed class DiaryBook : ShellPage
 			Paginate(leftText);
 		}
 		Bookmarks(b, cover, hits);
-		IClickableMenu.drawTextureBox(b, Game1.mouseCursors, FrameSource, cover.X, cover.Y, cover.Width, cover.Height, Cover, 4f);
+		DrawCover(b, cover);
 		if (_album)
 		{
 			DrawAlbumPage(b, left, _spread * 2, isLeft: true);
@@ -178,9 +174,7 @@ internal sealed class DiaryBook : ShellPage
 			DrawPage(b, left, leftText, _spread * 2, isLeft: true);
 			DrawPage(b, right, rightText, _spread * 2 + 1, isLeft: false);
 		}
-		Rectangle spine = new Rectangle(left.Right, cover.Y + 14, 28, cover.Height - 28);
-		AisvTheme.Fill(b, spine, Cover * 0.9f);
-		AisvTheme.Fill(b, new Rectangle(spine.Center.X - 1, spine.Y, 2, spine.Height), Color.Black * 0.35f);
+		DrawSpine(b, cover, left);
 		DrawRibbon(b, right.X + 34, cover.Y + 4, Math.Min(130, right.Height / 4));
 		if (_spread > 0)
 		{
@@ -220,16 +214,7 @@ internal sealed class DiaryBook : ShellPage
 	/// <summary>相册的一页：两张贴着胶带的照片，下面手写是谁拍的、在哪、哪天。</summary>
 	private void DrawAlbumPage(SpriteBatch b, Rectangle page, int index, bool isLeft)
 	{
-		AisvTheme.Fill(b, page, Paper);
-		AisvTheme.HLine(b, page.X, page.Y, page.Width, PaperEdge);
-		AisvTheme.HLine(b, page.X, page.Bottom - 2, page.Width, PaperEdge);
-		AisvTheme.VLine(b, page.X, page.Y, page.Height, PaperEdge);
-		AisvTheme.VLine(b, page.Right - 2, page.Y, page.Height, PaperEdge);
-		for (int i = 0; i < 6; i++)
-		{
-			int sx = isLeft ? page.Right - (i + 1) * 4 : page.X + i * 4;
-			AisvTheme.Fill(b, new Rectangle(sx, page.Y, 4, page.Height), Color.Black * (0.07f - i * 0.011f));
-		}
+		Sheet(b, page, isLeft);
 		if (_photos.Count == 0)
 		{
 			if (index == 0)
@@ -282,13 +267,8 @@ internal sealed class DiaryBook : ShellPage
 		AisvTheme.DrawText(b, number, new Vector2(page.Center.X - AisvTheme.Width(number) / 2f, page.Bottom - 40), Faded);
 	}
 
-	private Rectangle TextArea(Rectangle page)
-	{
-		Rectangle r = new Rectangle(page.X + 58, page.Y + 40, page.Width - 58 - 26, page.Height - 40 - 56);
-		return new Rectangle(r.X, r.Y, r.Width, Math.Max(_lineH, r.Height / _lineH * _lineH));
-	}
-
-	private void DrawPage(SpriteBatch b, Rectangle page, Rectangle text, int index, bool isLeft)
+	/// <summary>一页纸：边线和靠书脊的阴影。</summary>
+	internal static void Sheet(SpriteBatch b, Rectangle page, bool isLeft)
 	{
 		AisvTheme.Fill(b, page, Paper);
 		AisvTheme.HLine(b, page.X, page.Y, page.Width, PaperEdge);
@@ -300,6 +280,36 @@ internal sealed class DiaryBook : ShellPage
 			int x = isLeft ? page.Right - (i + 1) * 4 : page.X + i * 4;
 			AisvTheme.Fill(b, new Rectangle(x, page.Y, 4, page.Height), Color.Black * (0.07f - i * 0.011f));
 		}
+	}
+
+	/// <summary>皮面、两页纸的位置。</summary>
+	internal static (Rectangle Cover, Rectangle Left, Rectangle Right) Layout(Rectangle area)
+	{
+		int w = Math.Min(area.Width - 80, 1180), h = Math.Min(area.Height - 76, 760);
+		Rectangle cover = new Rectangle(area.Center.X - w / 2, area.Center.Y - h / 2 + 18, w, h);
+		int pageW = (cover.Width - 36 - 28) / 2;
+		Rectangle left = new Rectangle(cover.X + 18, cover.Y + 18, pageW, cover.Height - 36);
+		return (cover, left, new Rectangle(left.Right + 28, left.Y, pageW, left.Height));
+	}
+
+	internal static void DrawCover(SpriteBatch b, Rectangle cover) => IClickableMenu.drawTextureBox(b, Game1.mouseCursors, FrameSource, cover.X, cover.Y, cover.Width, cover.Height, Cover, 4f);
+
+	internal static void DrawSpine(SpriteBatch b, Rectangle cover, Rectangle left)
+	{
+		Rectangle spine = new Rectangle(left.Right, cover.Y + 14, 28, cover.Height - 28);
+		AisvTheme.Fill(b, spine, Cover * 0.9f);
+		AisvTheme.Fill(b, new Rectangle(spine.Center.X - 1, spine.Y, 2, spine.Height), Color.Black * 0.35f);
+	}
+
+	private Rectangle TextArea(Rectangle page)
+	{
+		Rectangle r = new Rectangle(page.X + 58, page.Y + 40, page.Width - 58 - 26, page.Height - 40 - 56);
+		return new Rectangle(r.X, r.Y, r.Width, Math.Max(_lineH, r.Height / _lineH * _lineH));
+	}
+
+	private void DrawPage(SpriteBatch b, Rectangle page, Rectangle text, int index, bool isLeft)
+	{
+		Sheet(b, page, isLeft);
 		for (int y = text.Y + _lineH - 4; y <= text.Bottom; y += _lineH)
 		{
 			AisvTheme.Fill(b, new Rectangle(page.X + 10, y, page.Width - 20, 2), Rule);

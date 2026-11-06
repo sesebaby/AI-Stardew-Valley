@@ -42,6 +42,11 @@ public sealed class ShellContext
 	/// <summary>现在是不是连 AI星露谷服务器（否则是玩家自己的网关）。</summary>
 	public Func<bool> UsesServer { get; set; } = () => false;
 
+	public AISV.Game.Awareness.AwarenessSystem? Awareness { get; set; }
+
+	/// <summary>mod ID 换成名字。</summary>
+	public Func<string, string> ModName { get; set; } = id => id;
+
 	public AISV.Game.Group.ResidentsService? Residents { get; set; }
 
 	public AISV.Game.Messenger.MessengerService? Messenger { get; set; }

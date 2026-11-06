@@ -252,6 +252,8 @@ public sealed class NpcEligibility
 		return npcMods.Any(selected.Contains) || (npcMods.Any(SveMods.IsSve) && selected.Any(SveMods.IsSve));
 	}
 
+	public IReadOnlyList<string> NpcModIds => NpcMods().OrderBy(id => id, StringComparer.OrdinalIgnoreCase).ToList();
+
 	/// <summary>带 NPC 的 mod：扫描结果、世界里的村民名字前缀，加上 SVE（不等扫描）。</summary>
 	private IEnumerable<string> NpcMods()
 	{

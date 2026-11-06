@@ -32,6 +32,7 @@ internal sealed class AppsPage : ShellPage
 		_apps = new List<App>
 		{
 			new App("messenger", AppIcons.Messenger, new Color(226, 240, 214), Tr.Get("apps.messenger", "信使"), MessengerSummary, () => Host.Open(ShellMenu.Tab.Social, ShellMenu.SocialTab.Messenger)),
+			new App("where", AppIcons.Where, new Color(226, 238, 246), Tr.Get("apps.where", "大家都在哪"), WhereSummary, () => Host.Push(new WhereaboutsPage(Ctx))),
 			new App("mood", AppIcons.Mood, new Color(224, 236, 250), Tr.Get("apps.mood", "心情预报"), MoodSummary, () => Host.Push(new MoodForecastPage(Ctx))),
 			new App("pelican", AppIcons.Pelican, new Color(238, 230, 248), Tr.Get("apps.pelican", "鹈鹕图"), PelicanSummary, () => Host.Push(new PelicanPage(Ctx))),
 			new App("gossip", AppIcons.Gossip, new Color(222, 240, 234), Tr.Get("apps.gossip", "八卦树"), GossipSummary, () => Host.Push(new GossipTreePage(Ctx))),
@@ -148,6 +149,13 @@ internal sealed class AppsPage : ShellPage
 		}
 		int unread = m.Unread.Count;
 		return unread > 0 ? Tr.Get("apps.messenger.unread", "{{count}} 位村民有新消息", ("count", unread)) : Tr.Get("apps.messenger.none", "和村民发发消息，看看他们在忙什么");
+	}
+
+	private string WhereSummary()
+	{
+		List<WhereInput> inputs = AppData.WhereInputs(Ctx);
+		int home = inputs.Count(w => !w.Hidden && w.Place != null && string.Equals(w.Place, w.Home, StringComparison.OrdinalIgnoreCase));
+		return Tr.Get("apps.where.line", "{{out}} 位在外面，{{home}} 位在家", ("out", inputs.Count(w => !w.Hidden) - home), ("home", home));
 	}
 
 	private string MoodSummary()

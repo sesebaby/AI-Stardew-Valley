@@ -3,15 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using AISV.Core.Apps;
 using AISV.Core.Dialogue;
+using AISV.Core.Favors;
 using AISV.Core.Persona;
 using AISV.Core.Social;
 using AISV.Core.Social.Gossip;
+using AISV.Core.Social.Drama;
 using AISV.Core.Social.Personality;
 using AISV.Core.Stories;
 using AISV.Core.Social.Web;
 using AISV.Core.Text;
+using AISV.Game.Dialogue;
 using AISV.UI.Shell;
+using Microsoft.Xna.Framework;
 using StardewValley;
+using StardewValley.WorldMaps;
 
 namespace AISV.UI.Apps;
 
@@ -99,6 +104,130 @@ internal static class AppData
 		}
 		return list.OrderByDescending(x => x.Item4).ThenBy(x => x.Item2, StringComparer.CurrentCulture).Select(x => (x.Item1, x.Item2, x.Item3)).ToList();
 	});
+
+	/// <summary>村民日记要用的记录：每种单独读，一种读不出来不影响别的。</summary>
+	public static VillagerFacts VillagerFacts(ShellContext ctx, string npc)
+	{
+		int today = GameState.Today.TotalDays;
+		return new VillagerFacts
+		{
+			Npc = npc,
+			Name = ctx.Display(npc),
+			Today = today,
+			AfterwordDays = ctx.Config().AfterwordDays,
+			Profile = One(ctx, "情感档案", () => ctx.Social.Feelings.Find(npc)),
+			Noticing = One(ctx, "今天的心事", () => ctx.Awareness?.DiaryView(npc)) ?? NoticingView.Off,
+			Favors = Safe(ctx, "托付", () => ctx.Favors?.Favors.All.ToList() ?? new List<NpcFavor>()),
+			ItemRequests = Safe(ctx, "物品请求", () => ctx.Favors?.Requests.For(npc).ToList() ?? new List<ItemRequestFavor>()),
+			Arcs = Safe(ctx, "小剧场", () => ctx.Arcs?.Arcs.All.ToList() ?? new List<StoryArc>()),
+			Edges = Safe(ctx, "村民关系", () => ctx.Social.Web.Edges.ToList()),
+			Personality = One(ctx, "性格变化", () => ctx.Social.Personality.Find(npc)),
+			Rumors = Safe(ctx, "传闻", () => ctx.Social.Drama.RumorsKnownBy(npc, today).ToList()),
+			Opinions = Safe(ctx, "看法", () => ctx.Social.Drama.OpinionsHeldBy(npc).ToList()),
+			Display = n => string.Equals(n, RumorRules.Farmer, StringComparison.OrdinalIgnoreCase) ? Tr.Get("vdiary.you", "你") : ctx.Display(n)
+		};
+	}
+
+	private static T? One<T>(ShellContext ctx, string what, Func<T?> read) where T : class
+	{
+		try
+		{
+			return read();
+		}
+		catch (Exception ex)
+		{
+			ctx.Log.Warn($"读不出{what}：{ex.Message}");
+			return null;
+		}
+	}
+
+	/// <summary>大家都在哪：每位村民现在的位置和今天的路线。</summary>
+	public static List<WhereInput> WhereInputs(ShellContext ctx) => Safe(ctx, "村民的位置", () =>
+	{
+		List<WhereInput> list = new List<WhereInput>();
+		foreach (NPC n in Utility.getAllVillagers().Where(n => n != null && n.CanSocialize).GroupBy(n => n.Name, StringComparer.OrdinalIgnoreCase).Select(g => g.First()))
+		{
+			bool hasRoute = n.Schedule != null && !n.ignoreScheduleToday && n.followSchedule;
+			List<WhereStop> stops = hasRoute
+				? n.Schedule!.Where(p => !string.IsNullOrWhiteSpace(p.Value?.targetLocationName)).Select(p => new WhereStop(p.Key, p.Value.targetLocationName, PlaceName(p.Value.targetLocationName))).ToList()
+				: new List<WhereStop>();
+			string? place = n.currentLocation?.Name;
+			string? heading = n.controller?.pathToEndPoint?.Count > 0 ? n.DirectionsToNewLocation?.targetLocationName : null;
+			list.Add(new WhereInput(n.Name, ctx.Display(n.Name), place, PlaceName(place), n.DefaultMap, heading, PlaceName(heading), n.IsInvisible || place == null, hasRoute, stops));
+		}
+		return list;
+	});
+
+	/// <summary>村民在世界地图上的位置（像素，1 倍）。地图上找不到的不在里面。</summary>
+	public static Dictionary<string, (string Region, float X, float Y)> WherePoints(ShellContext ctx)
+	{
+		Dictionary<string, (string, float, float)> points = new Dictionary<string, (string, float, float)>(StringComparer.OrdinalIgnoreCase);
+		foreach (NPC n in Utility.getAllVillagers().Where(n => n?.currentLocation != null && n.CanSocialize && !n.IsInvisible))
+		{
+			try
+			{
+				if (WorldMapManager.GetPositionData(n.currentLocation, n.TilePoint) is { } at)
+				{
+					Vector2 pixel = at.GetMapPixelPosition();
+					points[n.Name] = (at.Data.Region.Id, pixel.X / 4f, pixel.Y / 4f);
+				}
+			}
+			catch (Exception ex)
+			{
+				ctx.Log.Debug($"大家都在哪：{n.Name} 放不到地图上：{ex.Message}");
+			}
+		}
+		return points;
+	}
+
+	public static string HomeRegion(ShellContext ctx)
+	{
+		try
+		{
+			return WorldMapManager.GetPositionData(Game1.getFarm(), Point.Zero)?.Data.Region.Id ?? "";
+		}
+		catch (Exception ex)
+		{
+			ctx.Log.Debug($"大家都在哪：农场不在地图上：{ex.Message}");
+			return "";
+		}
+	}
+
+	/// <summary>地点叫什么：先用自己的说法，再用游戏的名字；都没有时用出口通向的地方（mod 的小房间）。</summary>
+	public static string PlaceName(string? id)
+	{
+		if (string.IsNullOrWhiteSpace(id))
+		{
+			return Tr.Get("where.somewhere", "某个地方");
+		}
+		if (Places.IsKnown(id))
+		{
+			return Places.Name(id);
+		}
+		GameLocation? location = Game1.getLocationFromName(id);
+		if (location == null)
+		{
+			return id;
+		}
+		if (HasOwnName(location))
+		{
+			return location.DisplayName;
+		}
+		foreach (Warp warp in location.warps)
+		{
+			if (Places.IsKnown(warp.TargetName))
+			{
+				return Places.Name(warp.TargetName);
+			}
+			if (Game1.getLocationFromName(warp.TargetName) is GameLocation target && !string.Equals(target.Name, location.Name, StringComparison.OrdinalIgnoreCase) && HasOwnName(target))
+			{
+				return target.DisplayName;
+			}
+		}
+		return id;
+	}
+
+	private static bool HasOwnName(GameLocation location) => !string.IsNullOrWhiteSpace(location.DisplayName) && !string.Equals(location.DisplayName, location.Name, StringComparison.OrdinalIgnoreCase);
 
 	/// <summary>最先看谁：伴侣，其次交情最深的。</summary>
 	public static string? Closest(ShellContext ctx, IEnumerable<string> npcs)

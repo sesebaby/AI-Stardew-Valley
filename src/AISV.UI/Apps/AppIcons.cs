@@ -12,6 +12,8 @@ internal static class AppIcons
 
 	public static readonly PixelGlyph Messenger = new PixelGlyph(P, "................", "..kkkkkkkkkkkk..", ".kGGGGGGGGGGGGk.", "kGllGGGGGGGGGGGk", "kGlGGGGGGGGGGGGk", "kGGGwwGGwwGGwwGk", "kGGGwwGGwwGGwwGk", "kGGGGGGGGGGGGGGk", "kDGGGGGGGGGGGGDk", ".kDDGGGGGGGGDDk.", "..kkkkGGDkkkkk..", ".....kGDk.......", ".....kDk........", ".....kk.........", "................", "................");
 
+	public static readonly PixelGlyph Where = new PixelGlyph(P, "................", "......kkkk......", ".....kRRRRk.....", "....kRRwwRRk....", "....kRRwwRRk....", "....kRRRRRRk....", ".....kRRRRk.....", "..kkkkkRRkkkkk..", ".kGGGGkRRkuuuuk.", ".kGlGGGkkuuuuuk.", ".kGGGlGGuuuuuuk.", ".kGGGGGuuuuGGGk.", ".kuuuuuuuGGlGGk.", ".kuuuuuGGGGGGGk.", "..kkkkkkkkkkkk..", "................");
+
 	public static readonly PixelGlyph Thanks = new PixelGlyph(P, "................", "..kkkk....kkkk..", ".kqqqqk..kqqqqk.", "kqqwqqqkkqqqqqqk", "kqwqqqqqqqqqqqqk", "kqqqqqqqqqqqqqqk", "kqqqqqqqqqqqqqqk", ".kqqqqqqqqqqqqk.", "..kqqqqqqqqqqk..", "...kqqqqqqqqk...", "....kqqqqqqk....", ".....kqqqqk.....", "......kqqk......", ".......kk.......", "................", "................");
 
 	public static readonly PixelGlyph Year = new PixelGlyph(P, "..kk........kk..", ".kRRk......kRRk.", "kkkkkkkkkkkkkkkk", "krrrrrrrrrrrrrrk", "krrrrrrrrrrrrrrk", "kkkkkkkkkkkkkkkk", "keeeeeeyyeeeeeek", "keeeeeyyyyeeeeek", "keeyyyyYYyyyyeek", "keeeyyyYYyyyeeek", "keeeeyyyyyyeeeek", "keeeyyyeeyyyeeek", "keeeyyeeeeyyeeek", "keeeeeeeeeeeeeek", "kkkkkkkkkkkkkkkk", "................");

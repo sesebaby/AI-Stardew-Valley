@@ -322,6 +322,16 @@ internal sealed class VillagersPage : ShellPage
 		y = DrawInfo(b, v, x0, y, cardW, hits) + 16;
 		if (v.AiEnabled)
 		{
+			Rectangle diary = new Rectangle(x0, y, cardW, 52);
+			AisvTheme.Button(b, diary, Tr.Get("shell.villagers.diary", "翻开{{name}}的日记", ("name", v.Display)), hover: AisvTheme.Hover(diary, _detail), scale: 0.85f);
+			string npc = v.Name;
+			hits.Add(diary, () =>
+			{
+				_search.Selected = false;
+				Game1.playSound("shwip");
+				Host.Push(new VillagerDiaryBook(Ctx, npc));
+			}, _detail);
+			y = diary.Bottom + 16;
 			foreach (Section s in Sections(v.Name))
 			{
 				y = DrawSection(b, s, x0, y, cardW) + 16;

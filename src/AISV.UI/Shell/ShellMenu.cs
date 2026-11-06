@@ -545,6 +545,24 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 		((IShellHost)this).Push(new AccountPage(_ctx, prompted));
 	}
 
+	public void OpenAiStatus()
+	{
+		Open(Tab.Settings);
+		((IShellHost)this).Push(new AiStatusPage(_ctx));
+	}
+
+	public void OpenNpcCompat()
+	{
+		Open(Tab.Settings);
+		((IShellHost)this).Push(new NpcCompatPage(_ctx));
+	}
+
+	public void OpenVillagerDiary(string npc)
+	{
+		Open(Tab.Social, SocialTab.Contacts);
+		((IShellHost)this).Push(new VillagerDiaryBook(_ctx, npc));
+	}
+
 	/// <summary>打开一位村民的家当；loan 为真时直接到借钱。</summary>
 	public void OpenLedger(string npc, bool loan = false)
 	{

@@ -694,5 +694,7 @@ public static class Places
 		"姜岛北面:IslandNorth", "姜岛西面:IslandWest", "姜岛东面:IslandEast", "岛上的屋子:IslandFarmHouse", "姜岛东南角:IslandSouthEast", "核桃屋:QiNutRoom", "火山口:Caldera"
 	}.Select(row => row.Split(':')).SelectMany(c => c[1].Split(' ').Select(place => (place, c[0]))).ToDictionary(p => p.place, p => p.Item2, StringComparer.OrdinalIgnoreCase);
 
+	public static bool IsKnown(string? location) => !string.IsNullOrWhiteSpace(location) && Names.ContainsKey(location);
+
 	public static string Name(string? location) => string.IsNullOrWhiteSpace(location) ? "镇上" : Names.TryGetValue(location, out string? n) ? n : location;
 }

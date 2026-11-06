@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Threading.Tasks;
 using AISV.Core.Ai;
 using AISV.Core.Config;
 using AISV.Core.Text;
@@ -133,28 +132,11 @@ internal sealed class GatewayPage : ShellPage
 		SaveTyped();
 		_testing = true;
 		_result = "";
-		Task.Run(async () =>
+		ConnectionTest.Run(ai, (ok, text) =>
 		{
-			string text;
-			bool ok;
-			try
-			{
-				AiResult r = await ai.SendAsync(new ChatRequest("connection_test", "这是一次连通测试。", "只回一个字：好", 64, 0.1));
-				ok = r.Ok;
-				text = ok ? Tr.Get("gateway.testOk", "通了，模型回了：{{text}}", ("text", (r.Text ?? "").Trim())) : FailureText.Describe(r.Failure, r.Message);
-			}
-			catch (Exception ex)
-			{
-				ok = false;
-				text = ex.Message;
-			}
-			MainThread.Run(() =>
-			{
-				_testing = false;
-				_resultOk = ok;
-				_result = text;
-				Game1.playSound(ok ? "newArtifact" : "cancel");
-			});
+			_testing = false;
+			_resultOk = ok;
+			_result = text;
 		});
 	}
 

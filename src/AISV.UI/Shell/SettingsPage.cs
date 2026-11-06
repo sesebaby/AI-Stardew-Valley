@@ -117,6 +117,8 @@ internal sealed class SettingsPage : ShellPage
 				{
 					new LinkRow(Tr.Get("shell.settings.account", "账号"), Tr.Get("shell.settings.accountNote", "注册、登录、改密码，看今天还能用多少"), ctx => new AccountPage(ctx)),
 					new LinkRow(Tr.Get("shell.settings.gateway", "AI 连接"), Tr.Get("shell.settings.gatewayNote", "用服务器还是自己的 AI 网关、模型、思考档位"), ctx => new GatewayPage(ctx)),
+					new LinkRow(Tr.Get("shell.settings.aiStatus", "AI 状态"), Tr.Get("shell.settings.aiStatusNote", "现在好不好用、今天用了多少、最近为什么失败"), ctx => new AiStatusPage(ctx)),
+					new LinkRow(Tr.Get("shell.settings.npcCompat", "村民和 NPC mod"), Tr.Get("shell.settings.npcCompatNote", "哪些村民用 AI，为什么；关掉谁、用哪些 mod 的村民"), ctx => new NpcCompatPage(ctx)),
 					new ToggleRow(Tr.Get("shell.settings.aiFeatures", "AI 功能"), Tr.Get("shell.settings.aiFeaturesNote", "关掉后村民用游戏原来的台词，晚上也不整理八卦和日记"), c => c.AiOn, (c, v) => c.AiOn = v),
 					new ChoiceRow(Tr.Get("shell.settings.talkMinutes", "聊天花的时间"), Tr.Get("shell.settings.talkMinutesNote", "当面聊一轮、群聊说一句，钟走几分钟（只在单人游戏里；聊完关掉对话框再走，最晚到 25:50）"),
 						TalkMinutes.Select(m => m == 0 ? Tr.Get("shell.settings.talkFree", "不花时间") : Tr.Get("shell.settings.minutes", "{{n}} 分钟", ("n", m))).ToArray(),

@@ -36,6 +36,8 @@ public interface IAiSender
 /// 所有 AI 请求的入口：选连接（服务器 / 自己的网关）、分槽、每天的后台上限、换备用模型、截断后加大上限重试一次。
 /// 不在主线程上调用；结果回到调用方自己的线程。
 /// </summary>
+public sealed record AiFailureNote(string When, string Request, FailureKind Kind, string Message);
+
 public sealed class AiService : IAiSender
 {
 	/// <summary>用服务器时的默认上限（和服务器的默认值一样）。</summary>
@@ -61,6 +63,10 @@ public sealed class AiService : IAiSender
 
 	private string? _reasoningSeenFor;
 
+	private const int MaxFailureNotes = 6;
+
+	private readonly List<AiFailureNote> _recentFailures = new List<AiFailureNote>();
+
 	public AiService(Func<ModConfig> config, ChatClient client, ServerConnection connection, ServerAccount account, ILog log)
 	{
 		_config = config;
@@ -69,6 +75,14 @@ public sealed class AiService : IAiSender
 		_account = account;
 		_log = log;
 		client.ServerResponse += account.ObserveAiResponse;
+		client.Usage += (_, _, total, _) =>
+		{
+			lock (_lock)
+			{
+				TokensToday += total;
+				TokensSession += total;
+			}
+		};
 	}
 
 	/// <summary>当前用的是不是 AI星露谷服务器（有 connection.dat，且设置没选"自己的网关"）。</summary>
@@ -89,6 +103,22 @@ public sealed class AiService : IAiSender
 	public int SucceededToday { get; private set; }
 
 	public int FailedToday { get; private set; }
+
+	public long TokensToday { get; private set; }
+
+	public long TokensSession { get; private set; }
+
+	/// <summary>最近几次失败，新的在前。</summary>
+	public IReadOnlyList<AiFailureNote> RecentFailures
+	{
+		get
+		{
+			lock (_lock)
+			{
+				return new List<AiFailureNote>(_recentFailures);
+			}
+		}
+	}
 
 	public FailureKind LastFailure { get; private set; }
 
@@ -117,6 +147,7 @@ public sealed class AiService : IAiSender
 			_backgroundSkippedToday = 0;
 			SucceededToday = 0;
 			FailedToday = 0;
+			TokensToday = 0;
 			_noticedToday.Clear();
 		}
 	}
@@ -141,13 +172,13 @@ public sealed class AiService : IAiSender
 			{
 				_account.RequestLogin();
 			}
-			RecordFailure(FailureKind.AccountRequired, "");
+			RecordFailure(FailureKind.AccountRequired, "", request.Name);
 			return AiResult.Fail(FailureKind.AccountRequired);
 		}
 		IReadOnlyList<string> models = SlotRouter.Models(config, slot, server);
 		if (models.Count == 0)
 		{
-			RecordFailure(FailureKind.ModelNotFound, "no model configured");
+			RecordFailure(FailureKind.ModelNotFound, "no model configured", request.Name);
 			return AiResult.Fail(FailureKind.ModelNotFound, "no model configured");
 		}
 		string reasoningKey = server ? "server|" + SlotRouter.ServerDialogueAlias : "own|" + config.CustomLlmBaseUrl + "|" + config.CustomLlmModel;
@@ -206,7 +237,7 @@ public sealed class AiService : IAiSender
 			}
 			if (last.Failure != FailureKind.Cancelled)
 			{
-				RecordFailure(last.Failure, last.Message);
+				RecordFailure(last.Failure, last.Message, request.Name);
 			}
 		}
 		return last ?? AiResult.Fail(FailureKind.Other);
@@ -438,10 +469,15 @@ public sealed class AiService : IAiSender
 		}
 	}
 
-	private void RecordFailure(FailureKind failure, string message)
+	private void RecordFailure(FailureKind failure, string message, string request = "")
 	{
 		lock (_lock)
 		{
+			_recentFailures.Insert(0, new AiFailureNote(DateTime.Now.ToString("HH:mm"), request, failure, message));
+			if (_recentFailures.Count > MaxFailureNotes)
+			{
+				_recentFailures.RemoveAt(_recentFailures.Count - 1);
+			}
 			FailedToday++;
 			LastFailureUtc = DateTime.UtcNow;
 			LastFailure = failure;

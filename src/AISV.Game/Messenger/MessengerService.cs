@@ -85,6 +85,8 @@ public sealed class MessengerService
 
 	private readonly HashSet<string> _unread = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+	private readonly List<string> _arrivals = new List<string>();
+
 	public MessengerService(Func<ModConfig> config, AiService ai, DialogueEngine engine, MaterialFactory materials, Relationships relationships, ConversationLog log, NpcDirectory npcs, PhotoStore photos, ILog diag)
 	{
 		_config = config;
@@ -124,6 +126,12 @@ public sealed class MessengerService
 	public int PendingCount => _outbox.Count;
 
 	public IReadOnlyCollection<string> Unread => _unread;
+
+	/// <summary>最近一条没读的消息是谁发的。</summary>
+	public string? LatestUnread => _arrivals.LastOrDefault(_unread.Contains);
+
+	/// <summary>有人接手提示新消息（屏幕下方的小手机）；没有时用左下角提示。</summary>
+	public Action<string, string>? ShowArrival { get; set; }
 
 	public void MarkRead(string npc)
 	{
@@ -336,6 +344,13 @@ public sealed class MessengerService
 			return;
 		}
 		_unread.Add(npc);
+		_arrivals.RemoveAll(n => string.Equals(n, npc, StringComparison.OrdinalIgnoreCase));
+		_arrivals.Add(npc);
+		if (ShowArrival != null)
+		{
+			ShowArrival(npc, text);
+			return;
+		}
 		Game1.addHUDMessage(new HUDMessage($"{AISV.Core.Text.Tr.Get("messenger.title", "信使")} · {_npcs.Names.Display(npc)}：{MessengerRules.Preview(text, 40)}", 2) { noIcon = true });
 	}
 

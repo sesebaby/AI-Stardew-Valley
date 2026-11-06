@@ -146,6 +146,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private AISV.Game.Phone.PhoneItem _phone = null!;
 
+	private PhonePeek _phonePeek = null!;
+
 	private ImeCandidateWindow _ime = null!;
 
 	private FarmHelpService _farmHelp = null!;
@@ -359,9 +361,13 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				TextedBeside = OnTextedBeside
 			};
 			_shell.Messenger = _messenger;
+			_shell.Awareness = _awareness;
+			_shell.ModName = id => helper.ModRegistry.Get(id)?.Manifest.Name ?? id;
+			_phonePeek = new PhonePeek(_messenger, _npcs, OpenChat);
+			_phonePeek.Attach(helper);
 			_villagerTexts = new VillagerTextService(() => _config, store, _messenger, new MessengerAi(_ai, _templates, PromptLanguage), _npcs, relationships, _log) { Social = _social };
 			_awareness.SendText = _villagerTexts.TryRequestText;
-			helper.ConsoleCommands.Add("aisv_msg", "信使调试。\n用法：aisv_msg send <村民> <文字> | text <村民> [类型] | seen <村民> [看到的事] | open <村民> | state", (_, args) => MessengerCommand(args));
+			helper.ConsoleCommands.Add("aisv_msg", "信使调试。\n用法：aisv_msg send <村民> <文字> | text <村民> [类型] | seen <村民> [看到的事] | open <村民> | arrive <村民> [文字] | peek [open|dismiss] | state", (_, args) => MessengerCommand(args));
 			helper.ConsoleCommands.Add("aisv_group", "群聊调试。\n用法：aisv_group start | ambient | key | click <村民> | state | post <文字> | villagers | residents | farmertopic always|normal", (_, args) => GroupCommand(args));
 			helper.ConsoleCommands.Add("aisv_looks", "村民临时样子调试。\n用法：aisv_looks soot <村民> | dance <村民> [帧] | clear", (_, args) => LooksCommand(args));
 			_eco = new Ecosystem(_log, () => _npcs.Eligibility.LoadedModIds, _npcs.Eligibility.OwnerModId, _npcs.Eligibility.IsContentModEnabled);
@@ -553,7 +559,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_news.ShowBeyond = () => _promo.Enabled;
 			_shell.Promo = _promo;
 			_shell.Log = _log;
-			_phone = new AISV.Game.Phone.PhoneItem(helper.DirectoryPath, helper.Input, _log, () => OpenShell(""));
+			_phone = new AISV.Game.Phone.PhoneItem(helper.DirectoryPath, helper.Input, _log, () => OpenChat(_messenger.LatestUnread));
 			helper.ConsoleCommands.Add("aisv_phone", "手机物品调试。\n用法：aisv_phone dump | give | hold | lose", (_, args) => _log.Info(Context.IsWorldReady ? _phone.Command(args) : "先进存档。"));
 			_ime = new ImeCandidateWindow(() => _config, SaveConfig, _log);
 			_ime.Apply();
@@ -876,6 +882,18 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private static bool Matches(string? key, SButton pressed) => !string.IsNullOrWhiteSpace(key) && Enum.TryParse(key.Trim(), true, out SButton b) && b == pressed;
 
+	/// <summary>打开这个人的聊天；没有要看的就打开外壳。</summary>
+	private void OpenChat(string? npc)
+	{
+		if (string.IsNullOrWhiteSpace(npc))
+		{
+			OpenShell("");
+			return;
+		}
+		ShellMenu.PreselectChat(npc);
+		OpenShell("messenger");
+	}
+
 	private void OpenShell(string where)
 	{
 		string arg = where.Contains(':') ? where[(where.IndexOf(':') + 1)..] : "";
@@ -889,7 +907,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		{
 			"" => ((ShellMenu.Tab?)null, (ShellMenu.SocialTab?)null),
 			"social" => (ShellMenu.Tab.Social, null),
-			"contacts" or "villagers" => (ShellMenu.Tab.Social, ShellMenu.SocialTab.Contacts),
+			"contacts" or "villagers" or "vdiary" => (ShellMenu.Tab.Social, ShellMenu.SocialTab.Contacts),
 			"gossip" => (ShellMenu.Tab.Social, ShellMenu.SocialTab.Gossip),
 			"residents" or "group" => (ShellMenu.Tab.Social, ShellMenu.SocialTab.Residents),
 			"messenger" or "msg" => (ShellMenu.Tab.Social, ShellMenu.SocialTab.Messenger),
@@ -901,9 +919,9 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			"world" => (ShellMenu.Tab.World, null),
 			"market" or "commissions" or "help" or "farmhelp" or "mine" or "errand" or "ledger" or "belongings" or "loan" => (ShellMenu.Tab.World, null),
 			"news" or "paper" => (ShellMenu.Tab.World, null),
-			"settings" or "profile" or "cards" => (ShellMenu.Tab.Settings, null),
+			"settings" or "profile" or "cards" or "aistatus" or "npccompat" => (ShellMenu.Tab.Settings, null),
 			"today" => (ShellMenu.Tab.Today, null),
-			"apps" or "mood" or "year" or "web" or "gtree" or "reviews" or "pelican" or "agenda" or "horoscope" or "sky" or "ads" or "whosaid" or "junimo" => (ShellMenu.Tab.Apps, null),
+			"apps" or "where" or "mood" or "year" or "web" or "gtree" or "reviews" or "pelican" or "agenda" or "horoscope" or "sky" or "ads" or "whosaid" or "junimo" => (ShellMenu.Tab.Apps, null),
 			_ => (null, null)
 		};
 		ShellMenu.WorldTab? world = where.Trim().ToLowerInvariant() switch
@@ -936,6 +954,15 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			return;
 		case "cards":
 			menu.OpenCards();
+			return;
+		case "aistatus":
+			menu.OpenAiStatus();
+			return;
+		case "npccompat":
+			menu.OpenNpcCompat();
+			return;
+		case "vdiary":
+			menu.OpenVillagerDiary(arg);
 			return;
 		}
 		if (tab == ShellMenu.Tab.Apps && where.Trim().ToLowerInvariant() is string app && app != "apps")
@@ -1253,6 +1280,20 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			break;
 		case "seen" when who.Length > 0:
 			_log.Info(_villagerTexts.TryRequestText(who, "你看到的事：" + (rest.Length > 0 ? rest : "农夫在广场上翻了垃圾桶。"), () => _log.Info("看到的事：消息发出去了。")) ? "开始写了。" : "现在发不了。");
+			break;
+		case "arrive" when who.Length > 0:
+			_messenger.Arrived(who, rest.Length > 0 ? rest : "在吗？");
+			break;
+		case "peek":
+			if (who == "open")
+			{
+				_phonePeek.OpenCurrent();
+			}
+			else if (who == "dismiss")
+			{
+				_phonePeek.Dismiss();
+			}
+			_log.Info("小手机：" + _phonePeek.DebugState);
 			break;
 		case "open" when who.Length > 0:
 			ShellMenu.PreselectChat(who);

@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AISV.Core.Approach;
 using AISV.Core.Awareness;
+using AISV.Core.Social;
 using AISV.Core.Config;
 using AISV.Core.Diagnostics;
 using AISV.Core.Dialogue;
@@ -901,6 +902,26 @@ public sealed class AwarenessSystem
 			.Where(x => x.Item2.Length > 0)
 			.ToList();
 	}
+
+	/// <summary>村民日记用：今天的心事、留着下回说的那件、最近看到的值得一提的事。只读，不算说过。</summary>
+	public NoticingView DiaryView(string npc)
+	{
+		if (!Enabled || string.IsNullOrWhiteSpace(npc) || !Context.IsWorldReady)
+		{
+			return NoticingView.Off;
+		}
+		int day = Today;
+		int time = Game1.timeOfDay;
+		string farmer = PlayerName;
+		string you = Core.Text.Tr.Get("vdiary.you", "你");
+		List<FeelingLine> feelings = Feelings.Readings(npc, NowMinute)
+			.Select(r => new FeelingLine(r.MeterId, r.Tier, r.Thresholds.Length, r.ActedTier >= r.Tier && r.ActedTier > 0, r.WalkingOver, r.CarriedIntoTomorrow, RewardName(r.RewardItem))).ToList();
+		List<string> sights = Memory.MemoriesOf(npc, day, AwarenessMemory.MaxContextMemories).Where(m => !SmallTalk(m.Event))
+			.Select(m => SightingText.Relative(m.Event.OnDay, m.Event.Clock, day, time) + "：" + SightingText.Terminate(Writer.Past(m.Event).Replace(farmer, you))).Distinct().ToList();
+		return new NoticingView(true, feelings, Feelings.PeekAside(npc, NowMinute)?.MeterId, sights);
+	}
+
+	private static string RewardName(string? item) => string.IsNullOrWhiteSpace(item) ? "" : ItemRegistry.GetDataOrErrorItem(item).DisplayName;
 
 	/// <summary>
 	/// "你亲眼见过的事"。带心事时：有待说的（没在走过来的路上）就当引子用掉，否则取放在心里的那条，再没有就看刚才旁观的事。
