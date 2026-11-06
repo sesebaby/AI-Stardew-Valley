@@ -58,7 +58,7 @@ internal sealed class MessengerPage : ShellPage
 
 	private List<Row> _tabRows = new List<Row>();
 
-	private readonly TextBox _search = new TextBox(null, null, Game1.smallFont, AisvTheme.Text) { textLimit = 20, limitWidth = false };
+	private readonly TextBox _search = new TextBox(null, null, Game1.smallFont, Hearth.Quill) { textLimit = 20, limitWidth = false };
 
 	private string _query = "";
 
@@ -388,8 +388,8 @@ internal sealed class MessengerPage : ShellPage
 			return;
 		}
 		Rectangle list = new Rectangle(area.X, area.Y, Math.Min(ListWidth, area.Width / 3), area.Height);
-		AisvTheme.Fill(b, list, AisvTheme.PageDeep);
-		AisvTheme.VLine(b, list.Right, list.Y, list.Height, AisvTheme.Divider);
+		Hearth.Fill(b, list, Hearth.ParchmentDeep);
+		Hearth.VLine(b, list.Right, list.Y, list.Height, Hearth.Seam);
 		DrawList(b, list, hits, service);
 		Rectangle chat = new Rectangle(list.Right + 2, area.Y, area.Right - list.Right - 2, area.Height);
 		Row? row = _rows.FirstOrDefault(r => Same(r.Contact.NpcName, _selected));
@@ -407,7 +407,7 @@ internal sealed class MessengerPage : ShellPage
 		{
 			Rectangle header = new Rectangle(chat.X, chat.Y, chat.Width, 76);
 			DrawChatHeader(b, header, row.Contact, service);
-			int composeH = 40 + AisvTheme.LineHeight() * 2 + 40;
+			int composeH = 40 + Hearth.LineHeight() * 2 + 40;
 			Rectangle compose = new Rectangle(chat.X, chat.Bottom - composeH, chat.Width, composeH);
 			DrawMessages(b, new Rectangle(chat.X + 12, header.Bottom + 4, chat.Width - 24, compose.Y - header.Bottom - 8), hits, service, row.Contact);
 			DrawCompose(b, compose, hits, service, row.Contact);
@@ -463,7 +463,7 @@ internal sealed class MessengerPage : ShellPage
 		_searchBox = new Rectangle(r.X + 12, r.Y + 12, r.Width - 24, 42);
 		DrawSearch(b, hits);
 		Rectangle tabs = new Rectangle(r.X + 12, _searchBox.Bottom + 10, r.Width - 24, 40);
-		AisvTheme.FillRounded(b, tabs, AisvTheme.Divider * 0.6f, 20);
+		Hearth.FillRounded(b, tabs, Hearth.Seam * 0.6f, 20);
 		Rectangle chats = new Rectangle(tabs.X + 3, tabs.Y + 3, tabs.Width / 2 - 3, tabs.Height - 6);
 		Rectangle all = new Rectangle(tabs.Center.X, tabs.Y + 3, tabs.Width / 2 - 3, tabs.Height - 6);
 		DrawSegment(b, chats, Tr.Get("messenger.tab.chats", "聊天"), _chatsTab);
@@ -475,10 +475,10 @@ internal sealed class MessengerPage : ShellPage
 		{
 			string empty = _tokens.Count > 0 ? Tr.Get("messenger.noMatch", "没有找到“{{query}}”", ("query", _query))
 				: _chatsTab ? Tr.Get("messenger.noChats", "还没和谁聊过") : Tr.Get("messenger.noContacts", "还没认识谁");
-			AisvTheme.TextCentered(b, empty, new Rectangle(_listArea.X, _listArea.Y + 30, _listArea.Width, 40), AisvTheme.TextFaint, 0.8f);
+			Hearth.InkMiddle(b, empty, new Rectangle(_listArea.X, _listArea.Y + 30, _listArea.Width, 40), Hearth.QuillPale, 0.8f);
 			return;
 		}
-		AisvTheme.BeginClip(b, _listArea);
+		Hearth.BeginClip(b, _listArea);
 		int y = _listArea.Y - _listScroll.Offset;
 		foreach (Row row in _rows)
 		{
@@ -491,27 +491,27 @@ internal sealed class MessengerPage : ShellPage
 			}
 			y += RowHeight;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_listScroll.Finish(b, _listArea, y, 10);
 	}
 
 	private void DrawSearch(SpriteBatch b, Hits hits)
 	{
-		AisvTheme.Field(b, _searchBox, _search.Selected);
-		AisvTheme.Magnifier(b, new Vector2(_searchBox.X + 20, _searchBox.Center.Y));
+		Hearth.Field(b, _searchBox, _search.Selected);
+		Hearth.Magnifier(b, new Vector2(_searchBox.X + 20, _searchBox.Center.Y));
 		string text = _search.Text ?? "";
-		Vector2 tp = new Vector2(_searchBox.X + 40, _searchBox.Center.Y - AisvTheme.LineHeight(0.8f) / 2);
+		Vector2 tp = new Vector2(_searchBox.X + 40, _searchBox.Center.Y - Hearth.LineHeight(0.8f) / 2);
 		if (text.Length == 0 && !_search.Selected)
 		{
-			AisvTheme.DrawText(b, Tr.Get("messenger.search", "搜索村民或聊天内容"), tp, AisvTheme.TextFaint, 0.8f);
+			Hearth.Ink(b, Tr.Get("messenger.search", "搜索村民或聊天内容"), tp, Hearth.QuillPale, 0.8f);
 		}
 		else
 		{
-			string shown = AisvTheme.Truncate(text, _searchBox.Width - 84, 0.8f);
-			AisvTheme.DrawText(b, shown, tp, AisvTheme.Text, 0.8f);
+			string shown = Hearth.Truncate(text, _searchBox.Width - 84, 0.8f);
+			Hearth.Ink(b, shown, tp, Hearth.Quill, 0.8f);
 			if (_search.Selected && Game1.currentGameTime.TotalGameTime.TotalMilliseconds % 1000 < 550)
 			{
-				AisvTheme.Fill(b, new Rectangle((int)tp.X + (int)AisvTheme.Width(shown, 0.8f) + 2, _searchBox.Center.Y - 11, 2, 22), AisvTheme.Accent);
+				Hearth.Fill(b, new Rectangle((int)tp.X + (int)Hearth.Width(shown, 0.8f) + 2, _searchBox.Center.Y - 11, 2, 22), Hearth.Leaf);
 			}
 		}
 		hits.Add(_searchBox, () =>
@@ -522,8 +522,8 @@ internal sealed class MessengerPage : ShellPage
 		if (text.Length > 0)
 		{
 			Rectangle clear = new Rectangle(_searchBox.Right - 36, _searchBox.Center.Y - 14, 28, 28);
-			AisvTheme.FillRounded(b, clear, AisvTheme.Hover(clear) ? AisvTheme.Divider : AisvTheme.PageDeep, 14);
-			AisvTheme.TextCentered(b, "×", clear, AisvTheme.TextMuted, 0.8f);
+			Hearth.FillRounded(b, clear, Hearth.Hover(clear) ? Hearth.Seam : Hearth.ParchmentDeep, 14);
+			Hearth.InkMiddle(b, "×", clear, Hearth.QuillSoft, 0.8f);
 			hits.Add(clear, () =>
 			{
 				Game1.playSound("smallSelect");
@@ -540,17 +540,17 @@ internal sealed class MessengerPage : ShellPage
 		{
 			return;
 		}
-		int lh = AisvTheme.LineHeight(scale);
+		int lh = Hearth.LineHeight(scale);
 		foreach ((int start, int length) in MessengerRules.SearchSpans(line, _tokens))
 		{
 			if (start >= line.Length)
 			{
 				continue;
 			}
-			int x = (int)(pos.X + AisvTheme.Width(line.Substring(0, start), scale));
-			int w = (int)Math.Ceiling(AisvTheme.Width(line.Substring(start, Math.Min(length, line.Length - start)), scale));
-			AisvTheme.Fill(b, new Rectangle(x - 1, (int)pos.Y, w + 2, lh), AisvTheme.AccentSoft);
-			AisvTheme.Fill(b, new Rectangle(x - 1, (int)pos.Y + lh - 2, w + 2, 2), AisvTheme.Accent);
+			int x = (int)(pos.X + Hearth.Width(line.Substring(0, start), scale));
+			int w = (int)Math.Ceiling(Hearth.Width(line.Substring(start, Math.Min(length, line.Length - start)), scale));
+			Hearth.Fill(b, new Rectangle(x - 1, (int)pos.Y, w + 2, lh), Hearth.LeafPale);
+			Hearth.Fill(b, new Rectangle(x - 1, (int)pos.Y + lh - 2, w + 2, 2), Hearth.Leaf);
 		}
 	}
 
@@ -558,13 +558,13 @@ internal sealed class MessengerPage : ShellPage
 	{
 		if (selected)
 		{
-			AisvTheme.FillRounded(b, r, AisvTheme.Card, r.Height / 2);
+			Hearth.FillRounded(b, r, Hearth.Slip, r.Height / 2);
 		}
-		else if (AisvTheme.Hover(r))
+		else if (Hearth.Hover(r))
 		{
-			AisvTheme.FillRounded(b, r, AisvTheme.Card * 0.5f, r.Height / 2);
+			Hearth.FillRounded(b, r, Hearth.Slip * 0.5f, r.Height / 2);
 		}
-		AisvTheme.TextCentered(b, label, r, selected ? AisvTheme.AccentDark : AisvTheme.TextMuted, 0.8f);
+		Hearth.InkMiddle(b, label, r, selected ? Hearth.LeafDeep : Hearth.QuillSoft, 0.8f);
 	}
 
 	private void DrawRow(SpriteBatch b, Rectangle r, Row row, MessengerService service)
@@ -573,46 +573,46 @@ internal sealed class MessengerPage : ShellPage
 		bool selected = Same(c.NpcName, _selected);
 		if (selected)
 		{
-			AisvTheme.FillRounded(b, r, AisvTheme.SelectedRow, 10);
-			AisvTheme.FillRounded(b, new Rectangle(r.X, r.Y + 12, 4, r.Height - 24), AisvTheme.Accent, 2);
+			Hearth.FillRounded(b, r, Hearth.Honey, 10);
+			Hearth.FillRounded(b, new Rectangle(r.X, r.Y + 12, 4, r.Height - 24), Hearth.Leaf, 2);
 		}
-		else if (AisvTheme.Hover(r, _listArea))
+		else if (Hearth.Hover(r, _listArea))
 		{
-			AisvTheme.FillRounded(b, r, AisvTheme.Card * 0.7f, 10);
+			Hearth.FillRounded(b, r, Hearth.Slip * 0.7f, 10);
 		}
 		else if (c.Birthday)
 		{
-			AisvTheme.Bordered(b, r, AisvTheme.PinkSoft * 0.6f, AisvTheme.Pink * 0.5f, 10);
+			Hearth.Bordered(b, r, Hearth.RosePale * 0.6f, Hearth.Rose * 0.5f, 10);
 		}
 		Rectangle avatar = new Rectangle(r.X + 10, r.Center.Y - AvatarSize / 2, AvatarSize, AvatarSize);
-		AisvTheme.Avatar(b, avatar, ShellText.Npc(c.NpcName), c.DisplayName.Length > 0 ? c.DisplayName.Substring(0, 1) : "?");
+		Hearth.Cameo(b, avatar, ShellText.Npc(c.NpcName), c.DisplayName.Length > 0 ? c.DisplayName.Substring(0, 1) : "?");
 		if (c.NoPhone)
 		{
-			AisvTheme.Fill(b, avatar, AisvTheme.PageDeep * 0.55f);
+			Hearth.Fill(b, avatar, Hearth.ParchmentDeep * 0.55f);
 		}
 		int tx = avatar.Right + 12;
 		int right = r.Right - 10;
 		if (c.Hearts > 0 && !c.NoPhone)
 		{
 			string hearts = c.Hearts.ToString();
-			float hw = AisvTheme.Width(hearts, 0.66f);
-			AisvTheme.DrawText(b, hearts, new Vector2(right - hw, r.Y + 13), AisvTheme.TextFaint, 0.66f);
-			AisvTheme.Heart(b, new Rectangle((int)(right - hw - 18), r.Y + 15, 14, 12));
+			float hw = Hearth.Width(hearts, 0.66f);
+			Hearth.Ink(b, hearts, new Vector2(right - hw, r.Y + 13), Hearth.QuillPale, 0.66f);
+			Hearth.Heart(b, new Rectangle((int)(right - hw - 18), r.Y + 15, 14, 12));
 			right = (int)(right - hw - 26);
 		}
-		Color name = c.NoPhone ? AisvTheme.TextFaint : AisvTheme.Text;
-		string shownName = AisvTheme.Truncate(c.DisplayName, right - tx - (c.Birthday ? 30 : 0), 0.85f);
+		Color name = c.NoPhone ? Hearth.QuillPale : Hearth.Quill;
+		string shownName = Hearth.Truncate(c.DisplayName, right - tx - (c.Birthday ? 30 : 0), 0.85f);
 		Vector2 np = new Vector2(tx, r.Y + 10);
 		Highlight(b, shownName, np, 0.85f);
-		AisvTheme.Bold(b, shownName, np, name, 0.85f);
+		Hearth.InkBold(b, shownName, np, name, 0.85f);
 		if (c.Birthday)
 		{
-			Cake(b, new Rectangle(tx + (int)AisvTheme.Width(shownName, 0.85f) + 6, r.Y + 8, 24, 24));
+			Cake(b, new Rectangle(tx + (int)Hearth.Width(shownName, 0.85f) + 6, r.Y + 8, 24, 24));
 		}
 		bool unread = service.Unread.Contains(c.NpcName) && !selected;
 		int subRight = r.Right - 10 - (unread ? 26 : 0);
 		string sub;
-		Color subColor = AisvTheme.TextFaint;
+		Color subColor = Hearth.QuillPale;
 		bool preview = false;
 		if (c.NoPhone)
 		{
@@ -621,30 +621,30 @@ internal sealed class MessengerPage : ShellPage
 		else if (service.IsBusy(c.NpcName))
 		{
 			sub = Tr.Get("messenger.typingShort", "正在输入……");
-			subColor = AisvTheme.AccentDark;
+			subColor = Hearth.LeafDeep;
 		}
 		else if (c.Birthday)
 		{
 			sub = Tr.Get("messenger.birthday", "今天过生日");
-			subColor = AisvTheme.Pink;
+			subColor = Hearth.Rose;
 		}
 		else
 		{
 			preview = row.Preview.Length > 0;
 			sub = preview ? row.Preview.Replace('\n', ' ') : Tr.Get("messenger.noPreview", "还没聊过");
 		}
-		string shownSub = AisvTheme.Truncate(sub, subRight - tx, 0.7f);
+		string shownSub = Hearth.Truncate(sub, subRight - tx, 0.7f);
 		Vector2 sp = new Vector2(tx, r.Y + 40);
 		if (preview)
 		{
 			Highlight(b, shownSub, sp, 0.7f);
 		}
-		AisvTheme.DrawText(b, shownSub, sp, subColor, 0.7f);
+		Hearth.Ink(b, shownSub, sp, subColor, 0.7f);
 		if (unread)
 		{
 			Rectangle dot = new Rectangle(r.Right - 26, r.Y + 41, 16, 16);
-			AisvTheme.FillRounded(b, dot, AisvTheme.Badge, 8);
-			AisvTheme.FillRounded(b, AisvTheme.Inflate(dot, -5), Color.White * 0.9f, 3);
+			Hearth.FillRounded(b, dot, Hearth.Ember, 8);
+			Hearth.FillRounded(b, Hearth.Inflate(dot, -5), Color.White * 0.9f, 3);
 		}
 	}
 
@@ -669,32 +669,32 @@ internal sealed class MessengerPage : ShellPage
 		{
 			int w = 8 - i;
 			Rectangle line = right ? new Rectangle(x, y + i, w, 1) : new Rectangle(x + i, y + i, w, 1);
-			AisvTheme.Fill(b, line, fill);
-			AisvTheme.Fill(b, right ? new Rectangle(line.Right, line.Y, 2, 1) : new Rectangle(line.X - 2, line.Y, 2, 1), edge);
+			Hearth.Fill(b, line, fill);
+			Hearth.Fill(b, right ? new Rectangle(line.Right, line.Y, 2, 1) : new Rectangle(line.X - 2, line.Y, 2, 1), edge);
 		}
 	}
 
 	private void DrawChatHeader(SpriteBatch b, Rectangle r, Contact c, MessengerService service)
 	{
-		AisvTheme.Fill(b, r, AisvTheme.Card);
-		AisvTheme.HLine(b, r.X, r.Bottom - 2, r.Width, AisvTheme.Divider);
+		Hearth.Fill(b, r, Hearth.Slip);
+		Hearth.HLine(b, r.X, r.Bottom - 2, r.Width, Hearth.Seam);
 		Rectangle avatar = new Rectangle(r.X + 20, r.Y + 12, AvatarSize + 4, AvatarSize + 4);
-		AisvTheme.Avatar(b, avatar, ShellText.Npc(c.NpcName), c.DisplayName.Length > 0 ? c.DisplayName.Substring(0, 1) : "?");
+		Hearth.Cameo(b, avatar, ShellText.Npc(c.NpcName), c.DisplayName.Length > 0 ? c.DisplayName.Substring(0, 1) : "?");
 		int tx = avatar.Right + 14;
-		AisvTheme.Bold(b, c.DisplayName, new Vector2(tx, r.Y + 10), AisvTheme.Text, 1.0f);
+		Hearth.InkBold(b, c.DisplayName, new Vector2(tx, r.Y + 10), Hearth.Quill, 1.0f);
 		if (c.Birthday)
 		{
-			AisvTheme.Chip(b, new Vector2(tx + AisvTheme.Width(c.DisplayName) + 12, r.Y + 13), Tr.Get("messenger.birthday", "今天过生日"), AisvTheme.PinkSoft, AisvTheme.Pink, 0.66f);
+			Hearth.Tag(b, new Vector2(tx + Hearth.Width(c.DisplayName) + 12, r.Y + 13), Tr.Get("messenger.birthday", "今天过生日"), Hearth.RosePale, Hearth.Rose, 0.66f);
 		}
 		bool typing = !c.NoPhone && (service.IsTyping(c.NpcName) || service.IsBusy(c.NpcName));
 		if (typing)
 		{
 			string dots = new string('·', 1 + Game1.ticks / 20 % 3);
-			AisvTheme.DrawText(b, Tr.Get("messenger.typing", "{{name}}在打字", ("name", c.DisplayName)) + " " + dots, new Vector2(tx, r.Y + 44), AisvTheme.AccentDark, 0.72f);
+			Hearth.Ink(b, Tr.Get("messenger.typing", "{{name}}在打字", ("name", c.DisplayName)) + " " + dots, new Vector2(tx, r.Y + 44), Hearth.LeafDeep, 0.72f);
 		}
 		else
 		{
-			AisvTheme.Hearts(b, new Vector2(tx + 2, r.Y + 48), c.Hearts, 10, 14);
+			Hearth.Hearts(b, new Vector2(tx + 2, r.Y + 48), c.Hearts, 10, 14);
 		}
 		if (c.NoPhone)
 		{
@@ -704,13 +704,13 @@ internal sealed class MessengerPage : ShellPage
 		const int dot = 10, gap = 5;
 		int dotsW = limit * dot + (limit - 1) * gap;
 		string label = Tr.Get("messenger.leftLabel", "今天还能发");
-		float lw = AisvTheme.Width(label, 0.7f);
+		float lw = Hearth.Width(label, 0.7f);
 		int x = r.Right - 24 - dotsW;
 		int cy = r.Center.Y;
-		AisvTheme.DrawText(b, label, new Vector2(x - 10 - lw, cy - AisvTheme.LineHeight(0.7f) / 2), AisvTheme.TextFaint, 0.7f);
+		Hearth.Ink(b, label, new Vector2(x - 10 - lw, cy - Hearth.LineHeight(0.7f) / 2), Hearth.QuillPale, 0.7f);
 		for (int i = 0; i < limit; i++)
 		{
-			AisvTheme.FillRounded(b, new Rectangle(x + i * (dot + gap), cy - dot / 2, dot, dot), i < left ? AisvTheme.Accent : AisvTheme.Divider, dot / 2);
+			Hearth.FillRounded(b, new Rectangle(x + i * (dot + gap), cy - dot / 2, dot, dot), i < left ? Hearth.Leaf : Hearth.Seam, dot / 2);
 		}
 	}
 
@@ -718,14 +718,14 @@ internal sealed class MessengerPage : ShellPage
 
 	private void DrawMessages(SpriteBatch b, Rectangle view, Hits hits, MessengerService service, Contact c)
 	{
-		int lh = AisvTheme.LineHeight();
+		int lh = Hearth.LineHeight();
 		int bubbleMax = Math.Max(240, (int)(view.Width * 0.64f));
-		AisvTheme.Fill(b, AisvTheme.Inflate(view, 12), ChatBack);
-		AisvTheme.BeginClip(b, view);
+		Hearth.Fill(b, Hearth.Inflate(view, 12), ChatBack);
+		Hearth.BeginClip(b, view);
 		int y = view.Y + 12 - _chatScroll.Offset;
 		if (_items.Count == 0 && !service.IsBusy(c.NpcName))
 		{
-			AisvTheme.TextCentered(b, Tr.Get("messenger.emptyThread", "还没聊过，发条消息打个招呼吧"), new Rectangle(view.X, view.Y + 40, view.Width, 40), AisvTheme.TextFaint, 0.85f);
+			Hearth.InkMiddle(b, Tr.Get("messenger.emptyThread", "还没聊过，发条消息打个招呼吧"), new Rectangle(view.X, view.Y + 40, view.Width, 40), Hearth.QuillPale, 0.85f);
 		}
 		for (int i = 0; i < _items.Count; i++)
 		{
@@ -735,8 +735,8 @@ internal sealed class MessengerPage : ShellPage
 			case ChatItemKind.Date:
 			{
 				string label = Tr.Get("messenger.date", "第 {{year}} 年{{season}} {{day}} 日", ("year", item.Year), ("season", HistoryFormatter.SeasonName(item.Season)), ("day", item.Day));
-				int cw = AisvTheme.ChipWidth(label, 0.7f);
-				AisvTheme.Chip(b, new Vector2(view.Center.X - cw / 2, y), label, AisvTheme.Divider, AisvTheme.TextMuted, 0.7f);
+				int cw = Hearth.TagWidth(label, 0.7f);
+				Hearth.Tag(b, new Vector2(view.Center.X - cw / 2, y), label, Hearth.Seam, Hearth.QuillSoft, 0.7f);
 				y += 40;
 				break;
 			}
@@ -745,7 +745,7 @@ internal sealed class MessengerPage : ShellPage
 				Texture2D? image = service.Photos.Image(item.Text);
 				int w = Math.Min(bubbleMax, 320), h = w * PhotoCamera.Height / PhotoCamera.Width;
 				Rectangle r = new Rectangle(view.X + AvatarSize + 16, y, w, h);
-				AisvTheme.Bordered(b, AisvTheme.Inflate(r, 4), AisvTheme.Card, AisvTheme.CardBorder, 8);
+				Hearth.Bordered(b, Hearth.Inflate(r, 4), Hearth.Slip, Hearth.SlipEdge, 8);
 				if (image != null)
 				{
 					b.Draw(image, r, Color.White);
@@ -758,7 +758,7 @@ internal sealed class MessengerPage : ShellPage
 				}
 				else
 				{
-					AisvTheme.TextCentered(b, Tr.Get("messenger.photoMissing", "照片找不到了"), r, AisvTheme.TextFaint, 0.75f);
+					Hearth.InkMiddle(b, Tr.Get("messenger.photoMissing", "照片找不到了"), r, Hearth.QuillPale, 0.75f);
 				}
 				y += h + 20;
 				break;
@@ -779,28 +779,28 @@ internal sealed class MessengerPage : ShellPage
 						text = text.Substring(0, shown);
 					}
 				}
-				string wrapped = AisvTheme.Wrap(text, bubbleMax - 32);
-				string full = AisvTheme.Wrap(item.Text, bubbleMax - 32);
+				string wrapped = Hearth.Wrap(text, bubbleMax - 32);
+				string full = Hearth.Wrap(item.Text, bubbleMax - 32);
 				Vector2 size = Game1.smallFont.MeasureString(full);
 				int w = Math.Max(72, (int)size.X + 32);
 				int h = full.Split('\n').Length * lh + 22;
 				if (player)
 				{
 					Rectangle r = new Rectangle(view.Right - 20 - w, y, w, h);
-					AisvTheme.Bordered(b, r, Mine, MineEdge, 12);
+					Hearth.Bordered(b, r, Mine, MineEdge, 12);
 					Tail(b, r, right: true, Mine, MineEdge);
-					AisvTheme.DrawText(b, wrapped, new Vector2(r.X + 16, r.Y + 11), AisvTheme.Text);
+					Hearth.Ink(b, wrapped, new Vector2(r.X + 16, r.Y + 11), Hearth.Quill);
 				}
 				else
 				{
 					int ah = AvatarSize - 8, bh = h;
 					h = Math.Max(h, ah);
 					Rectangle avatar = new Rectangle(view.X + 4, y + h - ah, ah, ah);
-					AisvTheme.Avatar(b, avatar, ShellText.Npc(c.NpcName), c.DisplayName.Length > 0 ? c.DisplayName.Substring(0, 1) : "?");
+					Hearth.Cameo(b, avatar, ShellText.Npc(c.NpcName), c.DisplayName.Length > 0 ? c.DisplayName.Substring(0, 1) : "?");
 					Rectangle r = new Rectangle(view.X + AvatarSize + 12, y + h - bh, w, bh);
-					AisvTheme.Bordered(b, r, AisvTheme.Card, AisvTheme.CardBorder, 12);
-					Tail(b, r, right: false, AisvTheme.Card, AisvTheme.CardBorder);
-					AisvTheme.DrawText(b, wrapped, new Vector2(r.X + 16, r.Y + 11), AisvTheme.Text);
+					Hearth.Bordered(b, r, Hearth.Slip, Hearth.SlipEdge, 12);
+					Tail(b, r, right: false, Hearth.Slip, Hearth.SlipEdge);
+					Hearth.Ink(b, wrapped, new Vector2(r.X + 16, r.Y + 11), Hearth.Quill);
 				}
 				y += h + 14;
 				break;
@@ -826,19 +826,19 @@ internal sealed class MessengerPage : ShellPage
 		{
 			int ah = AvatarSize - 8;
 			Rectangle avatar = new Rectangle(view.X + 4, y, ah, ah);
-			AisvTheme.Avatar(b, avatar, ShellText.Npc(c.NpcName), c.DisplayName.Length > 0 ? c.DisplayName.Substring(0, 1) : "?");
+			Hearth.Cameo(b, avatar, ShellText.Npc(c.NpcName), c.DisplayName.Length > 0 ? c.DisplayName.Substring(0, 1) : "?");
 			Rectangle bubble = new Rectangle(view.X + AvatarSize + 12, y + ah - 40, 76, 40);
-			AisvTheme.Bordered(b, bubble, AisvTheme.Card, AisvTheme.CardBorder, 12);
-			Tail(b, bubble, right: false, AisvTheme.Card, AisvTheme.CardBorder);
+			Hearth.Bordered(b, bubble, Hearth.Slip, Hearth.SlipEdge, 12);
+			Tail(b, bubble, right: false, Hearth.Slip, Hearth.SlipEdge);
 			double t = Game1.currentGameTime?.TotalGameTime.TotalMilliseconds ?? 0;
 			for (int k = 0; k < 3; k++)
 			{
 				int lift = (int)Math.Round(Math.Max(0, Math.Sin(t / 160.0 - k * 0.9)) * 4);
-				AisvTheme.FillRounded(b, new Rectangle(bubble.X + 16 + k * 16, bubble.Center.Y - 4 - lift, 9, 9), Color.Lerp(AisvTheme.TextFaint, AisvTheme.Accent, k / 3f), 4);
+				Hearth.FillRounded(b, new Rectangle(bubble.X + 16 + k * 16, bubble.Center.Y - 4 - lift, 9, 9), Color.Lerp(Hearth.QuillPale, Hearth.Leaf, k / 3f), 4);
 			}
 			y += ah + 14;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_chatScroll.Finish(b, view, y + 8);
 		if (_stick)
 		{
@@ -848,12 +848,12 @@ internal sealed class MessengerPage : ShellPage
 
 	private void DrawCompose(SpriteBatch b, Rectangle r, Hits hits, MessengerService service, Contact c)
 	{
-		AisvTheme.HLine(b, r.X, r.Y, r.Width, AisvTheme.Divider);
+		Hearth.HLine(b, r.X, r.Y, r.Width, Hearth.Seam);
 		Rectangle toggle = new Rectangle(r.X + 20, r.Y + 8, 52, 26);
-		AisvTheme.Toggle(b, toggle, _keepSecret);
+		Hearth.Latch(b, toggle, _keepSecret);
 		string secret = Tr.Get("messenger.keepSecret", "别说出去（这条不会传成八卦）");
-		AisvTheme.DrawText(b, secret, new Vector2(toggle.Right + 10, toggle.Y + 2), _keepSecret ? AisvTheme.AccentDark : AisvTheme.TextMuted, 0.72f);
-		Rectangle toggleHit = new Rectangle(toggle.X, toggle.Y - 4, toggle.Width + 14 + (int)AisvTheme.Width(secret, 0.72f), toggle.Height + 8);
+		Hearth.Ink(b, secret, new Vector2(toggle.Right + 10, toggle.Y + 2), _keepSecret ? Hearth.LeafDeep : Hearth.QuillSoft, 0.72f);
+		Rectangle toggleHit = new Rectangle(toggle.X, toggle.Y - 4, toggle.Width + 14 + (int)Hearth.Width(secret, 0.72f), toggle.Height + 8);
 		hits.Add(toggleHit, () =>
 		{
 			Game1.playSound("drumkit6");
@@ -861,9 +861,9 @@ internal sealed class MessengerPage : ShellPage
 		});
 		if (_status.Length > 0)
 		{
-			string s = AisvTheme.Truncate(_status, r.Right - 20 - toggleHit.Right - 30, 0.72f);
+			string s = Hearth.Truncate(_status, r.Right - 20 - toggleHit.Right - 30, 0.72f);
 			Vector2 size = Game1.smallFont.MeasureString(s) * 0.72f;
-			AisvTheme.DrawText(b, s, new Vector2(r.Right - 20 - size.X, r.Y + 10), AisvTheme.Warn, 0.72f);
+			Hearth.Ink(b, s, new Vector2(r.Right - 20 - size.X, r.Y + 10), Hearth.Rust, 0.72f);
 		}
 		const int bw = 112;
 		Rectangle send = new Rectangle(r.Right - 20 - bw, r.Bottom - 14 - 48, bw, 48);
@@ -871,16 +871,16 @@ internal sealed class MessengerPage : ShellPage
 		_box.Draw(b);
 		string count = _box.Text.Length + "/" + MessengerRules.MaxMessageChars;
 		Vector2 cs = Game1.smallFont.MeasureString(count) * 0.7f;
-		AisvTheme.DrawText(b, count, new Vector2(_box.Bounds.Right - cs.X - 12, _box.Bounds.Bottom - cs.Y - 6), AisvTheme.TextFaint, 0.7f);
+		Hearth.Ink(b, count, new Vector2(_box.Bounds.Right - cs.X - 12, _box.Bounds.Bottom - cs.Y - 6), Hearth.QuillPale, 0.7f);
 		bool canSend = service.Check(c.NpcName, _box.Text) == SendBlock.None || Ctx.Ai?.NeedsLogin == true;
-		AisvTheme.Button(b, send, Tr.Get("reply.send", "发送"), primary: true, hover: AisvTheme.Hover(send), disabled: !canSend);
+		Hearth.PressPlate(b, send, Tr.Get("reply.send", "发送"), primary: true, hover: Hearth.Hover(send), disabled: !canSend);
 		hits.Add(_box.Bounds, () => _box.Focus());
 		hits.Add(send, Send);
 	}
 
 	private void DrawZoom(SpriteBatch b, Rectangle area, Hits hits, MessengerService service)
 	{
-		AisvTheme.Fill(b, area, Color.Black * 0.7f);
+		Hearth.Fill(b, area, Color.Black * 0.7f);
 		Texture2D? image = _zoomPhoto == null ? null : service.Photos.Image(_zoomPhoto);
 		PhotoRecord? record = _zoomPhoto == null ? null : service.Photos.Find(_zoomPhoto);
 		if (image != null)
@@ -888,13 +888,13 @@ internal sealed class MessengerPage : ShellPage
 			float scale = Math.Min((area.Width - 80f) / image.Width, (area.Height - 120f) / image.Height);
 			int w = (int)(image.Width * scale), h = (int)(image.Height * scale);
 			Rectangle r = new Rectangle(area.Center.X - w / 2, area.Center.Y - h / 2 - 16, w, h);
-			AisvTheme.Fill(b, AisvTheme.Inflate(r, 8), Color.White);
+			Hearth.Fill(b, Hearth.Inflate(r, 8), Color.White);
 			b.Draw(image, r, Color.White);
 			if (record != null)
 			{
 				string caption = Tr.Get("messenger.photoCaption", "{{place}} · 第 {{year}} 年{{season}} {{day}} 日 {{time}}",
 					("place", record.LocationDisplay), ("year", record.Year), ("season", HistoryFormatter.SeasonName(record.Season)), ("day", record.Day), ("time", MessengerRules.ClockText(record.Time)));
-				AisvTheme.TextCentered(b, caption, new Rectangle(area.X, r.Bottom + 16, area.Width, 32), Color.White, 0.8f);
+				Hearth.InkMiddle(b, caption, new Rectangle(area.X, r.Bottom + 16, area.Width, 32), Color.White, 0.8f);
 			}
 		}
 		hits.Add(area, () => _zoomPhoto = null);

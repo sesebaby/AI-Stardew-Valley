@@ -308,8 +308,8 @@ internal static class AppData
 			List<NPC> people = Utility.getAllVillagers().Where(n => n is not StardewValley.Characters.Child && !string.IsNullOrWhiteSpace(n.Name)).ToList();
 			return Kinship.Build(new KinSources
 			{
-				Villagers = people.ConvertAll(n => n.Name),
-				Away = people.Where(n => !n.CanSocialize).Select(n => n.Name).ToList(),
+				Residents = people.ConvertAll(n => n.Name),
+				Elsewhere = people.Where(n => !n.CanSocialize).Select(n => n.Name).ToList(),
 				Declared = people.SelectMany(DeclaredRelatives).ToList(),
 				Moods = Map(ctx).Ties.Select(t => new KinMood(t.A, t.B, t.Bond)).ToList(),
 				Farmer = Game1.player == null ? null : HomeOf(Game1.player)
@@ -334,8 +334,9 @@ internal static class AppData
 
 	private static FarmerHome HomeOf(Farmer farmer)
 	{
-		ILookup<FriendshipStatus, string> byStatus = farmer.friendshipData.Keys.ToLookup(npc => farmer.friendshipData[npc].Status);
-		string? partner = byStatus[FriendshipStatus.Married].FirstOrDefault();
+		List<string> Named(FriendshipStatus status, bool roommate) => farmer.friendshipData.Keys.Where(npc => farmer.friendshipData[npc].Status == status && farmer.friendshipData[npc].RoommateMarriage == roommate).ToList();
+		List<string> spouses = Named(FriendshipStatus.Married, false);
+		string? partner = spouses.FirstOrDefault();
 		if (partner == null && farmer.team.GetSpouse(farmer.UniqueMultiplayerID) is long id)
 		{
 			string? name = Game1.GetPlayer(id)?.Name;
@@ -344,8 +345,10 @@ internal static class AppData
 		return new FarmerHome
 		{
 			Spouse = partner,
-			Fiance = byStatus[FriendshipStatus.Engaged].FirstOrDefault(),
-			Sweethearts = byStatus[FriendshipStatus.Dating].ToList(),
+			OtherSpouses = spouses.Skip(1).ToList(),
+			Roommate = Named(FriendshipStatus.Married, true).Concat(Named(FriendshipStatus.Engaged, true)).FirstOrDefault(),
+			Fiance = Named(FriendshipStatus.Engaged, false).FirstOrDefault(),
+			Sweethearts = Named(FriendshipStatus.Dating, false),
 			Children = farmer.getChildren().ConvertAll(c => Kinship.Outsider(c.Name))
 		};
 	}

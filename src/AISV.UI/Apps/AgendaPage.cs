@@ -46,7 +46,7 @@ internal sealed class AgendaPage : ShellPage
 
 	public override void Scroll(int direction)
 	{
-		if (AisvTheme.Hover(_listView))
+		if (Hearth.Hover(_listView))
 		{
 			_list.Wheel(direction);
 		}
@@ -78,9 +78,9 @@ internal sealed class AgendaPage : ShellPage
 
 	private void People(SpriteBatch b, Hits hits)
 	{
-		AisvTheme.DrawCard(b, _listView);
+		Hearth.CardSlip(b, _listView);
 		Rectangle inner = new Rectangle(_listView.X + 6, _listView.Y + 8, _listView.Width - 12, _listView.Height - 16);
-		AisvTheme.BeginClip(b, inner);
+		Hearth.BeginClip(b, inner);
 		int y = inner.Y - _list.Offset;
 		foreach ((string npc, string name, string now) in _people)
 		{
@@ -88,13 +88,13 @@ internal sealed class AgendaPage : ShellPage
 			if (row.Bottom >= inner.Y && row.Y <= inner.Bottom)
 			{
 				bool on = npc.Equals(_selected, StringComparison.OrdinalIgnoreCase);
-				if (on || AisvTheme.Hover(row, inner))
+				if (on || Hearth.Hover(row, inner))
 				{
-					AisvTheme.FillRounded(b, row, on ? AisvTheme.SelectedRow : AisvTheme.PageDeep, 10);
+					Hearth.FillRounded(b, row, on ? Hearth.Honey : Hearth.ParchmentDeep, 10);
 				}
 				Kit.Avatar(b, new Rectangle(row.X + 8, row.Y + 9, 40, 40), Ctx, npc);
-				AisvTheme.Bold(b, AisvTheme.Truncate(name, row.Width - 70, 0.78f), new Vector2(row.X + 58, row.Y + 7), on ? AisvTheme.AccentDark : AisvTheme.Text, 0.78f);
-				AisvTheme.DrawText(b, AisvTheme.Truncate(now, row.Width - 70, 0.64f), new Vector2(row.X + 58, row.Y + 33), AisvTheme.TextMuted, 0.64f);
+				Hearth.InkBold(b, Hearth.Truncate(name, row.Width - 70, 0.78f), new Vector2(row.X + 58, row.Y + 7), on ? Hearth.LeafDeep : Hearth.Quill, 0.78f);
+				Hearth.Ink(b, Hearth.Truncate(now, row.Width - 70, 0.64f), new Vector2(row.X + 58, row.Y + 33), Hearth.QuillSoft, 0.64f);
 				string pick = npc;
 				hits.Add(row, () =>
 				{
@@ -105,28 +105,28 @@ internal sealed class AgendaPage : ShellPage
 			}
 			y += 62;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_list.Finish(b, _listView, y + 16, 6);
 	}
 
 	private void Timeline(SpriteBatch b, Hits hits, bool narrow)
 	{
 		int x = _view.X + 16, w = _view.Width - 44;
-		AisvTheme.BeginClip(b, _view);
+		Hearth.BeginClip(b, _view);
 		int y = _view.Y + 12 - _scroll.Offset;
 		string name = Ctx.Display(_selected);
 		Rectangle head = new Rectangle(x, y, w, 96);
-		AisvTheme.DrawCard(b, head);
+		Hearth.CardSlip(b, head);
 		Kit.Avatar(b, new Rectangle(head.X + 18, head.Y + 16, 64, 64), Ctx, _selected);
-		AisvTheme.Bold(b, name, new Vector2(head.X + 98, head.Y + 18), AisvTheme.Text, 1.0f);
+		Hearth.InkBold(b, name, new Vector2(head.X + 98, head.Y + 18), Hearth.Quill, 1.0f);
 		string now = Tr.Get("agenda.now", "现在 {{time}}", ("time", Agenda.Clock(Game1.timeOfDay)));
-		AisvTheme.DrawText(b, now, new Vector2(head.X + 98, head.Y + 56), AisvTheme.TextMuted, 0.72f);
+		Hearth.Ink(b, now, new Vector2(head.X + 98, head.Y + 56), Hearth.QuillSoft, 0.72f);
 		if (narrow)
 		{
 			int i = _people.FindIndex(p => p.Npc.Equals(_selected, StringComparison.OrdinalIgnoreCase));
 			Rectangle prev = new Rectangle(head.Right - 108, head.Y + 26, 44, 44), next = new Rectangle(head.Right - 56, head.Y + 26, 44, 44);
-			AisvTheme.Button(b, prev, "‹", hover: AisvTheme.Hover(prev, _view));
-			AisvTheme.Button(b, next, "›", hover: AisvTheme.Hover(next, _view));
+			Hearth.PressPlate(b, prev, "‹", hover: Hearth.Hover(prev, _view));
+			Hearth.PressPlate(b, next, "›", hover: Hearth.Hover(next, _view));
 			hits.Add(prev, () => _selected = _people[(i - 1 + _people.Count) % _people.Count].Npc, _view);
 			hits.Add(next, () => _selected = _people[(i + 1) % _people.Count].Npc, _view);
 		}
@@ -134,7 +134,7 @@ internal sealed class AgendaPage : ShellPage
 		List<AgendaStop> stops = _stops.TryGetValue(_selected, out List<AgendaStop>? s) ? s : new List<AgendaStop>();
 		if (stops.Count == 0)
 		{
-			AisvTheme.DrawText(b, Tr.Get("agenda.none", "今天没有安排，大概一直待在家里。"), new Vector2(x + 8, y), AisvTheme.TextMuted, 0.8f);
+			Hearth.Ink(b, Tr.Get("agenda.none", "今天没有安排，大概一直待在家里。"), new Vector2(x + 8, y), Hearth.QuillSoft, 0.8f);
 			y += 40;
 		}
 		int current = Agenda.Current(stops.Where(t => !t.WithYou).ToList(), Game1.timeOfDay);
@@ -152,27 +152,27 @@ internal sealed class AgendaPage : ShellPage
 			Rectangle row = new Rectangle(lineX + 26, y, w - (lineX + 26 - x), stop.Note.Length > 0 ? 82 : 62);
 			if (i < stops.Count - 1)
 			{
-				AisvTheme.VLine(b, lineX - 1, y + 30, row.Height + 12, AisvTheme.Divider, 3);
+				Hearth.VLine(b, lineX - 1, y + 30, row.Height + 12, Hearth.Seam, 3);
 			}
 			string clock = Agenda.Clock(stop.Time);
-			AisvTheme.Bold(b, clock, new Vector2(lineX - 24 - AisvTheme.Width(clock, 0.8f), y + 18), here ? AisvTheme.AccentDark : past ? AisvTheme.TextFaint : AisvTheme.Text, 0.8f);
-			Color dot = stop.WithYou ? AisvTheme.Pink : here ? AisvTheme.Accent : past ? AisvTheme.Divider : AisvTheme.CardBorder;
-			AisvTheme.FillRounded(b, new Rectangle(lineX - 10, y + 20, 20, 20), dot, 10);
+			Hearth.InkBold(b, clock, new Vector2(lineX - 24 - Hearth.Width(clock, 0.8f), y + 18), here ? Hearth.LeafDeep : past ? Hearth.QuillPale : Hearth.Quill, 0.8f);
+			Color dot = stop.WithYou ? Hearth.Rose : here ? Hearth.Leaf : past ? Hearth.Seam : Hearth.SlipEdge;
+			Hearth.FillRounded(b, new Rectangle(lineX - 10, y + 20, 20, 20), dot, 10);
 			if (here)
 			{
-				AisvTheme.FillRounded(b, new Rectangle(lineX - 5, y + 25, 10, 10), Color.White, 5);
+				Hearth.FillRounded(b, new Rectangle(lineX - 5, y + 25, 10, 10), Color.White, 5);
 			}
-			AisvTheme.Bordered(b, row, stop.WithYou ? AisvTheme.PinkSoft : here ? AisvTheme.SelectedRow : AisvTheme.Card, stop.WithYou ? AisvTheme.Pink * 0.6f : here ? AisvTheme.Accent * 0.5f : AisvTheme.Divider, 12);
-			AisvTheme.Bold(b, AisvTheme.Truncate(stop.Place, row.Width - 40, 0.84f), new Vector2(row.X + 18, row.Y + 9), past ? AisvTheme.TextMuted : AisvTheme.Text, 0.84f);
+			Hearth.Bordered(b, row, stop.WithYou ? Hearth.RosePale : here ? Hearth.Honey : Hearth.Slip, stop.WithYou ? Hearth.Rose * 0.6f : here ? Hearth.Leaf * 0.5f : Hearth.Seam, 12);
+			Hearth.InkBold(b, Hearth.Truncate(stop.Place, row.Width - 40, 0.84f), new Vector2(row.X + 18, row.Y + 9), past ? Hearth.QuillSoft : Hearth.Quill, 0.84f);
 			string doing = here ? (stop.Doing.Length > 0 ? Tr.Get("agenda.doingNow", "{{doing}} · 正在这儿", ("doing", stop.Doing)) : Tr.Get("agenda.hereNow", "正在这儿")) : stop.Doing;
-			AisvTheme.DrawText(b, AisvTheme.Truncate(doing, row.Width - 40, 0.7f), new Vector2(row.X + 18, row.Y + 36), stop.WithYou ? AisvTheme.Pink : AisvTheme.TextMuted, 0.7f);
+			Hearth.Ink(b, Hearth.Truncate(doing, row.Width - 40, 0.7f), new Vector2(row.X + 18, row.Y + 36), stop.WithYou ? Hearth.Rose : Hearth.QuillSoft, 0.7f);
 			if (stop.Note.Length > 0)
 			{
-				AisvTheme.DrawText(b, AisvTheme.Truncate(ShellText.Clean(stop.Note), row.Width - 40, 0.66f), new Vector2(row.X + 18, row.Y + 58), AisvTheme.TextFaint, 0.66f);
+				Hearth.Ink(b, Hearth.Truncate(ShellText.Clean(stop.Note), row.Width - 40, 0.66f), new Vector2(row.X + 18, row.Y + 58), Hearth.QuillPale, 0.66f);
 			}
 			y = row.Bottom + 12;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, _view, y + 8);
 	}
 }

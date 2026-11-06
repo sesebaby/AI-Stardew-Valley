@@ -147,8 +147,27 @@ internal sealed class LettersPage : ShellPage
 		}
 	}
 
+	private readonly Flip _flip = new Flip();
+
+	public override bool StepBack() => _flip.StepBack();
+
 	public override void Draw(SpriteBatch b, Rectangle area, Hits hits)
 	{
+		if (_letters.Count > 0 && Flip.Applies(area))
+		{
+			_flip.Draw(b, area, hits, r =>
+			{
+				_list = r;
+				_detail = Rectangle.Empty;
+				DrawList(b, hits);
+			}, r =>
+			{
+				_list = Rectangle.Empty;
+				_detail = r;
+				DrawLetter(b, _letters[_selected]);
+			});
+			return;
+		}
 		int listW = Math.Clamp(area.Width * 34 / 100, 300, 420);
 		_list = new Rectangle(area.X, area.Y, listW, area.Height);
 		_detail = new Rectangle(_list.Right, area.Y, area.Right - _list.Right, area.Height);
@@ -164,21 +183,21 @@ internal sealed class LettersPage : ShellPage
 	private static void DrawEmpty(SpriteBatch b, Rectangle area)
 	{
 		Rectangle box = new Rectangle(area.Center.X - 220, area.Center.Y - 90, 440, 180);
-		AisvTheme.DrawCard(b, box);
+		Hearth.CardSlip(b, box);
 		Rectangle env = new Rectangle(box.Center.X - 36, box.Y + 26, 72, 48);
-		AisvTheme.Bordered(b, env, PaperColor, AisvTheme.CardBorder, 6);
-		AisvTheme.Line(b, new Vector2(env.X + 4, env.Y + 4), new Vector2(env.Center.X, env.Center.Y + 6), AisvTheme.CardBorder, 2f);
-		AisvTheme.Line(b, new Vector2(env.Right - 4, env.Y + 4), new Vector2(env.Center.X, env.Center.Y + 6), AisvTheme.CardBorder, 2f);
-		AisvTheme.TextCentered(b, Tr.Get("shell.letters.none", "还没有收到信。"), new Rectangle(box.X, env.Bottom + 12, box.Width, 32), AisvTheme.Text, 0.9f);
-		AisvTheme.TextCentered(b, Tr.Get("shell.letters.noneHint", "和村民交情深了，他们会写信来。"), new Rectangle(box.X, env.Bottom + 48, box.Width, 30), AisvTheme.TextMuted, 0.75f);
+		Hearth.Bordered(b, env, PaperColor, Hearth.SlipEdge, 6);
+		Hearth.Line(b, new Vector2(env.X + 4, env.Y + 4), new Vector2(env.Center.X, env.Center.Y + 6), Hearth.SlipEdge, 2f);
+		Hearth.Line(b, new Vector2(env.Right - 4, env.Y + 4), new Vector2(env.Center.X, env.Center.Y + 6), Hearth.SlipEdge, 2f);
+		Hearth.InkMiddle(b, Tr.Get("shell.letters.none", "还没有收到信。"), new Rectangle(box.X, env.Bottom + 12, box.Width, 32), Hearth.Quill, 0.9f);
+		Hearth.InkMiddle(b, Tr.Get("shell.letters.noneHint", "和村民交情深了，他们会写信来。"), new Rectangle(box.X, env.Bottom + 48, box.Width, 30), Hearth.QuillSoft, 0.75f);
 	}
 
 	private void DrawList(SpriteBatch b, Hits hits)
 	{
-		AisvTheme.Fill(b, _list, AisvTheme.Card);
-		AisvTheme.VLine(b, _list.Right - 2, _list.Y, _list.Height, AisvTheme.Divider);
+		Hearth.Fill(b, _list, Hearth.Slip);
+		Hearth.VLine(b, _list.Right - 2, _list.Y, _list.Height, Hearth.Seam);
 		Rectangle clip = new Rectangle(_list.X, _list.Y + 6, _list.Width - 4, _list.Height - 12);
-		AisvTheme.BeginClip(b, clip);
+		Hearth.BeginClip(b, clip);
 		int y = clip.Y + 8 - _listScroll.Offset;
 		string section = "";
 		const int rowH = 84;
@@ -189,19 +208,19 @@ internal sealed class LettersPage : ShellPage
 			{
 				section = l.Section;
 				int n = _letters.Count(x => x.Section == l.Section);
-				AisvTheme.DrawText(b, ShellText.SeasonGroup(l.Source.Year, l.Source.Season) + "  ·  " + Tr.Get("shell.letters.count", "{{n}} 封", ("n", n)), new Vector2(_list.X + 20, y + 4), AisvTheme.TextFaint, 0.72f);
+				Hearth.Ink(b, ShellText.SeasonGroup(l.Source.Year, l.Source.Season) + "  ·  " + Tr.Get("shell.letters.count", "{{n}} 封", ("n", n)), new Vector2(_list.X + 20, y + 4), Hearth.QuillPale, 0.72f);
 				y += 34;
 			}
 			Rectangle row = new Rectangle(_list.X + 8, y, _list.Width - 20, rowH);
 			if (row.Bottom >= clip.Y && row.Y <= clip.Bottom)
 			{
-				DrawRow(b, l, row, i == _selected, AisvTheme.Hover(row, clip));
+				DrawRow(b, l, row, i == _selected, Hearth.Hover(row, clip));
 				int index = i;
 				hits.Add(row, () => Select(index), clip);
 			}
 			y += rowH + 2;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_listScroll.Finish(b, clip, y + 8, 10);
 	}
 
@@ -209,19 +228,19 @@ internal sealed class LettersPage : ShellPage
 	{
 		if (selected || hover)
 		{
-			AisvTheme.FillRounded(b, row, selected ? AisvTheme.SelectedRow : AisvTheme.Page, 10);
+			Hearth.FillRounded(b, row, selected ? Hearth.Honey : Hearth.Parchment, 10);
 		}
 		if (selected)
 		{
-			AisvTheme.FillRounded(b, new Rectangle(row.X, row.Y + 14, 4, row.Height - 28), AisvTheme.Accent, 2);
+			Hearth.FillRounded(b, new Rectangle(row.X, row.Y + 14, 4, row.Height - 28), Hearth.Leaf, 2);
 		}
 		Kit.Avatar(b, new Rectangle(row.X + 14, row.Y + 14, 54, 54), Ctx, l.Source.From);
 		int tx = row.X + 82;
 		bool transit = !l.Source.Sent;
 		string when = transit ? Tr.Get("shell.letters.onTheWay", "在路上") : ShellText.Season(l.Source.Season) + " " + l.Source.Day;
-		float ww = AisvTheme.Width(when, 0.66f);
-		AisvTheme.DrawText(b, when, new Vector2(row.Right - 12 - ww, row.Y + 16), transit ? AisvTheme.Gold : AisvTheme.TextFaint, 0.66f);
-		AisvTheme.Bold(b, AisvTheme.Truncate(l.Sender, row.Right - 24 - ww - tx, 0.9f), new Vector2(tx, row.Y + 12), AisvTheme.Text, 0.9f);
+		float ww = Hearth.Width(when, 0.66f);
+		Hearth.Ink(b, when, new Vector2(row.Right - 12 - ww, row.Y + 16), transit ? Hearth.Amber : Hearth.QuillPale, 0.66f);
+		Hearth.InkBold(b, Hearth.Truncate(l.Sender, row.Right - 24 - ww - tx, 0.9f), new Vector2(tx, row.Y + 12), Hearth.Quill, 0.9f);
 		float cx = row.Right - 12;
 		if (l.Gift != null)
 		{
@@ -237,11 +256,11 @@ internal sealed class LettersPage : ShellPage
 		if (l.Hearts > 0)
 		{
 			string h = Tr.Get("shell.letters.hearts", "{{n}}心", ("n", l.Hearts));
-			cx -= AisvTheme.ChipWidth(h, 0.6f) + 2;
-			AisvTheme.Chip(b, new Vector2(cx, row.Y + 48), h, AisvTheme.PinkSoft, AisvTheme.Pink, 0.6f);
+			cx -= Hearth.TagWidth(h, 0.6f) + 2;
+			Hearth.Tag(b, new Vector2(cx, row.Y + 48), h, Hearth.RosePale, Hearth.Rose, 0.6f);
 		}
 		string preview = l.Subject.Length > 0 ? l.Subject : l.Paragraphs.FirstOrDefault() ?? "";
-		AisvTheme.DrawText(b, AisvTheme.Truncate(preview, cx - 10 - tx, 0.75f), new Vector2(tx, row.Y + 48), AisvTheme.TextMuted, 0.75f);
+		Hearth.Ink(b, Hearth.Truncate(preview, cx - 10 - tx, 0.75f), new Vector2(tx, row.Y + 48), Hearth.QuillSoft, 0.75f);
 	}
 
 	private void DrawLetter(SpriteBatch b, Letter l)
@@ -250,35 +269,35 @@ internal sealed class LettersPage : ShellPage
 		int paperW = Math.Min(clip.Width - 64, 760);
 		int x = clip.X + (clip.Width - paperW) / 2;
 		int inner = paperW - 80;
-		int lh = AisvTheme.LineHeight(0.88f);
+		int lh = Hearth.LineHeight(0.88f);
 		bool transit = !l.Source.Sent;
-		List<string> subject = l.Subject.Length > 0 ? AisvTheme.WrapLines(l.Subject, inner) : new List<string>();
+		List<string> subject = l.Subject.Length > 0 ? Hearth.WrapLines(l.Subject, inner) : new List<string>();
 		List<List<string>> paras = transit
-			? new List<List<string>> { AisvTheme.WrapLines(Tr.Get("shell.letters.notYet", "信还在路上，明天早上寄到后才能读。"), inner, 0.88f) }
-			: l.Paragraphs.Select(p => AisvTheme.WrapLines(p, inner, 0.88f)).ToList();
+			? new List<List<string>> { Hearth.WrapLines(Tr.Get("shell.letters.notYet", "信还在路上，明天早上寄到后才能读。"), inner, 0.88f) }
+			: l.Paragraphs.Select(p => Hearth.WrapLines(p, inner, 0.88f)).ToList();
 		string greeting = transit ? "" : l.Greeting;
-		int h = 32 + 56 + 18 + subject.Count * AisvTheme.LineHeight(1f) + (subject.Count > 0 ? 14 : 0) + (greeting.Length > 0 ? lh + 12 : 0) + paras.Sum(p => p.Count * lh + 12) + lh + 20 + (l.Gift != null && !transit ? 96 : 0) + 32;
-		AisvTheme.BeginClip(b, clip);
+		int h = 32 + 56 + 18 + subject.Count * Hearth.LineHeight(1f) + (subject.Count > 0 ? 14 : 0) + (greeting.Length > 0 ? lh + 12 : 0) + paras.Sum(p => p.Count * lh + 12) + lh + 20 + (l.Gift != null && !transit ? 96 : 0) + 32;
+		Hearth.BeginClip(b, clip);
 		Rectangle paper = new Rectangle(x, clip.Y + 18 - _readScroll.Offset, paperW, h);
-		AisvTheme.DrawShadow(b, paper);
-		AisvTheme.Bordered(b, paper, PaperColor, AisvTheme.CardBorder, 10);
-		AisvTheme.Fill(b, new Rectangle(paper.X + 2, paper.Y + 2, paper.Width - 4, 8), new Color(232, 214, 176));
+		Hearth.CastShadow(b, paper);
+		Hearth.Bordered(b, paper, PaperColor, Hearth.SlipEdge, 10);
+		Hearth.Fill(b, new Rectangle(paper.X + 2, paper.Y + 2, paper.Width - 4, 8), new Color(232, 214, 176));
 		int cy = paper.Y + 32, px = paper.X + 40;
 		Kit.Avatar(b, new Rectangle(px, cy, 56, 56), Ctx, l.Source.From);
-		AisvTheme.Bold(b, l.Sender, new Vector2(px + 72, cy + 2), AisvTheme.Text);
+		Hearth.InkBold(b, l.Sender, new Vector2(px + 72, cy + 2), Hearth.Quill);
 		string meta = ShellText.Date(l.Source.Day, l.Source.Season, l.Source.Year) + (transit ? "  ·  " + Tr.Get("shell.letters.onTheWay", "在路上") : "");
-		AisvTheme.DrawText(b, meta, new Vector2(px + 72, cy + 32), AisvTheme.TextFaint, 0.72f);
+		Hearth.Ink(b, meta, new Vector2(px + 72, cy + 32), Hearth.QuillPale, 0.72f);
 		if (l.Hearts > 0)
 		{
 			string when = Tr.Get("shell.letters.heartsWhen", "写在你们 {{n}} 心的时候", ("n", l.Hearts));
-			AisvTheme.Chip(b, new Vector2(paper.Right - 40 - AisvTheme.ChipWidth(when, 0.66f), cy + 14), when, AisvTheme.PinkSoft, AisvTheme.Pink, 0.66f);
+			Hearth.Tag(b, new Vector2(paper.Right - 40 - Hearth.TagWidth(when, 0.66f), cy + 14), when, Hearth.RosePale, Hearth.Rose, 0.66f);
 		}
 		cy += 74;
-		AisvTheme.HLine(b, px, cy - 9, inner, AisvTheme.CardBorder);
+		Hearth.HLine(b, px, cy - 9, inner, Hearth.SlipEdge);
 		foreach (string line in subject)
 		{
-			AisvTheme.Bold(b, line, new Vector2(px, cy), AisvTheme.Text);
-			cy += AisvTheme.LineHeight(1f);
+			Hearth.InkBold(b, line, new Vector2(px, cy), Hearth.Quill);
+			cy += Hearth.LineHeight(1f);
 		}
 		if (subject.Count > 0)
 		{
@@ -286,14 +305,14 @@ internal sealed class LettersPage : ShellPage
 		}
 		if (greeting.Length > 0)
 		{
-			AisvTheme.DrawText(b, greeting, new Vector2(px, cy), AisvTheme.Text, 0.88f);
+			Hearth.Ink(b, greeting, new Vector2(px, cy), Hearth.Quill, 0.88f);
 			cy += lh + 12;
 		}
 		foreach (List<string> para in paras)
 		{
 			foreach (string line in para)
 			{
-				AisvTheme.DrawText(b, line, new Vector2(px, cy), transit ? AisvTheme.TextMuted : AisvTheme.Text, 0.88f);
+				Hearth.Ink(b, line, new Vector2(px, cy), transit ? Hearth.QuillSoft : Hearth.Quill, 0.88f);
 				cy += lh;
 			}
 			cy += 12;
@@ -301,15 +320,15 @@ internal sealed class LettersPage : ShellPage
 		if (!transit)
 		{
 			string sign = "—— " + l.Sender;
-			AisvTheme.Bold(b, sign, new Vector2(paper.Right - 40 - AisvTheme.Width(sign, 0.95f), cy), AisvTheme.AccentDark, 0.95f);
+			Hearth.InkBold(b, sign, new Vector2(paper.Right - 40 - Hearth.Width(sign, 0.95f), cy), Hearth.LeafDeep, 0.95f);
 		}
 		cy += lh + 20;
 		if (l.Gift != null && !transit)
 		{
 			Rectangle gift = new Rectangle(px, cy, inner, 80);
-			AisvTheme.Bordered(b, gift, AisvTheme.GoldSoft, AisvTheme.Gold * 0.5f, 10);
+			Hearth.Bordered(b, gift, Hearth.AmberPale, Hearth.Amber * 0.5f, 10);
 			Rectangle slot = new Rectangle(gift.X + 14, gift.Y + 8, 64, 64);
-			AisvTheme.FillRounded(b, slot, AisvTheme.Card, 8);
+			Hearth.FillRounded(b, slot, Hearth.Slip, 8);
 			try
 			{
 				l.Gift.drawInMenu(b, new Vector2(slot.X, slot.Y), 1f, 1f, 0.9f, StackDrawType.Hide, Color.White, drawShadow: false);
@@ -317,10 +336,10 @@ internal sealed class LettersPage : ShellPage
 			catch (Exception)
 			{
 			}
-			AisvTheme.DrawText(b, Tr.Get("shell.letters.gift", "随信附上的礼物"), new Vector2(slot.Right + 16, gift.Y + 12), AisvTheme.TextMuted, 0.72f);
-			AisvTheme.Bold(b, AisvTheme.Truncate(ShellText.Clean(Ctx.Social.LetterGiftName(l.Source)), gift.Right - slot.Right - 32, 0.9f), new Vector2(slot.Right + 16, gift.Y + 40), AisvTheme.Text, 0.9f);
+			Hearth.Ink(b, Tr.Get("shell.letters.gift", "随信附上的礼物"), new Vector2(slot.Right + 16, gift.Y + 12), Hearth.QuillSoft, 0.72f);
+			Hearth.InkBold(b, Hearth.Truncate(ShellText.Clean(Ctx.Social.LetterGiftName(l.Source)), gift.Right - slot.Right - 32, 0.9f), new Vector2(slot.Right + 16, gift.Y + 40), Hearth.Quill, 0.9f);
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_readScroll.Finish(b, clip, paper.Bottom + 24, 12);
 	}
 }

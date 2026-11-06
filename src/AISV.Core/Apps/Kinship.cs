@@ -10,7 +10,8 @@ public enum PairKind
 	Married,
 	Engaged,
 	Dating,
-	Siblings
+	Siblings,
+	Roommates
 }
 
 public enum ElderRole
@@ -18,7 +19,8 @@ public enum ElderRole
 	Parent,
 	Grandparent,
 	AuntOrUncle,
-	Godparent
+	Godparent,
+	Stepparent
 }
 
 /// <summary>认出来的一句亲属称呼：要么 A、B 是一对（Pair），要么 A 是 B 的长辈（Role）。</summary>
@@ -27,8 +29,11 @@ public sealed record KinClaim(string A, string B, PairKind? Pair, ElderRole? Rol
 /// <summary>晚辈挂在长辈这一格下面：Person 在 Cell 里，长辈是上一格里的 Elders。</summary>
 public sealed record KinBelow(KinCell Cell, string Person, IReadOnlyList<string> Elders, ElderRole Role);
 
-/// <summary>树之外还要交代的长辈关系，比如既是姑姑又不是直接带大的。</summary>
+/// <summary>树之外还要交代的长辈关系，比如既是姑姑又不是直接带大的。对方可能在另一棵树上。</summary>
 public sealed record KinSide(string Elder, string Younger, ElderRole Role);
+
+/// <summary>树之外还要交代的一对，比如两家的孩子在交往。对方可能在另一棵树上。</summary>
+public sealed record KinLink(string A, string B, PairKind Pair);
 
 /// <summary>
 /// 家谱上的一格：一个人，或站在一起的几个人。People[0] 和后面每个人的关系写在 Pairs 里。
@@ -64,6 +69,8 @@ public sealed class KinTree
 
 	public IReadOnlyList<KinSide> Sides { get; init; } = Array.Empty<KinSide>();
 
+	public IReadOnlyList<KinLink> Links { get; init; } = Array.Empty<KinLink>();
+
 	public IReadOnlyList<KinMood> Moods { get; init; } = Array.Empty<KinMood>();
 
 	public IEnumerable<string> Everyone => Root.SelfAndBelow().SelectMany(c => c.People);
@@ -78,6 +85,10 @@ public sealed class FarmerHome
 {
 	public string? Spouse { get; init; }
 
+	public IReadOnlyList<string> OtherSpouses { get; init; } = Array.Empty<string>();
+
+	public string? Roommate { get; init; }
+
 	public string? Fiance { get; init; }
 
 	public IReadOnlyList<string> Sweethearts { get; init; } = Array.Empty<string>();
@@ -87,12 +98,12 @@ public sealed class FarmerHome
 
 public sealed class KinSources
 {
-	public IReadOnlyCollection<string> Villagers { get; init; } = Array.Empty<string>();
+	public IReadOnlyCollection<string> Residents { get; init; } = Array.Empty<string>();
 
-	public IReadOnlyCollection<string> Away { get; init; } = Array.Empty<string>();
+	public IReadOnlyCollection<string> Elsewhere { get; init; } = Array.Empty<string>();
 
 	/// <summary>角色数据里的亲属：谁、亲属是谁、怎么称呼。</summary>
-	public IReadOnlyList<(string Owner, string Relative, string Title)> Declared { get; init; } = Array.Empty<(string, string, string)>();
+	public IReadOnlyList<(string Speaker, string Other, string Word)> Declared { get; init; } = Array.Empty<(string, string, string)>();
 
 	public IReadOnlyList<KinMood> Moods { get; init; } = Array.Empty<KinMood>();
 
@@ -104,9 +115,9 @@ public sealed class KinRegister
 	public IReadOnlyList<KinTree> Trees { get; init; } = Array.Empty<KinTree>();
 
 	/// <summary>在镇上，但亲戚都不在镇上的人。</summary>
-	public IReadOnlyList<string> Alone { get; init; } = Array.Empty<string>();
+	public IReadOnlyList<string> Solo { get; init; } = Array.Empty<string>();
 
-	public IReadOnlyCollection<string> Away { get; init; } = Array.Empty<string>();
+	public IReadOnlyCollection<string> Elsewhere { get; init; } = Array.Empty<string>();
 }
 
 /// <summary>家谱：把称呼变成一棵棵树。排版时先从下往上算每棵子树多宽，再从上往下放。</summary>
@@ -140,7 +151,13 @@ public static class Kinship
 
 	private static readonly Regex Token = new Regex("[a-z]+|[\\u4e00-\\u9fff]+", RegexOptions.CultureInvariant);
 
-	private static readonly Regex NotByBlood = new Regex("^(?:step|half|foster|adopt(?:ive|ed))(?=[a-z])", RegexOptions.CultureInvariant);
+	private static readonly Regex LocalizedKey = new Regex(":([^:\\]]+)\\]\\s*$", RegexOptions.CultureInvariant);
+
+	/// <summary>foster、adoptive 这些前缀不改变辈分，去掉后再查词表。</summary>
+	private static readonly Regex KindPrefix = new Regex("^(?:adopt(?:ive|ed)|foster|half)(?=[a-z])", RegexOptions.CultureInvariant);
+
+	/// <summary>出现这些词，后面的亲属词就不是在说这个人本身（前妻、姐夫、朋友的妹妹）。</summary>
+	private static readonly HashSet<string> NotKin = new HashSet<string> { "ex", "former", "law", "friend", "friends" };
 
 	/// <summary>词 → 说的是谁。Elder：对方是长辈；Younger：对方是晚辈。</summary>
 	private static readonly Dictionary<string, (bool? ElderIsRelative, PairKind? Pair, ElderRole? Role)> Vocabulary = BuildVocabulary();
@@ -165,7 +182,8 @@ public static class Kinship
 		Pair(PairKind.Married, "wife husband spouse 妻子 丈夫");
 		Pair(PairKind.Engaged, "fiancee fiance 未婚妻 未婚夫");
 		Pair(PairKind.Dating, "girlfriend boyfriend partner 女朋友 男朋友");
-		Pair(PairKind.Siblings, "sister brother sibling twin 姐姐 妹妹 哥哥 弟弟");
+		Pair(PairKind.Siblings, "sister brother sibling twin stepsister stepbrother 姐姐 妹妹 哥哥 弟弟");
+		Pair(PairKind.Roommates, "roommate housemate 室友");
 		Family(ElderRole.Parent, true, "mom mum mama mother dad papa father parent 妈妈 母亲 爸爸 父亲");
 		Family(ElderRole.Parent, false, "daughter son child kid 女儿 儿子 孩子");
 		Family(ElderRole.Grandparent, true, "grandmother grandma grandfather grandpa grandparent 奶奶 外婆 爷爷 外公");
@@ -174,6 +192,8 @@ public static class Kinship
 		Family(ElderRole.AuntOrUncle, false, "niece nephew 侄女 侄子 外甥女 外甥");
 		Family(ElderRole.Godparent, true, "godmother godfather godparent 教母 教父");
 		Family(ElderRole.Godparent, false, "goddaughter godson godchild");
+		Family(ElderRole.Stepparent, true, "stepmom stepmum stepmother stepdad stepfather stepparent 继母 继父");
+		Family(ElderRole.Stepparent, false, "stepdaughter stepson stepchild 继女 继子");
 		return map;
 	}
 
@@ -185,42 +205,67 @@ public static class Kinship
 
 	public static bool Same(string? a, string? b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
 
-	/// <summary>认一个称呼：relative 是 owner 的什么人。认不出返回 null。</summary>
-	public static KinClaim? ReadTitle(string owner, string relative, string? title)
+	/// <summary>认一个称呼：other 是 speaker 的什么人。认不出返回 null。</summary>
+	public static KinClaim? ReadTitle(string speaker, string other, string? word)
 	{
-		foreach (Match token in Token.Matches((title ?? "").ToLowerInvariant()))
+		string text = (word ?? "").ToLowerInvariant();
+		Match localized = LocalizedKey.Match(text);
+		if (localized.Success)
 		{
-			if (Vocabulary.TryGetValue(NotByBlood.Replace(token.Value, ""), out var meaning))
+			text = localized.Groups[1].Value;
+		}
+		string[] tokens = Token.Matches(text).Select(m => m.Value).ToArray();
+		if (Same(speaker, other) || tokens.Any(NotKin.Contains))
+		{
+			return null;
+		}
+		// 英文的中心词在最后；"grand mother" 这样拆开写的，先和前一个词拼起来查。
+		for (int i = tokens.Length - 1; i >= 0; i--)
+		{
+			string[] tries = i > 0 ? new[] { tokens[i - 1] + tokens[i], tokens[i] } : new[] { tokens[i] };
+			foreach (string candidate in tries)
 			{
-				return Same(owner, relative) ? null
-					: meaning.Pair != null ? new KinClaim(owner, relative, meaning.Pair, null)
-					: meaning.ElderIsRelative == true ? new KinClaim(relative, owner, null, meaning.Role)
-					: new KinClaim(owner, relative, null, meaning.Role);
+				if (Vocabulary.TryGetValue(KindPrefix.Replace(candidate, ""), out var meaning))
+				{
+					return meaning.Pair != null ? new KinClaim(speaker, other, meaning.Pair, null)
+						: meaning.ElderIsRelative == true ? new KinClaim(other, speaker, null, meaning.Role)
+						: new KinClaim(speaker, other, null, meaning.Role);
+				}
 			}
 		}
 		return null;
 	}
 
+	/// <summary>同一件事可能内置表和角色数据各说一遍。一对只留最亲的那种关系。</summary>
+	private static List<KinClaim> Unique(IEnumerable<KinClaim> claims)
+	{
+		string Key(KinClaim c) => string.Compare(c.A, c.B, StringComparison.OrdinalIgnoreCase) < 0 ? (c.A + "|" + c.B).ToLowerInvariant() : (c.B + "|" + c.A).ToLowerInvariant();
+		List<KinClaim> all = claims.ToList();
+		IEnumerable<KinClaim> pairs = all.Where(c => c.Pair != null).OrderBy(c => c.Pair).GroupBy(Key).Select(g => g.First());
+		IEnumerable<KinClaim> elders = all.Where(c => c.Role != null).GroupBy(c => (c.A.ToLowerInvariant(), c.B.ToLowerInvariant(), c.Role)).Select(g => g.First());
+		return pairs.Concat(elders).ToList();
+	}
+
 	public static KinRegister Build(KinSources sources)
 	{
-		HashSet<string> town = new HashSet<string>(sources.Villagers, StringComparer.OrdinalIgnoreCase);
-		List<KinClaim> claims = TownClaims().Concat(sources.Declared.Select(d => ReadTitle(d.Owner, d.Relative, d.Title)).OfType<KinClaim>())
-			.Where(c => town.Contains(c.A) && town.Contains(c.B)).ToList();
+		HashSet<string> town = new HashSet<string>(sources.Residents, StringComparer.OrdinalIgnoreCase);
+		List<KinClaim> claims = Unique(TownClaims().Concat(sources.Declared.Select(d => ReadTitle(d.Speaker, d.Other, d.Word)).OfType<KinClaim>())
+			.Where(c => town.Contains(c.A) && town.Contains(c.B)));
 		Dictionary<string, KinCell> cellOf = MakeCells(town, claims);
 		Dictionary<KinCell, List<KinSide>> sides = new Dictionary<KinCell, List<KinSide>>();
 		HashSet<KinCell> hung = Hang(cellOf, claims, sides);
-		List<KinTree> trees = new List<KinTree>();
-		foreach (KinCell root in cellOf.Values.Distinct().Where(c => !hung.Contains(c) && (c.People.Count > 1 || c.Below.Count > 0)).OrderBy(c => c.People[0], StringComparer.OrdinalIgnoreCase))
-		{
-			trees.Add(FinishTree(root, false, sides.SelectMany(s => s.Value), sources.Moods));
-		}
-		HashSet<string> away = new HashSet<string>(sources.Away, StringComparer.OrdinalIgnoreCase);
-		List<string> alone = town.Where(n => !away.Contains(n) && !trees.Any(t => t.Everyone.Contains(n, StringComparer.OrdinalIgnoreCase))).OrderBy(n => n, StringComparer.OrdinalIgnoreCase).ToList();
+		List<KinLink> links = Unplaced(claims, cellOf);
+		bool Related(KinCell c) => c.People.Count > 1 || c.Below.Count > 0 || claims.Any(k => Same(k.A, c.People[0]) || Same(k.B, c.People[0]));
+		List<KinTree> trees = cellOf.Values.Distinct().Where(c => !hung.Contains(c) && Related(c)).OrderBy(c => c.People[0], StringComparer.OrdinalIgnoreCase)
+			.Select(root => FinishTree(root, false, sides.SelectMany(s => s.Value), links, sources.Moods)).ToList();
+		HashSet<string> elsewhere = new HashSet<string>(sources.Elsewhere, StringComparer.OrdinalIgnoreCase);
+		HashSet<string> placed = new HashSet<string>(trees.SelectMany(tree => tree.Everyone), StringComparer.OrdinalIgnoreCase);
+		IOrderedEnumerable<string> solo = town.Except(placed, StringComparer.OrdinalIgnoreCase).Except(elsewhere, StringComparer.OrdinalIgnoreCase).OrderBy(n => n, StringComparer.OrdinalIgnoreCase);
 		if (sources.Farmer != null)
 		{
-			trees.Insert(0, FinishTree(FarmerCell(sources.Farmer), true, Array.Empty<KinSide>(), Array.Empty<KinMood>()));
+			trees.Insert(0, FinishTree(FarmerCell(sources.Farmer), true, Array.Empty<KinSide>(), Array.Empty<KinLink>(), Array.Empty<KinMood>()));
 		}
-		return new KinRegister { Trees = trees, Alone = alone, Away = away };
+		return new KinRegister { Trees = trees, Solo = solo.ToList(), Elsewhere = elsewhere };
 	}
 
 	private static IEnumerable<KinClaim> TownClaims()
@@ -243,7 +288,7 @@ public static class Kinship
 	}
 
 	/// <summary>
-	/// 夫妻总在一格。订婚、交往和没有长辈的兄弟姐妹，只有都没长辈时才放一格，免得把两家连到一起。
+	/// 一对尽量站一格。只有结婚能把两边的长辈连到一起；两边都有长辈的情侣和兄弟姐妹各归各家，关系另记一条。
 	/// </summary>
 	private static Dictionary<string, KinCell> MakeCells(IEnumerable<string> town, List<KinClaim> claims)
 	{
@@ -251,23 +296,28 @@ public static class Kinship
 		bool HasElder(string person) => claims.Any(c => c.Role != null && Same(c.B, person));
 		foreach (KinClaim claim in claims.Where(c => c.Pair != null).OrderBy(c => c.Pair))
 		{
-			if (claim.Pair != PairKind.Married && (HasElder(claim.A) || HasElder(claim.B)))
+			PairKind kind = claim.Pair!.Value;
+			bool freeA = !cellOf.ContainsKey(claim.A), freeB = !cellOf.ContainsKey(claim.B);
+			if (kind != PairKind.Married && HasElder(claim.A) && HasElder(claim.B) || !freeA && !freeB)
 			{
 				continue;
 			}
-			if (cellOf.TryGetValue(claim.A, out KinCell? ofA) && !cellOf.ContainsKey(claim.B) && claim.Pair == PairKind.Siblings && ofA.Pairs.All(p => p == PairKind.Siblings))
-			{
-				ofA.People.Add(claim.B);
-				ofA.Pairs.Add(PairKind.Siblings);
-				cellOf[claim.B] = ofA;
-			}
-			else if (ofA == null && !cellOf.ContainsKey(claim.B))
+			if (freeA && freeB)
 			{
 				KinCell cell = new KinCell();
 				cell.People.Add(claim.A);
 				cell.People.Add(claim.B);
-				cell.Pairs.Add(claim.Pair!.Value);
+				cell.Pairs.Add(kind);
 				cellOf[claim.A] = cellOf[claim.B] = cell;
+				continue;
+			}
+			string held = freeA ? claim.B : claim.A, joining = freeA ? claim.A : claim.B;
+			KinCell holder = cellOf[held];
+			if (kind == PairKind.Siblings ? holder.Pairs.All(p => p == PairKind.Siblings) : Same(holder.People[0], held) && holder.Pairs.All(p => p != PairKind.Siblings))
+			{
+				holder.People.Add(joining);
+				holder.Pairs.Add(kind);
+				cellOf[joining] = holder;
 			}
 		}
 		foreach (string person in town.Where(p => !cellOf.ContainsKey(p)))
@@ -320,7 +370,7 @@ public static class Kinship
 				{
 					continue;
 				}
-				KinClaim best = mine.OrderByDescending(c => Chain(c.A, 0)).First();
+				KinClaim best = mine.OrderByDescending(c => Chain(c.A, 0)).ThenBy(c => c.Role).First();
 				KinCell above = cellOf[best.A];
 				if (!up.ContainsKey(cell) && above != cell && !WouldLoop(above, cell))
 				{
@@ -340,6 +390,18 @@ public static class Kinship
 		return new HashSet<KinCell>(up.Keys);
 	}
 
+	/// <summary>站不进同一格、也不能从共同的家长看出来的那些关系。</summary>
+	private static List<KinLink> Unplaced(List<KinClaim> claims, Dictionary<string, KinCell> cellOf)
+	{
+		bool Siblings(string a, string b) => claims.Any(x => x.Role == ElderRole.Parent && Same(x.B, a) && claims.Any(y => y.Role == ElderRole.Parent && Same(y.B, b) && Same(x.A, y.A)));
+		bool Shown(KinClaim c)
+		{
+			KinCell cell = cellOf[c.A];
+			return cell == cellOf[c.B] && (Same(cell.People[0], c.A) || Same(cell.People[0], c.B) || c.Pair == PairKind.Siblings);
+		}
+		return claims.Where(c => c.Pair != null && !Shown(c) && !(c.Pair == PairKind.Siblings && Siblings(c.A, c.B))).Select(c => new KinLink(c.A, c.B, c.Pair!.Value)).ToList();
+	}
+
 	private static KinCell FarmerCell(FarmerHome home)
 	{
 		KinCell cell = new KinCell();
@@ -353,6 +415,11 @@ public static class Kinship
 			}
 		}
 		Join(home.Spouse, PairKind.Married);
+		foreach (string other in home.OtherSpouses)
+		{
+			Join(other, PairKind.Married);
+		}
+		Join(home.Roommate, PairKind.Roommates);
 		Join(home.Fiance, PairKind.Engaged);
 		foreach (string sweetheart in home.Sweethearts)
 		{
@@ -368,7 +435,7 @@ public static class Kinship
 		return cell;
 	}
 
-	private static KinTree FinishTree(KinCell root, bool isFarmers, IEnumerable<KinSide> allSides, IEnumerable<KinMood> moods)
+	private static KinTree FinishTree(KinCell root, bool isFarmers, IEnumerable<KinSide> allSides, IEnumerable<KinLink> allLinks, IEnumerable<KinMood> moods)
 	{
 		Place(root, 0, 0);
 		HashSet<string> people = new HashSet<string>(root.SelfAndBelow().SelectMany(c => c.People), StringComparer.OrdinalIgnoreCase);
@@ -376,7 +443,8 @@ public static class Kinship
 		{
 			Root = root,
 			IsFarmers = isFarmers,
-			Sides = allSides.Where(s => people.Contains(s.Elder) && people.Contains(s.Younger)).ToList(),
+			Sides = allSides.Where(s => people.Contains(s.Elder) || people.Contains(s.Younger)).ToList(),
+			Links = allLinks.Where(l => people.Contains(l.A) || people.Contains(l.B)).ToList(),
 			Moods = moods.Where(m => people.Contains(m.A) && people.Contains(m.B) && m.Bond != Bond.Strangers).ToList()
 		};
 	}

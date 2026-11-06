@@ -31,7 +31,7 @@ internal sealed class PartnersPage : ShellPage
 
 	public PartnersPage(ShellContext ctx) : base(ctx)
 	{
-		_wish = new TextBox(null, null, Game1.smallFont, AisvTheme.Text) { textLimit = SpouseStoryRules.MaxThemeLength, limitWidth = false };
+		_wish = new TextBox(null, null, Game1.smallFont, Hearth.Quill) { textLimit = SpouseStoryRules.MaxThemeLength, limitWidth = false };
 	}
 
 	public override bool CapturesKeys => _wish.Selected;
@@ -78,15 +78,15 @@ internal sealed class PartnersPage : ShellPage
 		int w = Math.Min(_view.Width - 80, 980);
 		int x = _view.X + (_view.Width - w) / 2;
 		int y = _view.Y + 16 - _scroll.Offset;
-		AisvTheme.BeginClip(b, _view);
+		Hearth.BeginClip(b, _view);
 		if (_partners.Count > 1)
 		{
 			float cx = x;
 			foreach (string p in _partners)
 			{
 				string label = Ctx.Display(p);
-				Rectangle r = new Rectangle((int)cx, y, (int)AisvTheme.Width(label, 0.85f) + 40, 44);
-				AisvTheme.SubTab(b, r, label, p == _partner, AisvTheme.Hover(r));
+				Rectangle r = new Rectangle((int)cx, y, (int)Hearth.Width(label, 0.85f) + 40, 44);
+				Hearth.PaperTab(b, r, label, p == _partner, Hearth.Hover(r));
 				string pick = p;
 				hits.Add(r, () => Select(pick), _view);
 				cx = r.Right + 8;
@@ -96,7 +96,7 @@ internal sealed class PartnersPage : ShellPage
 		y = DrawNow(b, stories, _partner, x, y, w) + 16;
 		y = DrawWish(b, stories, _partner, x, y, w, hits) + 28;
 		y = DrawHistory(b, stories, _partner, x, y, w);
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, _view, y);
 	}
 
@@ -119,7 +119,7 @@ internal sealed class PartnersPage : ShellPage
 		List<string> lines;
 		if (p != null && step != null)
 		{
-			lines = AisvTheme.WrapLines(ShellText.Clean(stories.StepStatus(p, step)), textW, 0.8f);
+			lines = Hearth.WrapLines(ShellText.Clean(stories.StepStatus(p, step)), textW, 0.8f);
 		}
 		else
 		{
@@ -127,26 +127,26 @@ internal sealed class PartnersPage : ShellPage
 				: !stories.Enabled ? Tr.Get("story.disabled", "伴侣剧情已关闭，可以在设置里打开。")
 				: Math.Max(0, stories.NextStoryDay - (Game1.Date?.TotalDays ?? 0)) is int days && days > 0 ? Tr.Get("story.nextIn", "下一段故事大约在 {{days}} 天后开始。", ("days", days))
 				: Tr.Get("story.soon", "下一段故事很快就会开始。");
-			lines = AisvTheme.WrapLines(ShellText.Clean(text), textW, 0.8f);
+			lines = Hearth.WrapLines(ShellText.Clean(text), textW, 0.8f);
 		}
-		int lh = AisvTheme.LineHeight(0.8f);
+		int lh = Hearth.LineHeight(0.8f);
 		Rectangle card = new Rectangle(x, y, w, Math.Max(132, 64 + (p != null ? 40 : 0) + lines.Count * lh + 20));
-		AisvTheme.DrawCard(b, card);
-		AisvTheme.FillRounded(b, new Rectangle(card.X + 2, card.Y + 12, 6, card.Height - 24), AisvTheme.Pink, 3);
+		Hearth.CardSlip(b, card);
+		Hearth.FillRounded(b, new Rectangle(card.X + 2, card.Y + 12, 6, card.Height - 24), Hearth.Rose, 3);
 		Kit.Avatar(b, new Rectangle(card.X + 28, card.Y + 22, 84, 84), Ctx, partner);
-		AisvTheme.Bold(b, Ctx.Display(partner), new Vector2(tx, card.Y + 18), AisvTheme.Text, 0.95f);
+		Hearth.InkBold(b, Ctx.Display(partner), new Vector2(tx, card.Y + 18), Hearth.Quill, 0.95f);
 		int ty = card.Y + 58;
 		if (p != null && step != null)
 		{
-			Rectangle chip = AisvTheme.Chip(b, new Vector2(tx, ty), Tr.Get("story.inProgress", "正在进行"), AisvTheme.PinkSoft, AisvTheme.Pink, 0.7f);
-			AisvTheme.Bold(b, AisvTheme.Truncate(ShellText.Clean("《" + p.Title + "》"), x + w - 24 - chip.Right - 8, 0.85f), new Vector2(chip.Right + 8, ty - 2), AisvTheme.Text, 0.85f);
+			Rectangle chip = Hearth.Tag(b, new Vector2(tx, ty), Tr.Get("story.inProgress", "正在进行"), Hearth.RosePale, Hearth.Rose, 0.7f);
+			Hearth.InkBold(b, Hearth.Truncate(ShellText.Clean("《" + p.Title + "》"), x + w - 24 - chip.Right - 8, 0.85f), new Vector2(chip.Right + 8, ty - 2), Hearth.Quill, 0.85f);
 			string progress = Tr.Get("story.progress", "第 {{n}}/{{total}} 步", ("n", step.Index + 1), ("total", p.Steps.Count));
-			AisvTheme.DrawText(b, progress, new Vector2(card.Right - 24 - AisvTheme.Width(progress, 0.72f), card.Y + 22), AisvTheme.TextFaint, 0.72f);
+			Hearth.Ink(b, progress, new Vector2(card.Right - 24 - Hearth.Width(progress, 0.72f), card.Y + 22), Hearth.QuillPale, 0.72f);
 			ty += 40;
 		}
 		foreach (string line in lines)
 		{
-			AisvTheme.DrawText(b, line, new Vector2(tx, ty), AisvTheme.TextMuted, 0.8f);
+			Hearth.Ink(b, line, new Vector2(tx, ty), Hearth.QuillSoft, 0.8f);
 			ty += lh;
 		}
 		return card.Bottom;
@@ -155,52 +155,52 @@ internal sealed class PartnersPage : ShellPage
 	private int DrawWish(SpriteBatch b, SpouseStoryService stories, string partner, int x, int y, int w, Hits hits)
 	{
 		Rectangle card = new Rectangle(x, y, w, 168);
-		AisvTheme.DrawCard(b, card);
-		AisvTheme.Bold(b, Tr.Get("story.wishTitle", "下一段故事，你想要什么？"), new Vector2(card.X + 24, card.Y + 18), AisvTheme.Text, 0.85f);
+		Hearth.CardSlip(b, card);
+		Hearth.InkBold(b, Tr.Get("story.wishTitle", "下一段故事，你想要什么？"), new Vector2(card.X + 24, card.Y + 18), Hearth.Quill, 0.85f);
 		string saved = stories.Theme(partner);
 		if (saved.Length > 0)
 		{
-			string note = AisvTheme.Truncate(ShellText.Clean(Tr.Get("story.wishSaved", "已经告诉TA：") + saved), w / 2f, 0.72f);
-			AisvTheme.DrawText(b, note, new Vector2(card.Right - 24 - AisvTheme.Width(note, 0.72f), card.Y + 22), AisvTheme.Gold, 0.72f);
+			string note = Hearth.Truncate(ShellText.Clean(Tr.Get("story.wishSaved", "已经告诉TA：") + saved), w / 2f, 0.72f);
+			Hearth.Ink(b, note, new Vector2(card.Right - 24 - Hearth.Width(note, 0.72f), card.Y + 22), Hearth.Amber, 0.72f);
 		}
 		const int buttonW = 150;
 		Rectangle field = new Rectangle(card.X + 24, card.Y + 62, card.Width - 48 - buttonW * 2 - 24, 48);
 		Rectangle save = new Rectangle(field.Right + 12, field.Y + 2, buttonW, 44);
 		Rectangle start = new Rectangle(save.Right + 12, field.Y + 2, buttonW, 44);
-		AisvTheme.Field(b, field, _wish.Selected);
+		Hearth.Field(b, field, _wish.Selected);
 		string text = _wish.Text ?? "";
 		Vector2 tp = new Vector2(field.X + 16, field.Center.Y - 14);
 		if (text.Length == 0 && !_wish.Selected)
 		{
-			AisvTheme.DrawText(b, Tr.Get("story.wishPlaceholder", "比如：一起去看海上的日落"), tp, AisvTheme.TextFaint, 0.85f);
+			Hearth.Ink(b, Tr.Get("story.wishPlaceholder", "比如：一起去看海上的日落"), tp, Hearth.QuillPale, 0.85f);
 		}
 		else
 		{
 			string shown = text;
-			while (shown.Length > 1 && AisvTheme.Width(shown, 0.85f) > field.Width - 32)
+			while (shown.Length > 1 && Hearth.Width(shown, 0.85f) > field.Width - 32)
 			{
 				shown = shown.Substring(1);
 			}
-			AisvTheme.DrawText(b, shown, tp, AisvTheme.Text, 0.85f);
+			Hearth.Ink(b, shown, tp, Hearth.Quill, 0.85f);
 			if (_wish.Selected && Game1.currentGameTime.TotalGameTime.TotalMilliseconds % 1000 < 550)
 			{
-				AisvTheme.Fill(b, new Rectangle((int)tp.X + (int)AisvTheme.Width(shown, 0.85f) + 2, field.Center.Y - 12, 2, 24), AisvTheme.Accent);
+				Hearth.Fill(b, new Rectangle((int)tp.X + (int)Hearth.Width(shown, 0.85f) + 2, field.Center.Y - 12, 2, 24), Hearth.Leaf);
 			}
 		}
 		hits.Add(field, () => _wish.Selected = true, _view);
 		bool hasText = text.Trim().Length > 0 && StardewModdingAPI.Context.IsMainPlayer;
-		AisvTheme.Button(b, save, Tr.Get("story.wishSave", "交给TA"), primary: false, hover: AisvTheme.Hover(save), disabled: !hasText, scale: 0.85f);
+		Hearth.PressPlate(b, save, Tr.Get("story.wishSave", "交给TA"), primary: false, hover: Hearth.Hover(save), disabled: !hasText, scale: 0.85f);
 		if (hasText)
 		{
 			hits.Add(save, SaveWish, _view);
 		}
 		bool canStart = CanStart(stories, partner);
-		AisvTheme.Button(b, start, Tr.Get("story.startNow", "现在就开始"), primary: true, hover: AisvTheme.Hover(start), disabled: !canStart, scale: 0.85f);
+		Hearth.PressPlate(b, start, Tr.Get("story.startNow", "现在就开始"), primary: true, hover: Hearth.Hover(start), disabled: !canStart, scale: 0.85f);
 		if (canStart)
 		{
 			hits.Add(start, () => StartNow(stories, partner), _view);
 		}
-		AisvTheme.DrawText(b, AisvTheme.Truncate(Tr.Get("story.wishHint", "写下你想要的，下一段故事会照这个来；也可以让TA现在就开始。"), card.Width - 48, 0.72f), new Vector2(card.X + 24, field.Bottom + 16), AisvTheme.TextFaint, 0.72f);
+		Hearth.Ink(b, Hearth.Truncate(Tr.Get("story.wishHint", "写下你想要的，下一段故事会照这个来；也可以让TA现在就开始。"), card.Width - 48, 0.72f), new Vector2(card.X + 24, field.Bottom + 16), Hearth.QuillPale, 0.72f);
 		return card.Bottom;
 	}
 
@@ -246,30 +246,30 @@ internal sealed class PartnersPage : ShellPage
 		IReadOnlyList<StoryPackage> history = stories.HistoryFor(partner);
 		if (history.Count == 0)
 		{
-			AisvTheme.DrawText(b, Tr.Get("story.historyEmpty", "还没有。"), new Vector2(x + 4, y), AisvTheme.TextMuted, 0.8f);
+			Hearth.Ink(b, Tr.Get("story.historyEmpty", "还没有。"), new Vector2(x + 4, y), Hearth.QuillSoft, 0.8f);
 			return y + 52;
 		}
-		int lh = AisvTheme.LineHeight(0.75f);
+		int lh = Hearth.LineHeight(0.75f);
 		foreach (StoryPackage p in history)
 		{
-			List<string> summary = AisvTheme.WrapLines(ShellText.Clean(p.Summary), w - 48, 0.75f).Take(3).ToList();
+			List<string> summary = Hearth.WrapLines(ShellText.Clean(p.Summary), w - 48, 0.75f).Take(3).ToList();
 			Rectangle card = new Rectangle(x, y, w, 64 + summary.Count * lh + 12);
-			AisvTheme.DrawCard(b, card);
+			Hearth.CardSlip(b, card);
 			(Color fill, Color ink) = p.State switch
 			{
-				StoryStates.Done => (AisvTheme.AccentSoft, AisvTheme.AccentDark),
-				StoryStates.Failed => (AisvTheme.PinkSoft, AisvTheme.Pink),
-				_ => (AisvTheme.Divider, AisvTheme.TextMuted)
+				StoryStates.Done => (Hearth.LeafPale, Hearth.LeafDeep),
+				StoryStates.Failed => (Hearth.RosePale, Hearth.Rose),
+				_ => (Hearth.Seam, Hearth.QuillSoft)
 			};
-			Rectangle chip = AisvTheme.Chip(b, new Vector2(card.X + 24, card.Y + 18), SpouseStoryRules.StateLabel(p.State), fill, ink, 0.68f);
-			AisvTheme.Bold(b, AisvTheme.Truncate(ShellText.Clean("《" + p.Title + "》"), w - 220, 0.85f), new Vector2(chip.Right + 10, card.Y + 16), AisvTheme.Text, 0.85f);
+			Rectangle chip = Hearth.Tag(b, new Vector2(card.X + 24, card.Y + 18), SpouseStoryRules.StateLabel(p.State), fill, ink, 0.68f);
+			Hearth.InkBold(b, Hearth.Truncate(ShellText.Clean("《" + p.Title + "》"), w - 220, 0.85f), new Vector2(chip.Right + 10, card.Y + 16), Hearth.Quill, 0.85f);
 			StardewModdingAPI.Utilities.SDate closed = StardewModdingAPI.Utilities.SDate.FromDaysSinceStart(Math.Max(1, p.ClosedDay + 1));
 			string when = ShellText.DaysAgo((Game1.Date?.TotalDays ?? 0) - p.ClosedDay, closed.Day, closed.SeasonKey);
-			AisvTheme.DrawText(b, when, new Vector2(card.Right - 24 - AisvTheme.Width(when, 0.7f), card.Y + 20), AisvTheme.TextFaint, 0.7f);
+			Hearth.Ink(b, when, new Vector2(card.Right - 24 - Hearth.Width(when, 0.7f), card.Y + 20), Hearth.QuillPale, 0.7f);
 			int ty = card.Y + 56;
 			foreach (string line in summary)
 			{
-				AisvTheme.DrawText(b, line, new Vector2(card.X + 24, ty), AisvTheme.TextMuted, 0.75f);
+				Hearth.Ink(b, line, new Vector2(card.X + 24, ty), Hearth.QuillSoft, 0.75f);
 				ty += lh;
 			}
 			y = card.Bottom + 10;

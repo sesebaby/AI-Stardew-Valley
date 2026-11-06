@@ -394,13 +394,13 @@ public sealed class ReplyMenu : IClickableMenu
 			return;
 		}
 		bool on = _outing == kind;
-		AisvTheme.Toggle(b, toggle, on);
-		AisvTheme.DrawText(b, label, new Vector2(toggle.Right + 12, toggle.Y), on ? AisvTheme.Accent : AisvTheme.TextMuted);
+		Hearth.Latch(b, toggle, on);
+		Hearth.Ink(b, label, new Vector2(toggle.Right + 12, toggle.Y), on ? Hearth.Leaf : Hearth.QuillSoft);
 		if (on)
 		{
 			string tip = kind == OutingKind.SpouseDate ? Tr.Get("reply.spouseDateTip", "这句话会当作约会邀请，去不去由对方决定") : Tr.Get("reply.inviteOutTip", "这句话会当作邀约，去不去、去哪由对方决定");
 			Vector2 size = Game1.smallFont.MeasureString(tip) * 0.8f;
-			b.DrawString(Game1.smallFont, tip, new Vector2(_reply.Bounds.Right - size.X - 4, labelY + 4), AisvTheme.Accent, 0f, Vector2.Zero, 0.8f, SpriteEffects.None, 1f);
+			b.DrawString(Game1.smallFont, tip, new Vector2(_reply.Bounds.Right - size.X - 4, labelY + 4), Hearth.Leaf, 0f, Vector2.Zero, 0.8f, SpriteEffects.None, 1f);
 		}
 	}
 
@@ -574,40 +574,41 @@ public sealed class ReplyMenu : IClickableMenu
 	public override void draw(SpriteBatch b)
 	{
 		b.Draw(Game1.fadeToBlackRect, new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height), Color.Black * 0.45f);
-		AisvTheme.Window(b, _panel);
+		Hearth.WoodFrame(b, _panel);
+		FrameDecor.DrawSmall(b, _panel);
 		DrawSpeaker(b);
 		DrawLine(b);
 		int labelY = _reply.Bounds.Y - _labelHeight;
-		AisvTheme.DrawText(b, Tr.Get("reply.label", "你的回应"), new Vector2(_reply.Bounds.X + 4, labelY), AisvTheme.TextMuted);
+		Hearth.Ink(b, Tr.Get("reply.label", "你的回应"), new Vector2(_reply.Bounds.X + 4, labelY), Hearth.QuillSoft);
 		_reply.Draw(b);
 		DrawCounter(b, _reply, MaxReplyChars);
 		if (_showAction)
 		{
 			string actionLabel = _outing != null ? Tr.Get("reply.actionDuringOuting", "约出去的时候这一栏不用填") : Tr.Get("reply.actionLabel", "想一起做点什么（可选）");
-			AisvTheme.DrawText(b, actionLabel, new Vector2(_action.Bounds.X + 4, _action.Bounds.Y - _labelHeight), _outing != null ? AisvTheme.TextFaint : AisvTheme.TextMuted);
+			Hearth.Ink(b, actionLabel, new Vector2(_action.Bounds.X + 4, _action.Bounds.Y - _labelHeight), _outing != null ? Hearth.QuillPale : Hearth.QuillSoft);
 			_action.Draw(b);
 			DrawCounter(b, _action, MaxActionChars);
 		}
 		else if (_inviteLabel != null)
 		{
-			AisvTheme.Toggle(b, _inviteToggle, _inviting);
-			AisvTheme.DrawText(b, _inviteLabel, new Vector2(_inviteToggle.Right + 12, _inviteToggle.Y), AisvTheme.Text);
+			Hearth.Latch(b, _inviteToggle, _inviting);
+			Hearth.Ink(b, _inviteLabel, new Vector2(_inviteToggle.Right + 12, _inviteToggle.Y), Hearth.Quill);
 			if (!string.IsNullOrWhiteSpace(_inviteTip))
 			{
-				AisvTheme.DrawText(b, _inviteTip, new Vector2(_inviteToggle.Right + 12 + Game1.smallFont.MeasureString(_inviteLabel).X + 20, _inviteToggle.Y), AisvTheme.TextMuted);
+				Hearth.Ink(b, _inviteTip, new Vector2(_inviteToggle.Right + 12 + Game1.smallFont.MeasureString(_inviteLabel).X + 20, _inviteToggle.Y), Hearth.QuillSoft);
 			}
 		}
-		AisvTheme.Toggle(b, _secretToggle, _keepSecret);
-		AisvTheme.DrawText(b, Tr.Get("reply.keepSecret", "保密"), new Vector2(_secretToggle.Right + 12, _secretToggle.Y), AisvTheme.TextMuted);
+		Hearth.Latch(b, _secretToggle, _keepSecret);
+		Hearth.Ink(b, Tr.Get("reply.keepSecret", "保密"), new Vector2(_secretToggle.Right + 12, _secretToggle.Y), Hearth.QuillSoft);
 		if (_proposalKind != null)
 		{
-			AisvTheme.Toggle(b, _proposalToggle, _proposing);
-			AisvTheme.DrawText(b, ProposalLabel, new Vector2(_proposalToggle.Right + 12, _proposalToggle.Y), _proposing ? AisvTheme.Accent : AisvTheme.TextMuted);
+			Hearth.Latch(b, _proposalToggle, _proposing);
+			Hearth.Ink(b, ProposalLabel, new Vector2(_proposalToggle.Right + 12, _proposalToggle.Y), _proposing ? Hearth.Leaf : Hearth.QuillSoft);
 			if (_proposing)
 			{
 				string tip = _proposalKind == ProposalKind.Marriage ? Tr.Get("reply.proposeMarriageTip", "这句话会当作求婚说出口，答不答应由对方决定") : Tr.Get("reply.proposeDatingTip", "这句话会当作表白说出口，答不答应由对方决定");
 				Vector2 size = Game1.smallFont.MeasureString(tip) * 0.8f;
-				b.DrawString(Game1.smallFont, tip, new Vector2(_reply.Bounds.Right - size.X - 4, labelY + 4), AisvTheme.Accent, 0f, Vector2.Zero, 0.8f, SpriteEffects.None, 1f);
+				b.DrawString(Game1.smallFont, tip, new Vector2(_reply.Bounds.Right - size.X - 4, labelY + 4), Hearth.Leaf, 0f, Vector2.Zero, 0.8f, SpriteEffects.None, 1f);
 			}
 		}
 		DrawOutingToggle(b, _outings.Invite, _inviteOutToggle, OutingKind.Invite, InviteOutLabel, labelY);
@@ -617,33 +618,33 @@ public sealed class ReplyMenu : IClickableMenu
 		if (_errandHit != Rectangle.Empty && !Locked && !pillsHidden)
 		{
 			bool hover = _errandHit.Contains(mx, my);
-			AisvTheme.Bordered(b, _errandHit, hover ? AisvTheme.GoldSoft : AisvTheme.Card, hover ? AisvTheme.Gold : AisvTheme.CardBorder, 20);
-			AisvTheme.TextCentered(b, ErrandLabel, _errandHit, hover ? AisvTheme.Gold : AisvTheme.TextMuted, 0.8f);
+			Hearth.Bordered(b, _errandHit, hover ? Hearth.AmberPale : Hearth.Slip, hover ? Hearth.Amber : Hearth.SlipEdge, 20);
+			Hearth.InkMiddle(b, ErrandLabel, _errandHit, hover ? Hearth.Amber : Hearth.QuillSoft, 0.8f);
 		}
 		if (_loanHit != Rectangle.Empty && !Locked && !pillsHidden)
 		{
 			bool hover = _loanHit.Contains(mx, my);
-			AisvTheme.Bordered(b, _loanHit, hover ? AisvTheme.GoldSoft : AisvTheme.Card, hover ? AisvTheme.Gold : AisvTheme.CardBorder, 20);
-			AisvTheme.TextCentered(b, LoanLabel, _loanHit, hover ? AisvTheme.Gold : AisvTheme.TextMuted, 0.8f);
+			Hearth.Bordered(b, _loanHit, hover ? Hearth.AmberPale : Hearth.Slip, hover ? Hearth.Amber : Hearth.SlipEdge, 20);
+			Hearth.InkMiddle(b, LoanLabel, _loanHit, hover ? Hearth.Amber : Hearth.QuillSoft, 0.8f);
 		}
 		if (_failure != null)
 		{
 			DrawFailure(b);
-			AisvTheme.Button(b, _closeButton, Tr.Get("reply.end", "结束"), hover: _closeButton.Contains(mx, my));
-			AisvTheme.Button(b, _skipButton, Tr.Get("reply.edit", "改一改"), hover: _skipButton.Contains(mx, my));
-			AisvTheme.Button(b, _sendButton, Tr.Get("reply.retry", "重发"), primary: true, hover: _sendButton.Contains(mx, my));
+			Hearth.PressPlate(b, _closeButton, Tr.Get("reply.end", "结束"), hover: _closeButton.Contains(mx, my));
+			Hearth.PressPlate(b, _skipButton, Tr.Get("reply.edit", "改一改"), hover: _skipButton.Contains(mx, my));
+			Hearth.PressPlate(b, _sendButton, Tr.Get("reply.retry", "重发"), primary: true, hover: _sendButton.Contains(mx, my));
 		}
 		else if (_processing)
 		{
 			string dots = new string('.', (int)(_processingClock.Elapsed.TotalSeconds * 2) % 4);
-			AisvTheme.DrawText(b, Tr.Get("reply.thinking", "{{npc}}在想", ("npc", _displayName)) + dots, new Vector2(_closeButton.Right + 20, _sendButton.Y + 14), AisvTheme.Accent);
-			AisvTheme.Button(b, _closeButton, Tr.Get("reply.stopWaiting", "不等了"), hover: _closeButton.Contains(mx, my), disabled: _processingClock.Elapsed < CancelGrace);
+			Hearth.Ink(b, Tr.Get("reply.thinking", "{{npc}}在想", ("npc", _displayName)) + dots, new Vector2(_closeButton.Right + 20, _sendButton.Y + 14), Hearth.Leaf);
+			Hearth.PressPlate(b, _closeButton, Tr.Get("reply.stopWaiting", "不等了"), hover: _closeButton.Contains(mx, my), disabled: _processingClock.Elapsed < CancelGrace);
 		}
 		else
 		{
-			AisvTheme.Button(b, _closeButton, Tr.Get("reply.close", "先不说了"), hover: _closeButton.Contains(mx, my));
-			AisvTheme.Button(b, _skipButton, _multiTurn ? Tr.Get("reply.finish", "聊到这") : Tr.Get("reply.skip", "不回了"), hover: _skipButton.Contains(mx, my));
-			AisvTheme.Button(b, _sendButton, Tr.Get("reply.send", "发送"), primary: true, hover: _sendButton.Contains(mx, my), disabled: _reply.Text.Trim().Length == 0);
+			Hearth.PressPlate(b, _closeButton, Tr.Get("reply.close", "先不说了"), hover: _closeButton.Contains(mx, my));
+			Hearth.PressPlate(b, _skipButton, _multiTurn ? Tr.Get("reply.finish", "聊到这") : Tr.Get("reply.skip", "不回了"), hover: _skipButton.Contains(mx, my));
+			Hearth.PressPlate(b, _sendButton, Tr.Get("reply.send", "发送"), primary: true, hover: _sendButton.Contains(mx, my), disabled: _reply.Text.Trim().Length == 0);
 		}
 		drawMouse(b);
 	}
@@ -654,13 +655,13 @@ public sealed class ReplyMenu : IClickableMenu
 		const float scale = 0.7f;
 		string text = area.Text.Length + "/" + max;
 		Vector2 size = Game1.smallFont.MeasureString(text) * scale;
-		b.DrawString(Game1.smallFont, text, new Vector2(area.Bounds.Right - size.X - 12f, area.Bounds.Bottom - size.Y - 6f), area.Text.Length >= max ? AisvTheme.Danger : AisvTheme.TextFaint, 0f, Vector2.Zero, scale, SpriteEffects.None, 1f);
+		b.DrawString(Game1.smallFont, text, new Vector2(area.Bounds.Right - size.X - 12f, area.Bounds.Bottom - size.Y - 6f), area.Text.Length >= max ? Hearth.Berry : Hearth.QuillPale, 0f, Vector2.Zero, scale, SpriteEffects.None, 1f);
 	}
 
 	private void DrawSpeaker(SpriteBatch b)
 	{
 		Rectangle box = new Rectangle(_speakerLeft + Math.Max(0, 128 - _portraitSize) / 2, _lineCard.Y, _portraitSize, _portraitSize);
-		AisvTheme.DrawCard(b, box);
+		Hearth.CardSlip(b, box);
 		Texture2D? portrait = PortraitOverrides.For(_npc.Name, DisplayedEmotion) ?? SafePortrait();
 		if (portrait != null)
 		{
@@ -669,35 +670,35 @@ public sealed class ReplyMenu : IClickableMenu
 			index = index < tiles ? index : 0;
 			b.Draw(portrait, new Rectangle(box.X + 2, box.Y + 2, box.Width - 4, box.Height - 4), Game1.getSourceRectForStandardTileSheet(portrait, index, 64, 64), Color.White);
 		}
-		AisvTheme.TextCentered(b, _displayName, new Rectangle(box.X - 10, box.Bottom + 2, box.Width + 20, 32), AisvTheme.Text);
+		Hearth.InkMiddle(b, _displayName, new Rectangle(box.X - 10, box.Bottom + 2, box.Width + 20, 32), Hearth.Quill);
 		// 每排 7 颗，超过 7 心时再画一排（最多 14 心）。
-		AisvTheme.Hearts(b, new Vector2(_speakerLeft + 2, box.Bottom + 34), Math.Min(_hearts, 7), 7);
+		Hearth.Hearts(b, new Vector2(_speakerLeft + 2, box.Bottom + 34), Math.Min(_hearts, 7), 7);
 		if (_hearts > 7)
 		{
-			AisvTheme.Hearts(b, new Vector2(_speakerLeft + 2, box.Bottom + 48), Math.Min(_hearts - 7, 7), 7);
+			Hearth.Hearts(b, new Vector2(_speakerLeft + 2, box.Bottom + 48), Math.Min(_hearts - 7, 7), 7);
 		}
 	}
 
 	private void DrawLine(SpriteBatch b)
 	{
-		AisvTheme.DrawCard(b, _lineCard);
-		string text = AisvTheme.Wrap(_shownLine, _lineCard.Width - 32);
+		Hearth.CardSlip(b, _lineCard);
+		string text = Hearth.Wrap(_shownLine, _lineCard.Width - 32);
 		string[] lines = text.Split('\n');
-		int lh = AisvTheme.LineHeight();
+		int lh = Hearth.LineHeight();
 		int max = Math.Max(1, (_lineCard.Height - 24) / lh);
 		// 放不下时用滚轮看后面的。
 		_lineScroll = Math.Clamp(_lineScroll, 0, Math.Max(0, lines.Length - max));
 		for (int i = 0; i < max && i + _lineScroll < lines.Length; i++)
 		{
-			b.DrawString(Game1.smallFont, lines[i + _lineScroll], new Vector2(_lineCard.X + 16, _lineCard.Y + 12 + i * lh), AisvTheme.Text);
+			b.DrawString(Game1.smallFont, lines[i + _lineScroll], new Vector2(_lineCard.X + 16, _lineCard.Y + 12 + i * lh), Hearth.Quill);
 		}
 		if (lines.Length > max)
 		{
 			Rectangle track = new Rectangle(_lineCard.Right - 12, _lineCard.Y + 12, 4, _lineCard.Height - 24);
-			AisvTheme.Fill(b, track, AisvTheme.Divider);
+			Hearth.Fill(b, track, Hearth.Seam);
 			int thumb = Math.Max(16, track.Height * max / lines.Length);
 			int top = track.Y + (track.Height - thumb) * _lineScroll / Math.Max(1, lines.Length - max);
-			AisvTheme.Fill(b, new Rectangle(track.X, top, track.Width, thumb), AisvTheme.TextFaint);
+			Hearth.Fill(b, new Rectangle(track.X, top, track.Width, thumb), Hearth.QuillPale);
 		}
 	}
 
@@ -705,16 +706,16 @@ public sealed class ReplyMenu : IClickableMenu
 	{
 		// 盖住两个输入框：原因可能有好几行（比如网络错误），只盖回复框放不下。
 		Rectangle r = new Rectangle(_reply.Bounds.X, _reply.Bounds.Y, _reply.Bounds.Width, _action.Bounds.Bottom - _reply.Bounds.Y);
-		AisvTheme.Bordered(b, r, new Color(255, 246, 240), AisvTheme.Warn);
+		Hearth.Bordered(b, r, new Color(255, 246, 240), Hearth.Rust);
 		string title = _failureTitle ?? Tr.Get("reply.failedTitle", "这次没有回应");
-		AisvTheme.DrawText(b, title, new Vector2(r.X + 16, r.Y + 10), AisvTheme.Danger);
-		string[] lines = AisvTheme.Wrap((_failure ?? "") + "\n" + Tr.Get("reply.kept", "你写的话还在，可以重发。"), r.Width - 32).Split('\n');
-		int lh = AisvTheme.LineHeight();
+		Hearth.Ink(b, title, new Vector2(r.X + 16, r.Y + 10), Hearth.Berry);
+		string[] lines = Hearth.Wrap((_failure ?? "") + "\n" + Tr.Get("reply.kept", "你写的话还在，可以重发。"), r.Width - 32).Split('\n');
+		int lh = Hearth.LineHeight();
 		int top = r.Y + 10 + lh + 4;
 		int max = Math.Max(1, (r.Bottom - 8 - top) / lh);
 		for (int i = 0; i < max && i < lines.Length; i++)
 		{
-			b.DrawString(Game1.smallFont, lines[i], new Vector2(r.X + 16, top + i * lh), AisvTheme.Text);
+			b.DrawString(Game1.smallFont, lines[i], new Vector2(r.X + 16, top + i * lh), Hearth.Quill);
 		}
 	}
 

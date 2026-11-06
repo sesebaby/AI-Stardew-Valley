@@ -62,10 +62,10 @@ internal static class MoodText
 	/// <summary>原因前面的小圆点颜色。</summary>
 	public static Color CauseColor(MoodCause c) => c switch
 	{
-		MoodCause.Birthday => AisvTheme.Pink,
-		MoodCause.LikesWeather or MoodCause.LovesSeason or MoodCause.LikesDay or MoodCause.GoodEvent => AisvTheme.Accent,
-		MoodCause.DislikesWeather or MoodCause.DislikesSeason or MoodCause.DislikesDay or MoodCause.BadEvent => AisvTheme.Warn,
-		_ => AisvTheme.TextFaint
+		MoodCause.Birthday => Hearth.Rose,
+		MoodCause.LikesWeather or MoodCause.LovesSeason or MoodCause.LikesDay or MoodCause.GoodEvent => Hearth.Leaf,
+		MoodCause.DislikesWeather or MoodCause.DislikesSeason or MoodCause.DislikesDay or MoodCause.BadEvent => Hearth.Rust,
+		_ => Hearth.QuillPale
 	};
 
 	/// <summary>天气的底色（横幅和卡片角上用）。</summary>
@@ -84,7 +84,7 @@ internal static class MoodText
 	public static Color ScoreColor(int score)
 	{
 		float t = MoodForecast.Fraction(score);
-		return t < 0.5f ? Color.Lerp(new Color(120, 140, 186), new Color(196, 186, 150), t * 2f) : Color.Lerp(new Color(196, 186, 150), AisvTheme.Gold, (t - 0.5f) * 2f);
+		return t < 0.5f ? Color.Lerp(new Color(120, 140, 186), new Color(196, 186, 150), t * 2f) : Color.Lerp(new Color(196, 186, 150), Hearth.Amber, (t - 0.5f) * 2f);
 	}
 }
 
@@ -120,7 +120,7 @@ internal sealed class MoodForecastPage : ShellPage
 
 	public override void Scroll(int direction)
 	{
-		if (AisvTheme.Hover(_detail))
+		if (Hearth.Hover(_detail))
 		{
 			_detailScroll.Wheel(direction);
 		}
@@ -152,6 +152,24 @@ internal sealed class MoodForecastPage : ShellPage
 		Rectangle banner = new Rectangle(area.X + 20, area.Y + 18, area.Width - 40, 140);
 		Banner(b, banner);
 		int top = banner.Bottom + 20;
+		if (Flip.Applies(area))
+		{
+			_flip.Draw(b, new Rectangle(area.X, top, area.Width, area.Bottom - top), hits, r =>
+			{
+				_detail = Rectangle.Empty;
+				_grid = new Rectangle(r.X + 20, r.Y, r.Width - 40, r.Height - 10);
+				Grid(b, hits);
+			}, r =>
+			{
+				_grid = Rectangle.Empty;
+				_detail = new Rectangle(r.X + 20, r.Y, r.Width - 40, r.Height - 10);
+				if (_entries.FirstOrDefault(e => Same(e.Npc, _selected)) is MoodEntry chosen)
+				{
+					Detail(b, _detail, chosen);
+				}
+			});
+			return;
+		}
 		int detailW = Math.Clamp(area.Width * 2 / 5, 380, 560);
 		Rectangle detail = _detail = new Rectangle(area.Right - 20 - detailW, top, detailW, area.Bottom - 18 - top);
 		_grid = new Rectangle(area.X + 20, top, detail.X - 20 - (area.X + 20), area.Bottom - 10 - top);
@@ -163,32 +181,36 @@ internal sealed class MoodForecastPage : ShellPage
 		}
 	}
 
+	private readonly Flip _flip = new Flip();
+
+	public override bool StepBack() => _flip.StepBack();
+
 	private void Banner(SpriteBatch b, Rectangle r)
 	{
 		MoodSky village = MoodForecast.Village(_entries.Select(e => e.Mood.Level));
 		(Color topColor, Color bottomColor) = MoodText.SkyColors(village);
-		AisvTheme.FillRounded(b, r, bottomColor, 16);
-		AisvTheme.FillRounded(b, new Rectangle(r.X, r.Y, r.Width, r.Height / 2 + 8), topColor, 16);
-		AisvTheme.Fill(b, new Rectangle(r.X, r.Y + r.Height / 2 - 8, r.Width, 16), Color.Lerp(topColor, bottomColor, 0.5f));
+		Hearth.FillRounded(b, r, bottomColor, 16);
+		Hearth.FillRounded(b, new Rectangle(r.X, r.Y, r.Width, r.Height / 2 + 8), topColor, 16);
+		Hearth.Fill(b, new Rectangle(r.X, r.Y + r.Height / 2 - 8, r.Width, 16), Color.Lerp(topColor, bottomColor, 0.5f));
 		AppIcons.Sky(village).Draw(b, r.X + 28, r.Center.Y - 48, 6);
 		int tx = r.X + 28 + 96 + 28;
-		AisvTheme.DrawText(b, Tr.Get("mood.villageLabel", "全村今天"), new Vector2(tx, r.Y + 22), AisvTheme.TextMuted, 0.78f);
-		AisvTheme.Bold(b, MoodText.SkyName(village), new Vector2(tx, r.Y + 48), AisvTheme.Text, 1.5f);
-		AisvTheme.DrawText(b, MoodText.VillageLine(village), new Vector2(tx, r.Y + 104), AisvTheme.TextMuted, 0.78f);
+		Hearth.Ink(b, Tr.Get("mood.villageLabel", "全村今天"), new Vector2(tx, r.Y + 22), Hearth.QuillSoft, 0.78f);
+		Hearth.InkBold(b, MoodText.SkyName(village), new Vector2(tx, r.Y + 48), Hearth.Quill, 1.5f);
+		Hearth.Ink(b, MoodText.VillageLine(village), new Vector2(tx, r.Y + 104), Hearth.QuillSoft, 0.78f);
 		// 右边：每种天气几个人。
 		int x = r.Right - 24;
 		foreach (IGrouping<MoodSky, MoodEntry> g in _entries.GroupBy(e => e.Sky).OrderByDescending(g => g.Key))
 		{
 			string count = g.Count().ToString();
-			int pw = 40 + 8 + (int)AisvTheme.Width(count, 0.85f) + 16;
+			int pw = 40 + 8 + (int)Hearth.Width(count, 0.85f) + 16;
 			Rectangle pill = new Rectangle(x - pw, r.Center.Y - 26, pw, 52);
 			if (pill.X < tx + 420)
 			{
 				break;
 			}
-			AisvTheme.FillRounded(b, pill, Color.White * 0.6f, 26);
+			Hearth.FillRounded(b, pill, Color.White * 0.6f, 26);
 			AppIcons.Sky(g.Key).Draw(b, pill.X + 10, pill.Center.Y - 16, 2);
-			AisvTheme.Bold(b, count, new Vector2(pill.X + 50, pill.Center.Y - 14), AisvTheme.Text, 0.85f);
+			Hearth.InkBold(b, count, new Vector2(pill.X + 50, pill.Center.Y - 14), Hearth.Quill, 0.85f);
 			x = pill.X - 10;
 		}
 	}
@@ -198,7 +220,7 @@ internal sealed class MoodForecastPage : ShellPage
 		const int gap = 14, h = 118;
 		int cols = Math.Max(1, (_grid.Width - 12 + gap) / (250 + gap));
 		int cw = (_grid.Width - 12 - gap * (cols - 1)) / cols;
-		AisvTheme.BeginClip(b, _grid);
+		Hearth.BeginClip(b, _grid);
 		int y0 = _grid.Y - _scroll.Offset;
 		for (int i = 0; i < _entries.Count; i++)
 		{
@@ -208,78 +230,78 @@ internal sealed class MoodForecastPage : ShellPage
 				continue;
 			}
 			MoodEntry e = _entries[i];
-			Card(b, r, e, Same(e.Npc, _selected), AisvTheme.Hover(r, _grid));
+			Card(b, r, e, Same(e.Npc, _selected), Hearth.Hover(r, _grid));
 			hits.Add(r, () => Select(e.Npc), _grid);
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, _grid, y0 + (_entries.Count + cols - 1) / cols * (h + gap), 4);
 	}
 
 	private void Card(SpriteBatch b, Rectangle r, MoodEntry e, bool selected, bool hover)
 	{
-		Color border = selected ? AisvTheme.Accent : e.Birthday ? AisvTheme.Pink : hover ? AisvTheme.TextFaint : AisvTheme.CardBorder;
-		AisvTheme.Bordered(b, r, selected ? AisvTheme.SelectedRow : AisvTheme.Card, border, 12, selected ? 3 : 2);
+		Color border = selected ? Hearth.Leaf : e.Birthday ? Hearth.Rose : hover ? Hearth.QuillPale : Hearth.SlipEdge;
+		Hearth.Bordered(b, r, selected ? Hearth.Honey : Hearth.Slip, border, 12, selected ? 3 : 2);
 		(Color skyTop, _) = MoodText.SkyColors(e.Sky);
 		Rectangle corner = new Rectangle(r.Right - 66, r.Y + 10, 56, 56);
-		AisvTheme.FillRounded(b, corner, skyTop, 14);
+		Hearth.FillRounded(b, corner, skyTop, 14);
 		AppIcons.Sky(e.Sky).Draw(b, corner.X + 4, corner.Y + 4, 3);
 		Rectangle avatar = new Rectangle(r.X + 14, r.Y + 14, 56, 56);
 		Kit.Avatar(b, avatar, Ctx, e.Npc);
 		int tx = avatar.Right + 12;
-		string name = AisvTheme.Truncate(e.Name, corner.X - tx - 6, 0.85f);
-		AisvTheme.Bold(b, name, new Vector2(tx, r.Y + 16), AisvTheme.Text, 0.85f);
+		string name = Hearth.Truncate(e.Name, corner.X - tx - 6, 0.85f);
+		Hearth.InkBold(b, name, new Vector2(tx, r.Y + 16), Hearth.Quill, 0.85f);
 		string word = e.Birthday ? Tr.Get("mood.birthday", "过生日") : MoodBook.MoodWord(e.Mood.Temper);
-		AisvTheme.DrawText(b, word + " · " + MoodText.SkyName(e.Sky), new Vector2(tx, r.Y + 46), e.Birthday ? AisvTheme.Pink : AisvTheme.TextMuted, 0.7f);
+		Hearth.Ink(b, word + " · " + MoodText.SkyName(e.Sky), new Vector2(tx, r.Y + 46), e.Birthday ? Hearth.Rose : Hearth.QuillSoft, 0.7f);
 		ScoreBar(b, new Rectangle(r.X + 14, r.Bottom - 30, r.Width - 28, 12), e.Mood.Level);
 	}
 
 	private static void ScoreBar(SpriteBatch b, Rectangle r, int score)
 	{
-		AisvTheme.FillRounded(b, r, AisvTheme.Divider, r.Height / 2);
+		Hearth.FillRounded(b, r, Hearth.Seam, r.Height / 2);
 		int fw = Math.Max(r.Height, (int)(r.Width * MoodForecast.Fraction(score)));
-		AisvTheme.FillRounded(b, new Rectangle(r.X, r.Y, fw, r.Height), MoodText.ScoreColor(score), r.Height / 2);
-		AisvTheme.Fill(b, new Rectangle(r.Center.X - 1, r.Y - 3, 2, r.Height + 6), AisvTheme.TextFaint * 0.5f);
+		Hearth.FillRounded(b, new Rectangle(r.X, r.Y, fw, r.Height), MoodText.ScoreColor(score), r.Height / 2);
+		Hearth.Fill(b, new Rectangle(r.Center.X - 1, r.Y - 3, 2, r.Height + 6), Hearth.QuillPale * 0.5f);
 	}
 
 	private void Detail(SpriteBatch b, Rectangle r, MoodEntry e)
 	{
-		AisvTheme.DrawCard(b, r);
+		Hearth.CardSlip(b, r);
 		(Color skyTop, _) = MoodText.SkyColors(e.Sky);
 		Rectangle head = new Rectangle(r.X + 2, r.Y + 2, r.Width - 4, 124);
-		AisvTheme.FillRounded(b, head, skyTop, 12);
-		AisvTheme.Fill(b, new Rectangle(head.X, head.Bottom - 14, head.Width, 14), skyTop);
+		Hearth.FillRounded(b, head, skyTop, 12);
+		Hearth.Fill(b, new Rectangle(head.X, head.Bottom - 14, head.Width, 14), skyTop);
 		AppIcons.Sky(e.Sky).Draw(b, head.Right - 24 - 80, head.Y + 26, 5);
 		Rectangle avatar = new Rectangle(r.X + 24, r.Y + 26, 80, 80);
 		Kit.Avatar(b, avatar, Ctx, e.Npc);
 		int tx = avatar.Right + 18;
-		AisvTheme.Bold(b, AisvTheme.Truncate(e.Name, head.Right - 120 - tx, 1.1f), new Vector2(tx, r.Y + 30), AisvTheme.Text, 1.1f);
-		AisvTheme.Bold(b, MoodText.SkyName(e.Sky), new Vector2(tx, r.Y + 72), AisvTheme.AccentDark, 0.85f);
-		AisvTheme.DrawText(b, MoodBook.MoodWord(e.Mood.Temper), new Vector2(tx + AisvTheme.Width(MoodText.SkyName(e.Sky), 0.85f) + 14, r.Y + 74), AisvTheme.TextMuted, 0.75f);
+		Hearth.InkBold(b, Hearth.Truncate(e.Name, head.Right - 120 - tx, 1.1f), new Vector2(tx, r.Y + 30), Hearth.Quill, 1.1f);
+		Hearth.InkBold(b, MoodText.SkyName(e.Sky), new Vector2(tx, r.Y + 72), Hearth.LeafDeep, 0.85f);
+		Hearth.Ink(b, MoodBook.MoodWord(e.Mood.Temper), new Vector2(tx + Hearth.Width(MoodText.SkyName(e.Sky), 0.85f) + 14, r.Y + 74), Hearth.QuillSoft, 0.75f);
 		int x = r.X + 24, w = r.Width - 48;
 		Rectangle content = new Rectangle(r.X, head.Bottom, r.Width, r.Bottom - head.Bottom - 4);
 		int y = head.Bottom + 16 - _detailScroll.Offset;
-		AisvTheme.BeginClip(b, content);
-		foreach (string line in AisvTheme.WrapLines(MoodText.SkyLine(e.Sky), w, 0.8f))
+		Hearth.BeginClip(b, content);
+		foreach (string line in Hearth.WrapLines(MoodText.SkyLine(e.Sky), w, 0.8f))
 		{
-			AisvTheme.DrawText(b, line, new Vector2(x, y), AisvTheme.Text, 0.8f);
-			y += AisvTheme.LineHeight(0.8f);
+			Hearth.Ink(b, line, new Vector2(x, y), Hearth.Quill, 0.8f);
+			y += Hearth.LineHeight(0.8f);
 		}
 		y += 14;
 		ScoreBar(b, new Rectangle(x, y, w, 14), e.Mood.Level);
 		y += 22;
-		AisvTheme.DrawText(b, Tr.Get("mood.low", "闷闷不乐"), new Vector2(x, y), AisvTheme.TextFaint, 0.62f);
+		Hearth.Ink(b, Tr.Get("mood.low", "闷闷不乐"), new Vector2(x, y), Hearth.QuillPale, 0.62f);
 		string high = Tr.Get("mood.high", "神采飞扬");
-		AisvTheme.DrawText(b, high, new Vector2(x + w - AisvTheme.Width(high, 0.62f), y), AisvTheme.TextFaint, 0.62f);
+		Hearth.Ink(b, high, new Vector2(x + w - Hearth.Width(high, 0.62f), y), Hearth.QuillPale, 0.62f);
 		y += 36;
 		Kit.SectionTitle(b, Tr.Get("mood.why", "为什么"), x, y);
 		y += 36;
 		foreach (MoodCauseItem c in e.Causes)
 		{
-			AisvTheme.FillRounded(b, new Rectangle(x + 2, y + 9, 10, 10), MoodText.CauseColor(c.Kind), 5);
-			foreach (string line in AisvTheme.WrapLines(c.Text, w - 24, 0.75f))
+			Hearth.FillRounded(b, new Rectangle(x + 2, y + 9, 10, 10), MoodText.CauseColor(c.Kind), 5);
+			foreach (string line in Hearth.WrapLines(c.Text, w - 24, 0.75f))
 			{
-				AisvTheme.DrawText(b, line, new Vector2(x + 22, y), AisvTheme.Text, 0.75f);
-				y += AisvTheme.LineHeight(0.75f);
+				Hearth.Ink(b, line, new Vector2(x + 22, y), Hearth.Quill, 0.75f);
+				y += Hearth.LineHeight(0.75f);
 			}
 			y += 4;
 		}
@@ -288,19 +310,19 @@ internal sealed class MoodForecastPage : ShellPage
 		y += 36;
 		foreach (MoodAdvice a in e.Advice)
 		{
-			List<string> lines = AisvTheme.WrapLines(MoodText.Advice(a), w - 52, 0.72f);
-			Rectangle tip = new Rectangle(x, y, w, lines.Count * AisvTheme.LineHeight(0.72f) + 22);
-			AisvTheme.FillRounded(b, tip, a == MoodAdvice.BirthdayGift ? AisvTheme.PinkSoft : AisvTheme.GoldSoft, 10);
-			AisvTheme.FillRounded(b, new Rectangle(tip.X + 14, tip.Y + 14, 14, 14), a == MoodAdvice.BirthdayGift ? AisvTheme.Pink : AisvTheme.Gold, 7);
+			List<string> lines = Hearth.WrapLines(MoodText.Advice(a), w - 52, 0.72f);
+			Rectangle tip = new Rectangle(x, y, w, lines.Count * Hearth.LineHeight(0.72f) + 22);
+			Hearth.FillRounded(b, tip, a == MoodAdvice.BirthdayGift ? Hearth.RosePale : Hearth.AmberPale, 10);
+			Hearth.FillRounded(b, new Rectangle(tip.X + 14, tip.Y + 14, 14, 14), a == MoodAdvice.BirthdayGift ? Hearth.Rose : Hearth.Amber, 7);
 			int ly = tip.Y + 11;
 			foreach (string line in lines)
 			{
-				AisvTheme.DrawText(b, line, new Vector2(tip.X + 40, ly), AisvTheme.Text, 0.72f);
-				ly += AisvTheme.LineHeight(0.72f);
+				Hearth.Ink(b, line, new Vector2(tip.X + 40, ly), Hearth.Quill, 0.72f);
+				ly += Hearth.LineHeight(0.72f);
 			}
 			y = tip.Bottom + 10;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_detailScroll.Finish(b, content, y + 10, 8);
 	}
 

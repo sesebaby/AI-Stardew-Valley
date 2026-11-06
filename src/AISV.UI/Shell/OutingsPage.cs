@@ -56,18 +56,18 @@ internal sealed class OutingsPage : ShellPage
 		Rectangle header = new Rectangle(area.X, area.Y, area.Width, 64);
 		Kit.Header(b, header, Tr.Get("shell.outings.title", "出游"), _waiting.Count > 0 ? Tr.Get("shell.outings.count", "约好了 {{n}} 次", ("n", _waiting.Count)) : "", null, hits, null);
 		string today = ShellText.TopLine();
-		AisvTheme.DrawText(b, today, new Vector2(header.Right - 24 - AisvTheme.Width(today, 0.8f), header.Y + 22), AisvTheme.TextFaint, 0.8f);
+		Hearth.Ink(b, today, new Vector2(header.Right - 24 - Hearth.Width(today, 0.8f), header.Y + 22), Hearth.QuillPale, 0.8f);
 		_view = new Rectangle(area.X, header.Bottom, area.Width, area.Bottom - header.Bottom);
 		int w = Math.Min(_view.Width - 80, 980);
 		int x = _view.X + (_view.Width - w) / 2;
 		int y = _view.Y + 16 - _scroll.Offset;
-		AisvTheme.BeginClip(b, _view);
+		Hearth.BeginClip(b, _view);
 		Kit.SectionTitle(b, Tr.Get("shell.outings.waiting", "约好的"), x, y);
 		y += 40;
 		if (_waiting.Count == 0)
 		{
 			Rectangle empty = new Rectangle(x, y, w, 104);
-			AisvTheme.DrawCard(b, empty);
+			Hearth.CardSlip(b, empty);
 			Kit.Empty(b, new Rectangle(x, y + 14, w, 80), Tr.Get("shell.outings.none", "还没有约好的出游。"), Tr.Get("shell.outings.noneHint", "和村民聊天时打开回复框底下的“约出去”，对方答应了就会出现在这里。"));
 			y = empty.Bottom + 28;
 		}
@@ -81,7 +81,7 @@ internal sealed class OutingsPage : ShellPage
 		}
 		y = DrawPlaces(b, Tr.Get("shell.outings.places", "能去的地方"), Tr.Get("shell.outings.placesNone", "现在没有能去的地方。"), _places, x, y, w);
 		y = DrawPlaces(b, Tr.Get("shell.outings.datePlaces", "和配偶约会能去的地方"), Tr.Get("shell.outings.datePlacesNone", "现在没有能约会的地方。"), _datePlaces, x, y, w);
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, _view, y);
 	}
 
@@ -90,29 +90,29 @@ internal sealed class OutingsPage : ShellPage
 		int today = GameState.Today.TotalDays;
 		int left = Math.Max(0, r.AskedOn + OutingBook.ExpiryDays - today);
 		bool late = today - r.AskedOn >= 5;
-		Color accent = !late ? AisvTheme.Accent : left == 0 ? AisvTheme.Danger : AisvTheme.Warn;
-		AisvTheme.DrawCard(b, card);
-		AisvTheme.FillRounded(b, new Rectangle(card.X + 2, card.Y + 12, 6, card.Height - 24), accent, 3);
+		Color accent = !late ? Hearth.Leaf : left == 0 ? Hearth.Berry : Hearth.Rust;
+		Hearth.CardSlip(b, card);
+		Hearth.FillRounded(b, new Rectangle(card.X + 2, card.Y + 12, 6, card.Height - 24), accent, 3);
 		Kit.Avatar(b, new Rectangle(card.X + 24, card.Y + 22, 68, 68), Ctx, r.Npc);
 		int tx = card.X + 112;
 		string place = OutingService.PlaceName(r.Place);
-		AisvTheme.Bold(b, Tr.Get("shell.outings.who", "{{npc}} · {{location}}", ("npc", Ctx.Display(r.Npc)), ("location", place)), new Vector2(tx, card.Y + 18), AisvTheme.Text, 0.95f);
+		Hearth.InkBold(b, Tr.Get("shell.outings.who", "{{npc}} · {{location}}", ("npc", Ctx.Display(r.Npc)), ("location", place)), new Vector2(tx, card.Y + 18), Hearth.Quill, 0.95f);
 		float cx = tx;
-		Rectangle chip = AisvTheme.Chip(b, new Vector2(cx, card.Y + 52), $"{OutingService.Clock(r.FromTime)}-{OutingService.Clock(r.ToTime)}", AisvTheme.AccentSoft, AisvTheme.AccentDark, 0.7f);
+		Rectangle chip = Hearth.Tag(b, new Vector2(cx, card.Y + 52), $"{OutingService.Clock(r.FromTime)}-{OutingService.Clock(r.ToTime)}", Hearth.LeafPale, Hearth.LeafDeep, 0.7f);
 		cx = chip.Right + 8;
 		string tone = OutingCatalog.NormalizeType(r.Tone);
 		if (tone.Length > 0)
 		{
-			cx = AisvTheme.Chip(b, new Vector2(cx, card.Y + 52), OutingAi.ToneName(tone), AisvTheme.GoldSoft, AisvTheme.Gold, 0.7f).Right + 8;
+			cx = Hearth.Tag(b, new Vector2(cx, card.Y + 52), OutingAi.ToneName(tone), Hearth.AmberPale, Hearth.Amber, 0.7f).Right + 8;
 		}
 		if (Game1.timeOfDay >= r.FromTime && Game1.timeOfDay <= r.ToTime)
 		{
-			AisvTheme.Chip(b, new Vector2(cx, card.Y + 52), Tr.Get("shell.outings.now", "现在就能去"), AisvTheme.Accent, Color.White, 0.7f);
+			Hearth.Tag(b, new Vector2(cx, card.Y + 52), Tr.Get("shell.outings.now", "现在就能去"), Hearth.Leaf, Color.White, 0.7f);
 		}
 		string remain = left == 0 ? Tr.Get("shell.outings.lastDay", "今天是最后一天") : Tr.Get("shell.outings.daysLeft", "还剩 {{n}} 天", ("n", left));
 		string meta = Tr.Get("shell.outings.hint", "{{time}}之间去{{location}}，到了就会开始", ("time", $"{OutingService.Clock(r.FromTime)}-{OutingService.Clock(r.ToTime)}"), ("location", place));
-		AisvTheme.DrawText(b, AisvTheme.Truncate(meta, card.Right - tx - 200, 0.72f), new Vector2(tx, card.Y + 84), AisvTheme.TextMuted, 0.72f);
-		AisvTheme.Bold(b, remain, new Vector2(card.Right - 24 - AisvTheme.Width(remain, 0.8f), card.Y + 20), accent, 0.8f);
+		Hearth.Ink(b, Hearth.Truncate(meta, card.Right - tx - 200, 0.72f), new Vector2(tx, card.Y + 84), Hearth.QuillSoft, 0.72f);
+		Hearth.InkBold(b, remain, new Vector2(card.Right - 24 - Hearth.Width(remain, 0.8f), card.Y + 20), accent, 0.8f);
 		return card.Bottom;
 	}
 
@@ -122,19 +122,19 @@ internal sealed class OutingsPage : ShellPage
 		y += 40;
 		if (places.Count == 0)
 		{
-			AisvTheme.DrawText(b, none, new Vector2(x + 4, y), AisvTheme.TextMuted, 0.8f);
+			Hearth.Ink(b, none, new Vector2(x + 4, y), Hearth.QuillSoft, 0.8f);
 			return y + 52;
 		}
 		int columns = Math.Max(1, (w + 12) / (PlaceCardWidth + 12));
 		int cardW = (w - (columns - 1) * 12) / columns;
-		int lh = AisvTheme.LineHeight(0.72f);
+		int lh = Hearth.LineHeight(0.72f);
 		int rowTop = y, rowHeight = 0;
 		for (int i = 0; i < places.Count; i++)
 		{
 			(string location, List<OutingDestination> rows) = places[i];
 			List<string> times = Merge(rows.Select(r => (r.TimeMin, r.TimeMax))).Select(t => $"{OutingService.Clock(t.Min)}-{OutingService.Clock(t.Max)}").ToList();
 			List<string> tones = rows.SelectMany(r => r.Types).Distinct().Select(OutingAi.ToneName).ToList();
-			List<string> toneLines = AisvTheme.WrapLines(string.Join(" · ", tones), cardW - 40, 0.72f);
+			List<string> toneLines = Hearth.WrapLines(string.Join(" · ", tones), cardW - 40, 0.72f);
 			int h = 24 + 32 + 34 + toneLines.Count * lh + 20;
 			if (i % columns == 0 && i > 0)
 			{
@@ -143,19 +143,19 @@ internal sealed class OutingsPage : ShellPage
 			}
 			Rectangle card = new Rectangle(x + i % columns * (cardW + 12), rowTop, cardW, h);
 			rowHeight = Math.Max(rowHeight, h);
-			AisvTheme.DrawCard(b, card);
-			AisvTheme.Bold(b, OutingService.PlaceName(location), new Vector2(card.X + 20, card.Y + 18), AisvTheme.Text, 0.9f);
+			Hearth.CardSlip(b, card);
+			Hearth.InkBold(b, OutingService.PlaceName(location), new Vector2(card.X + 20, card.Y + 18), Hearth.Quill, 0.9f);
 			string count = Tr.Get("shell.outings.kinds", "{{n}} 种", ("n", rows.Sum(r => r.Count)));
-			AisvTheme.DrawText(b, count, new Vector2(card.Right - 20 - AisvTheme.Width(count, 0.7f), card.Y + 22), AisvTheme.TextFaint, 0.7f);
+			Hearth.Ink(b, count, new Vector2(card.Right - 20 - Hearth.Width(count, 0.7f), card.Y + 22), Hearth.QuillPale, 0.7f);
 			float cx = card.X + 20;
 			foreach (string t in times)
 			{
-				cx = AisvTheme.Chip(b, new Vector2(cx, card.Y + 56), t, AisvTheme.AccentSoft, AisvTheme.AccentDark, 0.65f).Right + 6;
+				cx = Hearth.Tag(b, new Vector2(cx, card.Y + 56), t, Hearth.LeafPale, Hearth.LeafDeep, 0.65f).Right + 6;
 			}
 			int ty = card.Y + 92;
 			foreach (string line in toneLines)
 			{
-				AisvTheme.DrawText(b, line, new Vector2(card.X + 20, ty), AisvTheme.TextMuted, 0.72f);
+				Hearth.Ink(b, line, new Vector2(card.X + 20, ty), Hearth.QuillSoft, 0.72f);
 				ty += lh;
 			}
 		}

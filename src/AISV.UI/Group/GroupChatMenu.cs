@@ -332,19 +332,20 @@ internal sealed class GroupChatMenu : IClickableMenu, IGroupView
 	public override void draw(SpriteBatch b)
 	{
 		b.Draw(Game1.fadeToBlackRect, new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height), Color.Black * 0.4f);
-		AisvTheme.Window(b, new Rectangle(xPositionOnScreen, yPositionOnScreen, width, height));
-		AisvTheme.Fill(b, _page, AisvTheme.Page);
+		Hearth.WoodFrame(b, new Rectangle(xPositionOnScreen, yPositionOnScreen, width, height));
+		Hearth.Fill(b, _page, Hearth.Parchment);
 		DrawHeader(b);
 		DrawTranscript(b);
 		DrawCompose(b);
-		AisvTheme.CloseButton(b, _closeButton, AisvTheme.Hover(_closeButton));
+		FrameDecor.DrawSmall(b, new Rectangle(xPositionOnScreen, yPositionOnScreen, width, height));
+		Hearth.CrossPlate(b, _closeButton, Hearth.Hover(_closeButton));
 		drawMouse(b);
 	}
 
 	private void DrawHeader(SpriteBatch b)
 	{
-		AisvTheme.Fill(b, _header, AisvTheme.PageDeep);
-		AisvTheme.HLine(b, _header.X, _header.Bottom - 2, _header.Width, AisvTheme.Divider);
+		Hearth.Fill(b, _header, Hearth.ParchmentDeep);
+		Hearth.HLine(b, _header.X, _header.Bottom - 2, _header.Width, Hearth.Seam);
 		NPC? speaking = Revealing?.Npc;
 		int x = _header.X + 20;
 		foreach (NPC npc in _members)
@@ -352,27 +353,27 @@ internal sealed class GroupChatMenu : IClickableMenu, IGroupView
 			Rectangle r = new Rectangle(x, _header.Y + 16, AvatarSize, AvatarSize);
 			if (npc == speaking)
 			{
-				AisvTheme.FillRounded(b, AisvTheme.Inflate(r, 4), AisvTheme.Accent, 10);
+				Hearth.FillRounded(b, Hearth.Inflate(r, 4), Hearth.Leaf, 10);
 			}
-			AisvTheme.Avatar(b, r, npc, _display(npc.Name));
+			Hearth.Cameo(b, r, npc, _display(npc.Name));
 			x += AvatarSize + 12;
 		}
 		string title = Tr.Get("group.windowTitle", "{{names}}", ("names", string.Join(MapGroupChat.Cjk ? "、" : ", ", _members.Select(n => _display(n.Name)))));
-		AisvTheme.Bold(b, AisvTheme.Truncate(title, _closeButton.X - x - 40), new Vector2(x + 12, _header.Y + 18), AisvTheme.Text);
+		Hearth.InkBold(b, Hearth.Truncate(title, _closeButton.X - x - 40), new Vector2(x + 12, _header.Y + 18), Hearth.Quill);
 		string sub = _repliesLeft > 0 ? Tr.Get("group.repliesLeft", "还能说 {{count}} 句", ("count", _repliesLeft)) : Tr.Get("group.wrapUp", "聊得差不多了");
-		AisvTheme.DrawText(b, sub, new Vector2(x + 12, _header.Y + 48), AisvTheme.TextFaint, 0.75f);
+		Hearth.Ink(b, sub, new Vector2(x + 12, _header.Y + 48), Hearth.QuillPale, 0.75f);
 	}
 
 	private void DrawTranscript(SpriteBatch b)
 	{
 		int bubbleMax = Math.Max(240, (int)(_transcript.Width * 0.62f));
-		int lh = AisvTheme.LineHeight();
+		int lh = Hearth.LineHeight();
 		List<(Message M, string Wrapped, int H)> rows = new List<(Message, string, int)>();
 		int total = 0;
 		foreach (Message m in _messages)
 		{
 			string text = m == Revealing ? m.Text.Substring(0, Math.Min(m.Text.Length, (int)_shown)) : m.Text;
-			string wrapped = AisvTheme.Wrap(text.Length == 0 ? " " : text, bubbleMax - 32);
+			string wrapped = Hearth.Wrap(text.Length == 0 ? " " : text, bubbleMax - 32);
 			int h = wrapped.Split('\n').Length * lh + 24 + (m.Mine ? 0 : 22);
 			rows.Add((m, wrapped, h));
 			total += h + 14;
@@ -386,7 +387,7 @@ internal sealed class GroupChatMenu : IClickableMenu, IGroupView
 		{
 			_scroll = _maxScroll;
 		}
-		AisvTheme.BeginClip(b, _transcript);
+		Hearth.BeginClip(b, _transcript);
 		int y = _transcript.Y - _scroll;
 		foreach ((Message m, string wrapped, int h) in rows)
 		{
@@ -395,39 +396,39 @@ internal sealed class GroupChatMenu : IClickableMenu, IGroupView
 			if (m.Mine)
 			{
 				Rectangle r = new Rectangle(_transcript.Right - 16 - w, y, w, h);
-				AisvTheme.Bordered(b, r, new Color(214, 236, 190), new Color(139, 186, 102), 12);
-				AisvTheme.DrawText(b, wrapped, new Vector2(r.X + 16, r.Y + 12), AisvTheme.Text);
+				Hearth.Bordered(b, r, new Color(214, 236, 190), new Color(139, 186, 102), 12);
+				Hearth.Ink(b, wrapped, new Vector2(r.X + 16, r.Y + 12), Hearth.Quill);
 			}
 			else
 			{
 				Rectangle avatar = new Rectangle(_transcript.X + 4, y + 4, 44, 44);
-				AisvTheme.Avatar(b, avatar, m.Npc, _display(m.Npc!.Name));
-				AisvTheme.DrawText(b, _display(m.Npc.Name), new Vector2(avatar.Right + 12, y), AisvTheme.TextMuted, 0.7f);
+				Hearth.Cameo(b, avatar, m.Npc, _display(m.Npc!.Name));
+				Hearth.Ink(b, _display(m.Npc.Name), new Vector2(avatar.Right + 12, y), Hearth.QuillSoft, 0.7f);
 				Rectangle r = new Rectangle(avatar.Right + 10, y + 22, w, h - 22);
-				AisvTheme.Bordered(b, r, AisvTheme.Card, AisvTheme.CardBorder, 12);
-				AisvTheme.DrawText(b, wrapped, new Vector2(r.X + 16, r.Y + 12), AisvTheme.Text);
+				Hearth.Bordered(b, r, Hearth.Slip, Hearth.SlipEdge, 12);
+				Hearth.Ink(b, wrapped, new Vector2(r.X + 16, r.Y + 12), Hearth.Quill);
 			}
 			y += h + 14;
 		}
 		if (_phase == Phase.Waiting)
 		{
 			Rectangle r = new Rectangle(_transcript.X + 58, y, 84, 40);
-			AisvTheme.Bordered(b, r, AisvTheme.Card, AisvTheme.CardBorder, 12);
+			Hearth.Bordered(b, r, Hearth.Slip, Hearth.SlipEdge, 12);
 			for (int i = 0; i < 3; i++)
 			{
-				AisvTheme.FillRounded(b, new Rectangle(r.X + 18 + i * 18, r.Center.Y - 5, 10, 10), i < _dots ? AisvTheme.Accent : AisvTheme.CardBorder, 5);
+				Hearth.FillRounded(b, new Rectangle(r.X + 18 + i * 18, r.Center.Y - 5, 10, 10), i < _dots ? Hearth.Leaf : Hearth.SlipEdge, 5);
 			}
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		if (_maxScroll > 0)
 		{
-			AisvTheme.ScrollTrack(b, new Rectangle(_transcript.Right - 6, _transcript.Y + 4, 6, _transcript.Height - 8), _scroll, _maxScroll);
+			Hearth.Rail(b, new Rectangle(_transcript.Right - 6, _transcript.Y + 4, 6, _transcript.Height - 8), _scroll, _maxScroll);
 		}
 	}
 
 	private void DrawCompose(SpriteBatch b)
 	{
-		AisvTheme.HLine(b, _page.X, _box.Bounds.Y - 30, _page.Width, AisvTheme.Divider);
+		Hearth.HLine(b, _page.X, _box.Bounds.Y - 30, _page.Width, Hearth.Seam);
 		string hint = _phase switch
 		{
 			Phase.Revealing => Tr.Get("group.revealHint", "点一下或按回车看下一句"),
@@ -435,11 +436,11 @@ internal sealed class GroupChatMenu : IClickableMenu, IGroupView
 			Phase.Done => Tr.Get("group.done", "聊完了，可以关掉窗口"),
 			_ => Tr.Get("group.yourTurn", "轮到你说了")
 		};
-		AisvTheme.DrawText(b, hint, new Vector2(_box.Bounds.X, _box.Bounds.Y - 26), AisvTheme.TextFaint, 0.75f);
+		Hearth.Ink(b, hint, new Vector2(_box.Bounds.X, _box.Bounds.Y - 26), Hearth.QuillPale, 0.75f);
 		_box.Locked = _phase != Phase.Typing;
 		_box.Draw(b);
 		int mx = Game1.getMouseX(), my = Game1.getMouseY();
-		AisvTheme.Button(b, _endButton, Tr.Get("group.end", "结束"), hover: _endButton.Contains(mx, my), disabled: _phase == Phase.Waiting);
-		AisvTheme.Button(b, _sendButton, Tr.Get("reply.send", "发送"), primary: true, hover: _sendButton.Contains(mx, my), disabled: _phase != Phase.Typing || _box.Text.Trim().Length == 0);
+		Hearth.PressPlate(b, _endButton, Tr.Get("group.end", "结束"), hover: _endButton.Contains(mx, my), disabled: _phase == Phase.Waiting);
+		Hearth.PressPlate(b, _sendButton, Tr.Get("reply.send", "发送"), primary: true, hover: _sendButton.Contains(mx, my), disabled: _phase != Phase.Typing || _box.Text.Trim().Length == 0);
 	}
 }

@@ -28,7 +28,7 @@ internal sealed class TodayPage : ShellPage
 
 		public string Glyph = "";
 
-		public Color GlyphColor = AisvTheme.Accent;
+		public Color GlyphColor = Hearth.Leaf;
 
 		public string Text = "";
 
@@ -36,9 +36,9 @@ internal sealed class TodayPage : ShellPage
 
 		public string Chip = "";
 
-		public Color ChipFill = AisvTheme.AccentSoft;
+		public Color ChipFill = Hearth.LeafPale;
 
-		public Color ChipInk = AisvTheme.AccentDark;
+		public Color ChipInk = Hearth.LeafDeep;
 
 		public Action? Open;
 	}
@@ -82,7 +82,7 @@ internal sealed class TodayPage : ShellPage
 		}
 		if (Ctx.Social.IsPlayerBirthday())
 		{
-			_today.Rows.Add(new Row { Glyph = "生", GlyphColor = AisvTheme.Pink, Text = Tr.Get("shell.today.myBirthday", "今天是你的生日"), Sub = Tr.Get("shell.today.myBirthdaySub", "去镇上转转，大家也许记得。"), Chip = Tr.Get("shell.today.birthdayChip", "生日"), ChipFill = AisvTheme.PinkSoft, ChipInk = AisvTheme.Pink });
+			_today.Rows.Add(new Row { Glyph = "生", GlyphColor = Hearth.Rose, Text = Tr.Get("shell.today.myBirthday", "今天是你的生日"), Sub = Tr.Get("shell.today.myBirthdaySub", "去镇上转转，大家也许记得。"), Chip = Tr.Get("shell.today.birthdayChip", "生日"), ChipFill = Hearth.RosePale, ChipInk = Hearth.Rose });
 		}
 		foreach (NPC npc in Utility.getAllVillagers().Where(n => n.isBirthday() && n.CanSocialize && Ctx.Npcs.IsEnabled(n.Name)).OrderBy(n => Ctx.Display(n.Name), StringComparer.CurrentCulture))
 		{
@@ -93,8 +93,8 @@ internal sealed class TodayPage : ShellPage
 				Text = Tr.Get("shell.today.npcBirthday", "今天是{{npc}}的生日", ("npc", Ctx.Display(name))),
 				Sub = Tr.Get("shell.today.npcBirthdaySub", "送份礼物吧，生日的礼物分量更重。"),
 				Chip = Tr.Get("shell.today.birthdayChip", "生日"),
-				ChipFill = AisvTheme.PinkSoft,
-				ChipInk = AisvTheme.Pink,
+				ChipFill = Hearth.RosePale,
+				ChipInk = Hearth.Rose,
 				Open = () => OpenVillager(name)
 			});
 		}
@@ -107,8 +107,8 @@ internal sealed class TodayPage : ShellPage
 				Text = Tr.Get("shell.today.letter", "{{npc}}寄来一封信", ("npc", Ctx.Display(l.From))),
 				Sub = ShellText.Clean(l.Title),
 				Chip = Tr.Get("shell.today.letterChip", "在信箱里"),
-				ChipFill = AisvTheme.GoldSoft,
-				ChipInk = AisvTheme.Gold,
+				ChipFill = Hearth.AmberPale,
+				ChipInk = Hearth.Amber,
 				Open = () =>
 				{
 					LettersPage.Focus = key;
@@ -132,8 +132,8 @@ internal sealed class TodayPage : ShellPage
 				Text = Ctx.Display(name),
 				Sub = ShellText.Clean(m.Because),
 				Chip = MoodBook.MoodWord(m.Temper),
-				ChipFill = low ? AisvTheme.PageDeep : AisvTheme.AccentSoft,
-				ChipInk = low ? AisvTheme.TextMuted : AisvTheme.AccentDark,
+				ChipFill = low ? Hearth.ParchmentDeep : Hearth.LeafPale,
+				ChipInk = low ? Hearth.QuillSoft : Hearth.LeafDeep,
 				Open = () => OpenVillager(name)
 			});
 		}
@@ -146,12 +146,12 @@ internal sealed class TodayPage : ShellPage
 			{
 				Npc = v.Speaker,
 				Glyph = "?",
-				GlyphColor = AisvTheme.TextFaint,
+				GlyphColor = Hearth.QuillPale,
 				Text = v.Text,
 				Sub = (v.Speaker == null ? Tr.Get("shell.gossip.someone", "镇上有人说") : Ctx.Display(v.Speaker)) + " · " + ShellText.DaysAgo(today.TotalDays - e.TotalDay, e.Day, e.Season),
 				Chip = Tr.Get("shell.today.gossipChip", "八卦"),
-				ChipFill = AisvTheme.PinkSoft,
-				ChipInk = AisvTheme.Pink,
+				ChipFill = Hearth.RosePale,
+				ChipInk = Hearth.Rose,
 				Open = () => Host.Open(ShellMenu.Tab.Social, ShellMenu.SocialTab.Gossip)
 			});
 		}
@@ -163,8 +163,8 @@ internal sealed class TodayPage : ShellPage
 				Text = ShellText.Clean(m.WhatHappened),
 				Sub = Tr.Get("shell.today.pair", "{{a}}和{{b}}", ("a", Ctx.Display(m.First)), ("b", Ctx.Display(m.Second))) + " · " + Places.Name(m.Place),
 				Chip = WorldPage.ToneWord(m.Vibe),
-				ChipFill = AisvTheme.PageDeep,
-				ChipInk = AisvTheme.TextMuted,
+				ChipFill = Hearth.ParchmentDeep,
+				ChipInk = Hearth.QuillSoft,
 				Open = () => Host.Open(ShellMenu.Tab.World, world: ShellMenu.WorldTab.Village)
 			});
 		}
@@ -175,11 +175,11 @@ internal sealed class TodayPage : ShellPage
 			_town.Rows.Add(new Row
 			{
 				Glyph = "市",
-				GlyphColor = AisvTheme.Accent,
+				GlyphColor = Hearth.Leaf,
 				Text = Tr.Get("shell.today.hot", "这周镇上想要：{{items}}", ("items", string.Join("、", hot.Take(3)))),
 				Chip = Tr.Get("shell.today.market", "看行情"),
-				ChipFill = AisvTheme.AccentSoft,
-				ChipInk = AisvTheme.AccentDark,
+				ChipFill = Hearth.LeafPale,
+				ChipInk = Hearth.LeafDeep,
 				Open = () => Host.Open(ShellMenu.Tab.World, world: ShellMenu.WorldTab.Market)
 			});
 		}
@@ -202,12 +202,12 @@ internal sealed class TodayPage : ShellPage
 			_promo.Rows.Add(new Row
 			{
 				Glyph = "荐",
-				GlyphColor = AisvTheme.Pink,
+				GlyphColor = Hearth.Rose,
 				Text = ShellText.Clean(p.Title),
 				Sub = body,
 				Chip = Tr.Get("shell.today.promoChip", "去看看"),
-				ChipFill = AisvTheme.PinkSoft,
-				ChipInk = AisvTheme.Pink,
+				ChipFill = Hearth.RosePale,
+				ChipInk = Hearth.Rose,
 				Open = () => Host.Push(new PromoPage(Ctx))
 			});
 		}
@@ -240,11 +240,11 @@ internal sealed class TodayPage : ShellPage
 		_town.Rows.Add(new Row
 		{
 			Glyph = "报",
-			GlyphColor = AisvTheme.Gold,
+			GlyphColor = Hearth.Amber,
 			Text = text,
 			Chip = latest != null ? Tr.Get("shell.today.read", "去读") : "",
-			ChipFill = AisvTheme.GoldSoft,
-			ChipInk = AisvTheme.Gold,
+			ChipFill = Hearth.AmberPale,
+			ChipInk = Hearth.Amber,
 			Open = latest != null ? () => Host.Open(ShellMenu.Tab.World, world: ShellMenu.WorldTab.News) : null
 		});
 	}
@@ -261,8 +261,8 @@ internal sealed class TodayPage : ShellPage
 				Text = Tr.Get("todayPage.meetup", "和{{npc}}在{{place}}见面", ("npc", Ctx.Display(m.Npc)), ("place", MeetupService.PlaceLabel(m))),
 				Sub = Clock.Text(m.Time),
 				Chip = Tr.Get("todayPage.meetupChip", "约见"),
-				ChipFill = AisvTheme.PinkSoft,
-				ChipInk = AisvTheme.Pink,
+				ChipFill = Hearth.RosePale,
+				ChipInk = Hearth.Rose,
 				Open = () => Host.Open(ShellMenu.Tab.World, world: ShellMenu.WorldTab.Help)
 			}));
 		}
@@ -279,8 +279,8 @@ internal sealed class TodayPage : ShellPage
 					Text = Tr.Get("todayPage.farmHelp", "{{npc}}来农场{{task}}", ("npc", Ctx.Display(j.Npc)), ("task", FarmHelpRules.TaskLabel(j.Task))),
 					Sub = Clock.Text(j.Start) + progress,
 					Chip = working ? Tr.Get("todayPage.working", "正在干") : open ? Tr.Get("todayPage.helpChip", "帮工") : Tr.Get("todayPage.finished", "结束了"),
-					ChipFill = working ? AisvTheme.AccentSoft : new Color(220, 240, 238),
-					ChipInk = working ? AisvTheme.AccentDark : new Color(70, 165, 160),
+					ChipFill = working ? Hearth.LeafPale : new Color(220, 240, 238),
+					ChipInk = working ? Hearth.LeafDeep : new Color(70, 165, 160),
 					Open = () => Host.Open(ShellMenu.Tab.World, world: ShellMenu.WorldTab.Help)
 				}));
 			}
@@ -337,8 +337,8 @@ internal sealed class TodayPage : ShellPage
 				Text = ShellText.Clean(AISV.Game.World.CommissionService.TaskLine(c)),
 				Sub = Tr.Get("todayPage.reward", "酬劳 {{gold}}g", ("gold", c.RewardGold)),
 				Chip = left <= 0 ? Tr.Get("todayPage.dueToday", "今天截止") : Tr.Get("todayPage.daysLeft", "还剩 {{n}} 天", ("n", left)),
-				ChipFill = urgent ? redSoft : AisvTheme.Divider,
-				ChipInk = urgent ? red : AisvTheme.TextMuted,
+				ChipFill = urgent ? redSoft : Hearth.Seam,
+				ChipInk = urgent ? red : Hearth.QuillSoft,
 				Open = () => Host.Open(ShellMenu.Tab.World, world: ShellMenu.WorldTab.Commissions)
 			});
 		}
@@ -351,8 +351,8 @@ internal sealed class TodayPage : ShellPage
 				GlyphColor = new Color(205, 110, 50),
 				Text = Tr.Get("todayPage.openQuests", "板上有 {{n}} 条委托可以接", ("n", open)),
 				Chip = Tr.Get("todayPage.look", "去看看"),
-				ChipFill = AisvTheme.GoldSoft,
-				ChipInk = AisvTheme.Gold,
+				ChipFill = Hearth.AmberPale,
+				ChipInk = Hearth.Amber,
 				Open = () => Host.Open(ShellMenu.Tab.World, world: ShellMenu.WorldTab.Commissions)
 			});
 		}
@@ -376,8 +376,8 @@ internal sealed class TodayPage : ShellPage
 				Text = Tr.Get("todayPage.errand", "托{{name}}{{what}}", ("name", s.Display(e.Npc)), ("what", s.What(e))),
 				Sub = counter ? Tr.Get("todayPage.errandCounter", "开价 {{gold}}g，等你答复", ("gold", e.Counter)) : active ? Tr.Get("todayPage.errandActive", "办理中，还剩 {{n}} 天", ("n", Math.Max(0, AISV.Game.World.ErrandService.DaysLeft(e)))) : Tr.Get("todayPage.errandWaiting", "等他回话"),
 				Chip = counter ? Tr.Get("todayPage.errandAnswer", "去答复") : Tr.Get("todayPage.errandChip", "我发的"),
-				ChipFill = counter ? AisvTheme.GoldSoft : AisvTheme.Divider,
-				ChipInk = counter ? AisvTheme.Gold : AisvTheme.TextMuted,
+				ChipFill = counter ? Hearth.AmberPale : Hearth.Seam,
+				ChipInk = counter ? Hearth.Amber : Hearth.QuillSoft,
 				Open = () =>
 				{
 					CommissionsPage.ShowMine = true;
@@ -400,7 +400,7 @@ internal sealed class TodayPage : ShellPage
 	public override void Draw(SpriteBatch b, Rectangle area, Hits hits)
 	{
 		_view = area;
-		AisvTheme.BeginClip(b, area);
+		Hearth.BeginClip(b, area);
 		const int pad = 28;
 		int x = area.X + pad, w = area.Width - pad * 2;
 		int y = area.Y + 18 - _scroll.Offset;
@@ -433,53 +433,53 @@ internal sealed class TodayPage : ShellPage
 				y = DrawCard(b, _promo, x, y - 6, w, hits) + 22;
 			}
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, area, y, 12);
 	}
 
 	private int DrawHero(SpriteBatch b, int x, int y, int w)
 	{
 		string name = Game1.player?.Name ?? "";
-		AisvTheme.Bold(b, ShellText.Greeting() + (name.Length > 0 ? "，" + name : ""), new Vector2(x + 4, y), AisvTheme.Text, 1.35f);
-		int lh = AisvTheme.LineHeight(1.35f);
-		AisvTheme.DrawText(b, ShellText.TopLine(), new Vector2(x + 6, y + lh + 4), AisvTheme.TextMuted, 0.82f);
 		int count = _today.Rows.Count;
 		string summary = count == 0 ? Tr.Get("shell.today.nothing", "今天没什么要赶的事。") : Tr.Get("shell.today.count", "今天有 {{n}} 件事", ("n", count));
-		int sw = (int)AisvTheme.Width(summary, 0.85f);
+		int sw = (int)Hearth.Width(summary, 0.85f);
+		Hearth.InkBold(b, Hearth.Truncate(ShellText.Greeting() + (name.Length > 0 ? "，" + name : ""), w - sw - 60, 1.35f), new Vector2(x + 4, y), Hearth.Quill, 1.35f);
+		int lh = Hearth.LineHeight(1.35f);
+		Hearth.Ink(b, ShellText.TopLine(), new Vector2(x + 6, y + lh + 4), Hearth.QuillSoft, 0.82f);
 		Rectangle chip = new Rectangle(x + w - sw - 36, y + 10, sw + 32, 40);
-		AisvTheme.FillRounded(b, chip, count == 0 ? AisvTheme.PageDeep : AisvTheme.AccentSoft, 20);
-		AisvTheme.TextCentered(b, summary, chip, count == 0 ? AisvTheme.TextMuted : AisvTheme.AccentDark, 0.85f);
-		return y + lh + 4 + AisvTheme.LineHeight(0.82f);
+		Hearth.FillRounded(b, chip, count == 0 ? Hearth.ParchmentDeep : Hearth.LeafPale, 20);
+		Hearth.InkMiddle(b, summary, chip, count == 0 ? Hearth.QuillSoft : Hearth.LeafDeep, 0.85f);
+		return y + lh + 4 + Hearth.LineHeight(0.82f);
 	}
 
 	private int DrawCard(SpriteBatch b, Card card, int x, int y, int w, Hits hits)
 	{
 		int rows = Math.Max(1, card.Rows.Count);
 		Rectangle r = new Rectangle(x, y, w, 18 + 34 + rows * RowH + 12);
-		AisvTheme.DrawCard(b, r);
+		Hearth.CardSlip(b, r);
 		Kit.SectionTitle(b, card.Title, x + 20, y + 18);
 		if (card.Rows.Count > 0)
 		{
 			string n = card.Rows.Count.ToString();
-			AisvTheme.DrawText(b, n, new Vector2(x + w - 20 - AisvTheme.Width(n, 0.7f), y + 22), AisvTheme.TextFaint, 0.7f);
+			Hearth.Ink(b, n, new Vector2(x + w - 20 - Hearth.Width(n, 0.7f), y + 22), Hearth.QuillPale, 0.7f);
 		}
 		int ry = y + 52;
 		if (card.Rows.Count == 0)
 		{
-			AisvTheme.DrawText(b, card.Empty, new Vector2(x + 20, ry + 18), AisvTheme.TextFaint, 0.8f);
+			Hearth.Ink(b, card.Empty, new Vector2(x + 20, ry + 18), Hearth.QuillPale, 0.8f);
 			return r.Bottom;
 		}
 		for (int i = 0; i < card.Rows.Count; i++)
 		{
 			Row row = card.Rows[i];
 			Rectangle rr = new Rectangle(x + 8, ry, w - 16, RowH);
-			if (row.Open != null && AisvTheme.Hover(rr, _view))
+			if (row.Open != null && Hearth.Hover(rr, _view))
 			{
-				AisvTheme.FillRounded(b, rr, AisvTheme.SelectedRow, 10);
+				Hearth.FillRounded(b, rr, Hearth.Honey, 10);
 			}
 			if (i > 0)
 			{
-				AisvTheme.HLine(b, rr.X + 12, rr.Y, rr.Width - 24, AisvTheme.Divider);
+				Hearth.HLine(b, rr.X + 12, rr.Y, rr.Width - 24, Hearth.Seam);
 			}
 			Rectangle face = new Rectangle(rr.X + 12, rr.Y + 10, 46, 46);
 			if (row.Npc != null)
@@ -488,23 +488,23 @@ internal sealed class TodayPage : ShellPage
 			}
 			else
 			{
-				AisvTheme.Glyph(b, face, row.GlyphColor, row.Glyph);
+				Hearth.Glyph(b, face, row.GlyphColor, row.Glyph);
 			}
 			int tx = face.Right + 14, right = rr.Right - 12;
 			if (row.Chip.Length > 0)
 			{
-				int cw = AisvTheme.ChipWidth(row.Chip, 0.66f);
-				AisvTheme.Chip(b, new Vector2(right - cw, rr.Y + (row.Sub.Length > 0 ? 12 : 20)), row.Chip, row.ChipFill, row.ChipInk, 0.66f);
+				int cw = Hearth.TagWidth(row.Chip, 0.66f);
+				Hearth.Tag(b, new Vector2(right - cw, rr.Y + (row.Sub.Length > 0 ? 12 : 20)), row.Chip, row.ChipFill, row.ChipInk, 0.66f);
 				right -= cw + 10;
 			}
 			if (row.Sub.Length > 0)
 			{
-				AisvTheme.DrawText(b, AisvTheme.Truncate(row.Text, right - tx, 0.85f), new Vector2(tx, rr.Y + 8), AisvTheme.Text, 0.85f);
-				AisvTheme.DrawText(b, AisvTheme.Truncate(row.Sub, right - tx, 0.7f), new Vector2(tx, rr.Y + 36), AisvTheme.TextFaint, 0.7f);
+				Hearth.Ink(b, Hearth.Truncate(row.Text, right - tx, 0.85f), new Vector2(tx, rr.Y + 8), Hearth.Quill, 0.85f);
+				Hearth.Ink(b, Hearth.Truncate(row.Sub, right - tx, 0.7f), new Vector2(tx, rr.Y + 36), Hearth.QuillPale, 0.7f);
 			}
 			else
 			{
-				AisvTheme.DrawText(b, AisvTheme.Truncate(row.Text, right - tx, 0.85f), new Vector2(tx, rr.Y + 20), AisvTheme.Text, 0.85f);
+				Hearth.Ink(b, Hearth.Truncate(row.Text, right - tx, 0.85f), new Vector2(tx, rr.Y + 20), Hearth.Quill, 0.85f);
 			}
 			if (row.Open != null)
 			{

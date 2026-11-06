@@ -115,10 +115,10 @@ internal sealed class ProfilePage : ShellPage
 		string intro = !_welcome ? Tr.Get("profile.intro", "村民会照着这些认识你：交情浅的只听说过一点，熟了才知道得多。")
 			: key.Length > 0 ? Tr.Get("profile.welcome", "欢迎来到山谷！先介绍一下自己吧，村民会照着这些认识你。不想写可以先返回，以后按 {{key}} 再来。", ("key", key))
 			: Tr.Get("profile.welcomeMenu", "欢迎来到山谷！先介绍一下自己吧，村民会照着这些认识你。不想写可以先返回，以后在设置里再来。");
-		AisvTheme.DrawText(b, AisvTheme.Truncate(intro, w - 200, 0.8f), new Vector2(x, y), AisvTheme.TextMuted, 0.8f);
+		Hearth.Ink(b, Hearth.Truncate(intro, w - 200, 0.8f), new Vector2(x, y), Hearth.QuillSoft, 0.8f);
 		int filled = _areas.Count(a => a.Text.Trim().Length > 0);
 		string progress = Tr.Get("profile.progress", "答了 {{filled}}/{{total}}", ("filled", filled), ("total", _areas.Length));
-		AisvTheme.Chip(b, new Vector2(x + w - AisvTheme.ChipWidth(progress, 0.75f), y - 2), progress, filled == _areas.Length ? AisvTheme.AccentSoft : AisvTheme.PageDeep, AisvTheme.AccentDark, 0.75f);
+		Hearth.Tag(b, new Vector2(x + w - Hearth.TagWidth(progress, 0.75f), y - 2), progress, filled == _areas.Length ? Hearth.LeafPale : Hearth.ParchmentDeep, Hearth.LeafDeep, 0.75f);
 		y += 48;
 		// 按 Tab 换到下一个输入框时，页签跟着走。
 		int focused = Array.IndexOf(_areas, _fields.Focused);
@@ -160,23 +160,23 @@ internal sealed class ProfilePage : ShellPage
 			bool sel = i == _tab;
 			bool done = i < _areas.Length ? _areas[i].Text.Trim().Length > 0 : _day > 0;
 			string label = i < _areas.Length ? Label(i).Title : Tr.Get("profile.birthday", "生日");
-			Color fill = sel ? AisvTheme.Accent : AisvTheme.Hover(r) ? AisvTheme.SelectedRow : AisvTheme.PageDeep;
-			AisvTheme.FillRounded(b, r, fill, 14);
-			string shown = AisvTheme.Truncate(label, tw - 44, 0.82f);
-			float lw = AisvTheme.Width(shown, 0.82f);
+			Color fill = sel ? Hearth.Leaf : Hearth.Hover(r) ? Hearth.Honey : Hearth.ParchmentDeep;
+			Hearth.FillRounded(b, r, fill, 14);
+			string shown = Hearth.Truncate(label, tw - 44, 0.82f);
+			float lw = Hearth.Width(shown, 0.82f);
 			int lx = r.Center.X - (int)(lw + (done ? 18 : 0)) / 2;
 			if (done)
 			{
-				AisvTheme.FillRounded(b, new Rectangle(lx, r.Center.Y - 5, 10, 10), sel ? Color.White : AisvTheme.Accent, 5);
+				Hearth.FillRounded(b, new Rectangle(lx, r.Center.Y - 5, 10, 10), sel ? Color.White : Hearth.Leaf, 5);
 				lx += 18;
 			}
 			if (sel)
 			{
-				AisvTheme.Bold(b, shown, new Vector2(lx, r.Center.Y - 13), Color.White, 0.82f);
+				Hearth.InkBold(b, shown, new Vector2(lx, r.Center.Y - 13), Color.White, 0.82f);
 			}
 			else
 			{
-				AisvTheme.DrawText(b, shown, new Vector2(lx, r.Center.Y - 13), AisvTheme.Text, 0.82f);
+				Hearth.Ink(b, shown, new Vector2(lx, r.Center.Y - 13), Hearth.Quill, 0.82f);
 			}
 			int k = i;
 			hits.Add(r, () => Pick(k));
@@ -204,11 +204,11 @@ internal sealed class ProfilePage : ShellPage
 
 	private void Field(SpriteBatch b, Rectangle card, string title, string hint, TextArea text, Hits hits)
 	{
-		AisvTheme.Bordered(b, card, AisvTheme.Card, text.Selected ? AisvTheme.Accent : AisvTheme.CardBorder, 14);
-		AisvTheme.Bold(b, title, new Vector2(card.X + 28, card.Y + 22), AisvTheme.Text, 1.05f);
-		AisvTheme.DrawText(b, hint, new Vector2(card.X + 28, card.Y + 62), AisvTheme.TextMuted, 0.75f);
+		Hearth.Bordered(b, card, Hearth.Slip, text.Selected ? Hearth.Leaf : Hearth.SlipEdge, 14);
+		Hearth.InkBold(b, title, new Vector2(card.X + 28, card.Y + 22), Hearth.Quill, 1.05f);
+		Hearth.Ink(b, hint, new Vector2(card.X + 28, card.Y + 62), Hearth.QuillSoft, 0.75f);
 		string count = $"{text.Text.Length}/{text.MaxChars}";
-		AisvTheme.DrawText(b, count, new Vector2(card.Right - 28 - AisvTheme.Width(count, 0.68f), card.Y + 28), text.Text.Length >= text.MaxChars ? AisvTheme.Warn : AisvTheme.TextFaint, 0.68f);
+		Hearth.Ink(b, count, new Vector2(card.Right - 28 - Hearth.Width(count, 0.68f), card.Y + 28), text.Text.Length >= text.MaxChars ? Hearth.Rust : Hearth.QuillPale, 0.68f);
 		text.Bounds = new Rectangle(card.X + 20, card.Y + 100, card.Width - 40, card.Height - 120);
 		text.Draw(b);
 		hits.Add(card, () => _fields.Focus(text));
@@ -216,14 +216,14 @@ internal sealed class ProfilePage : ShellPage
 
 	private void Birthday(SpriteBatch b, Rectangle r, Hits hits)
 	{
-		AisvTheme.Bordered(b, r, AisvTheme.Card, AisvTheme.CardBorder, 14);
-		AisvTheme.Bold(b, Tr.Get("profile.birthday", "生日"), new Vector2(r.X + 28, r.Y + 22), AisvTheme.Text, 1.05f);
-		AisvTheme.DrawText(b, Tr.Get("profile.birthdayHint", "那天村民会给你发消息、寄礼物；节日那几天不能选。"), new Vector2(r.X + 28, r.Y + 62), AisvTheme.TextMuted, 0.75f);
+		Hearth.Bordered(b, r, Hearth.Slip, Hearth.SlipEdge, 14);
+		Hearth.InkBold(b, Tr.Get("profile.birthday", "生日"), new Vector2(r.X + 28, r.Y + 22), Hearth.Quill, 1.05f);
+		Hearth.Ink(b, Tr.Get("profile.birthdayHint", "那天村民会给你发消息、寄礼物；节日那几天不能选。"), new Vector2(r.X + 28, r.Y + 62), Hearth.QuillSoft, 0.75f);
 		Rectangle cake = new Rectangle(r.Center.X - 160, r.Center.Y - 84, 320, 90);
-		AisvTheme.FillRounded(b, cake, AisvTheme.PinkSoft, 20);
+		Hearth.FillRounded(b, cake, Hearth.RosePale, 20);
 		bool set = _day > 0;
 		string date = set ? ShellText.Season(_season) + " " + Tr.Get("profile.day", "{{day}} 日", ("day", _day)) : Tr.Get("profile.notSet", "还没设");
-		b.DrawString(Game1.dialogueFont, date, new Vector2(cake.Center.X - Game1.dialogueFont.MeasureString(date).X / 2f, cake.Center.Y - Game1.dialogueFont.MeasureString(date).Y / 2f), set ? AisvTheme.Pink : AisvTheme.TextFaint);
+		b.DrawString(Game1.dialogueFont, date, new Vector2(cake.Center.X - Game1.dialogueFont.MeasureString(date).X / 2f, cake.Center.Y - Game1.dialogueFont.MeasureString(date).Y / 2f), set ? Hearth.Rose : Hearth.QuillPale);
 		int cy = cake.Bottom + 44;
 		const int stepW = 40 + 4 + 120 + 4 + 40;
 		int sx = r.Center.X - (stepW * 2 + 24) / 2;
@@ -234,7 +234,7 @@ internal sealed class ProfilePage : ShellPage
 		{
 			string label = Tr.Get("profile.clearBirthday", "不设生日");
 			Rectangle clear = new Rectangle(r.Center.X - 70, cy + 44, 140, 44);
-			AisvTheme.Button(b, clear, label, hover: AisvTheme.Hover(clear), scale: 0.75f);
+			Hearth.PressPlate(b, clear, label, hover: Hearth.Hover(clear), scale: 0.75f);
 			hits.Add(clear, () =>
 			{
 				_season = "";
@@ -246,10 +246,10 @@ internal sealed class ProfilePage : ShellPage
 	private void Bottom(SpriteBatch b, Rectangle r, Hits hits)
 	{
 		string tip = Tr.Get("profile.keys", "Tab 换下一个问题 · Ctrl+Enter 保存 · Esc 返回");
-		AisvTheme.DrawText(b, tip, new Vector2(r.X + 4, r.Center.Y - AisvTheme.LineHeight(0.7f) / 2), AisvTheme.TextFaint, 0.7f);
+		Hearth.Ink(b, tip, new Vector2(r.X + 4, r.Center.Y - Hearth.LineHeight(0.7f) / 2), Hearth.QuillPale, 0.7f);
 		Rectangle save = new Rectangle(r.Right - 200, r.Center.Y - 26, 200, 52);
 		bool dirty = Dirty;
-		AisvTheme.Button(b, save, dirty ? Tr.Get("profile.save", "保存") : Tr.Get("profile.savedShort", "已保存"), primary: true, hover: AisvTheme.Hover(save), disabled: !dirty);
+		Hearth.PressPlate(b, save, dirty ? Tr.Get("profile.save", "保存") : Tr.Get("profile.savedShort", "已保存"), primary: true, hover: Hearth.Hover(save), disabled: !dirty);
 		if (dirty)
 		{
 			hits.Add(save, Save);
@@ -261,12 +261,12 @@ internal sealed class ProfilePage : ShellPage
 		Rectangle left = new Rectangle(x, cy - 20, 40, 40);
 		Rectangle mid = new Rectangle(left.Right + 4, cy - 22, w, 44);
 		Rectangle right = new Rectangle(mid.Right + 4, cy - 20, 40, 40);
-		AisvTheme.FillRounded(b, left, AisvTheme.Hover(left) ? AisvTheme.PinkSoft : AisvTheme.PageDeep, 20);
-		AisvTheme.FillRounded(b, right, AisvTheme.Hover(right) ? AisvTheme.PinkSoft : AisvTheme.PageDeep, 20);
-		AisvTheme.Chevron(b, new Vector2(left.Center.X + 2, cy), left: true, AisvTheme.Pink);
-		AisvTheme.Chevron(b, new Vector2(right.Center.X - 2, cy), left: false, AisvTheme.Pink);
-		AisvTheme.Bordered(b, mid, AisvTheme.Card, AisvTheme.CardBorder, 10);
-		AisvTheme.TextCentered(b, label, mid, AisvTheme.Text, 0.85f);
+		Hearth.FillRounded(b, left, Hearth.Hover(left) ? Hearth.RosePale : Hearth.ParchmentDeep, 20);
+		Hearth.FillRounded(b, right, Hearth.Hover(right) ? Hearth.RosePale : Hearth.ParchmentDeep, 20);
+		Hearth.Chevron(b, new Vector2(left.Center.X + 2, cy), left: true, Hearth.Rose);
+		Hearth.Chevron(b, new Vector2(right.Center.X - 2, cy), left: false, Hearth.Rose);
+		Hearth.Bordered(b, mid, Hearth.Slip, Hearth.SlipEdge, 10);
+		Hearth.InkMiddle(b, label, mid, Hearth.Quill, 0.85f);
 		hits.Add(left, prev);
 		hits.Add(right, next);
 		return right.Right;

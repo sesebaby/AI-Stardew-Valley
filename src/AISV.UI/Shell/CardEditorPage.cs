@@ -17,7 +17,7 @@ internal sealed class CardEditorPage : ShellPage
 {
 	private sealed record Slot(string Label, string Hint, TextArea Area, int Height);
 
-	public static readonly PixelGlyph Pencil = new PixelGlyph(PixelGlyph.Palette(('e', new Color(250, 196, 170)), ('t', new Color(120, 120, 130))),
+	public static readonly PixelArt Pencil = PixelArt.Of(PixelArt.Inks(('e', new Color(250, 196, 170)), ('t', new Color(120, 120, 130))),
 		"..........kk",
 		".........kpk",
 		"........kyyk",
@@ -116,11 +116,11 @@ internal sealed class CardEditorPage : ShellPage
 
 	public override void Scroll(int direction)
 	{
-		if (AisvTheme.Hover(_leftView))
+		if (Hearth.Hover(_leftView))
 		{
 			_left.Wheel(direction);
 		}
-		else if (AisvTheme.Hover(_rightView))
+		else if (Hearth.Hover(_rightView))
 		{
 			_right.Wheel(direction);
 		}
@@ -180,22 +180,22 @@ internal sealed class CardEditorPage : ShellPage
 
 	private static Rectangle Column(SpriteBatch b, Rectangle r, string title, Color band)
 	{
-		AisvTheme.Bordered(b, r, AisvTheme.Card, AisvTheme.CardBorder, 14);
+		Hearth.Bordered(b, r, Hearth.Slip, Hearth.SlipEdge, 14);
 		Rectangle head = new Rectangle(r.X + 2, r.Y + 2, r.Width - 4, 48);
-		AisvTheme.FillRounded(b, head, band, 12);
-		AisvTheme.Bold(b, title, new Vector2(r.X + 20, r.Y + 13), AisvTheme.Text, 0.85f);
+		Hearth.FillRounded(b, head, band, 12);
+		Hearth.InkBold(b, title, new Vector2(r.X + 20, r.Y + 13), Hearth.Quill, 0.85f);
 		return new Rectangle(r.X + 4, head.Bottom + 4, r.Width - 8, r.Bottom - head.Bottom - 10);
 	}
 
 	private void DrawDefault(SpriteBatch b, Rectangle r, Hits hits)
 	{
-		Rectangle body = Column(b, r, Tr.Get("card.default", "默认设定"), AisvTheme.PageDeep);
+		Rectangle body = Column(b, r, Tr.Get("card.default", "默认设定"), Hearth.ParchmentDeep);
 		string src = CardsPage.SourceName(_default.Source);
-		AisvTheme.Chip(b, new Vector2(r.Right - 16 - AisvTheme.ChipWidth(src, 0.66f), r.Y + 13), src, AisvTheme.Card, AisvTheme.TextMuted, 0.66f);
+		Hearth.Tag(b, new Vector2(r.Right - 16 - Hearth.TagWidth(src, 0.66f), r.Y + 13), src, Hearth.Slip, Hearth.QuillSoft, 0.66f);
 		Rectangle copy = new Rectangle(body.X + 12, body.Bottom - 48, body.Width - 24, 44);
 		_leftView = new Rectangle(body.X, body.Y, body.Width, copy.Y - 8 - body.Y);
-		Prose(b, _leftView, _left, _default.Personality, AisvTheme.TextMuted);
-		AisvTheme.Button(b, copy, Tr.Get("card.copyDefault", "抄进性格栏再改"), hover: AisvTheme.Hover(copy), scale: 0.75f);
+		Prose(b, _leftView, _left, _default.Personality, Hearth.QuillSoft);
+		Hearth.PressPlate(b, copy, Tr.Get("card.copyDefault", "抄进性格栏再改"), hover: Hearth.Hover(copy), scale: 0.75f);
 		hits.Add(copy, () =>
 		{
 			TextArea p = _slots[1].Area;
@@ -219,58 +219,58 @@ internal sealed class CardEditorPage : ShellPage
 			_preview = Ctx.Npcs.Preview(_npc, Draft());
 		}
 		CharacterCard draft = Draft();
-		(string mode, Color fill, Color ink) = draft.IsEmpty ? (Tr.Get("card.modeDefault", "用默认"), AisvTheme.Card, AisvTheme.TextMuted)
+		(string mode, Color fill, Color ink) = draft.IsEmpty ? (Tr.Get("card.modeDefault", "用默认"), Hearth.Slip, Hearth.QuillSoft)
 			: CardsPage.Badge(draft);
-		if (fill == AisvTheme.AccentSoft)
+		if (fill == Hearth.LeafPale)
 		{
-			fill = AisvTheme.Card;
+			fill = Hearth.Slip;
 		}
-		Rectangle body = Column(b, r, Tr.Get("card.preview", "AI 实际看到的"), AisvTheme.AccentSoft);
-		AisvTheme.Chip(b, new Vector2(r.Right - 16 - AisvTheme.ChipWidth(mode, 0.66f), r.Y + 13), mode, fill, ink, 0.66f);
+		Rectangle body = Column(b, r, Tr.Get("card.preview", "AI 实际看到的"), Hearth.LeafPale);
+		Hearth.Tag(b, new Vector2(r.Right - 16 - Hearth.TagWidth(mode, 0.66f), r.Y + 13), mode, fill, ink, 0.66f);
 		string name = _preview.DisplayNameOverride.Length > 0 ? _preview.DisplayNameOverride : Ctx.Display(_npc);
 		string text = Tr.Get("card.previewName", "称呼：{{name}}", ("name", name)) + "\n\n" + _preview.Personality;
 		string count = Tr.Get("card.chars", "{{n}} 字", ("n", _preview.Personality.Length));
-		Vector2 cp = new Vector2(body.Right - 12 - AisvTheme.Width(count, 0.66f), body.Bottom - AisvTheme.LineHeight(0.66f) - 6);
+		Vector2 cp = new Vector2(body.Right - 12 - Hearth.Width(count, 0.66f), body.Bottom - Hearth.LineHeight(0.66f) - 6);
 		_rightView = new Rectangle(body.X, body.Y, body.Width, (int)cp.Y - 6 - body.Y);
-		Prose(b, _rightView, _right, text, AisvTheme.Text);
-		AisvTheme.DrawText(b, count, cp, _preview.Personality.Length > 2400 ? AisvTheme.Warn : AisvTheme.TextFaint, 0.66f);
+		Prose(b, _rightView, _right, text, Hearth.Quill);
+		Hearth.Ink(b, count, cp, _preview.Personality.Length > 2400 ? Hearth.Rust : Hearth.QuillPale, 0.66f);
 	}
 
 	private static void Prose(SpriteBatch b, Rectangle view, Scroller scroll, string text, Color color)
 	{
 		const float scale = 0.76f;
-		int lh = AisvTheme.LineHeight(scale) + 4;
-		AisvTheme.BeginClip(b, view);
+		int lh = Hearth.LineHeight(scale) + 4;
+		Hearth.BeginClip(b, view);
 		int y = view.Y + 10 - scroll.Offset;
-		foreach (string line in AisvTheme.WrapLines(text, view.Width - 36, scale, paragraphGap: true))
+		foreach (string line in Hearth.WrapLines(text, view.Width - 36, scale, paragraphGap: true))
 		{
 			if (y + lh >= view.Y && y <= view.Bottom)
 			{
-				AisvTheme.DrawText(b, line, new Vector2(view.X + 16, y), color, scale);
+				Hearth.Ink(b, line, new Vector2(view.X + 16, y), color, scale);
 			}
 			y += lh;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		scroll.Finish(b, view, y + 10, 6);
 	}
 
 	private void DrawFields(SpriteBatch b, Rectangle r, Hits hits)
 	{
-		Rectangle body = Column(b, r, Tr.Get("card.mine", "我的设定"), AisvTheme.GoldSoft);
+		Rectangle body = Column(b, r, Tr.Get("card.mine", "我的设定"), Hearth.AmberPale);
 		_midView = body;
-		AisvTheme.BeginClip(b, body);
+		Hearth.BeginClip(b, body);
 		int x = body.X + 16, w = body.Width - 32;
 		int y = body.Y + 12 - _mid.Offset;
 		foreach (Slot s in _slots)
 		{
-			AisvTheme.Bold(b, s.Label, new Vector2(x, y), AisvTheme.Text, 0.8f);
+			Hearth.InkBold(b, s.Label, new Vector2(x, y), Hearth.Quill, 0.8f);
 			string count = $"{s.Area.Text.Length}/{s.Area.MaxChars}";
-			AisvTheme.DrawText(b, count, new Vector2(x + w - AisvTheme.Width(count, 0.62f), y + 4), AisvTheme.TextFaint, 0.62f);
-			y += AisvTheme.LineHeight(0.8f) + 2;
-			foreach (string line in AisvTheme.WrapLines(s.Hint, w, 0.68f))
+			Hearth.Ink(b, count, new Vector2(x + w - Hearth.Width(count, 0.62f), y + 4), Hearth.QuillPale, 0.62f);
+			y += Hearth.LineHeight(0.8f) + 2;
+			foreach (string line in Hearth.WrapLines(s.Hint, w, 0.68f))
 			{
-				AisvTheme.DrawText(b, line, new Vector2(x, y), AisvTheme.TextMuted, 0.68f);
-				y += AisvTheme.LineHeight(0.68f);
+				Hearth.Ink(b, line, new Vector2(x, y), Hearth.QuillSoft, 0.68f);
+				y += Hearth.LineHeight(0.68f);
 			}
 			y += 6;
 			s.Area.Bounds = new Rectangle(x, y, w, s.Height);
@@ -279,7 +279,7 @@ internal sealed class CardEditorPage : ShellPage
 			hits.Add(s.Area.Bounds, () => _fields.Focus(area), body);
 			y += s.Height + 18;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		int bottom = y + _mid.Offset;
 		_mid.Finish(b, body, y, 6);
 		KeepFocusedVisible(body, bottom);
@@ -320,23 +320,23 @@ internal sealed class CardEditorPage : ShellPage
 		}
 		Rectangle save = new Rectangle(r.Right - 200, r.Center.Y - 26, 200, 52);
 		bool dirty = Dirty;
-		AisvTheme.Button(b, save, dirty ? Tr.Get("card.save", "保存") : Tr.Get("card.savedShort", "已保存"), primary: true, hover: AisvTheme.Hover(save), disabled: !dirty);
+		Hearth.PressPlate(b, save, dirty ? Tr.Get("card.save", "保存") : Tr.Get("card.savedShort", "已保存"), primary: true, hover: Hearth.Hover(save), disabled: !dirty);
 		if (dirty)
 		{
 			hits.Add(save, Save);
 		}
 		string tip = Tr.Get("card.keys", "Tab 下一栏 · Ctrl+Enter 保存");
-		float tw = AisvTheme.Width(tip, 0.66f);
+		float tw = Hearth.Width(tip, 0.66f);
 		if (save.X - 20 - tw > x + 160)
 		{
-			AisvTheme.DrawText(b, tip, new Vector2(save.X - 20 - tw, r.Center.Y - AisvTheme.LineHeight(0.66f) / 2), AisvTheme.TextFaint, 0.66f);
+			Hearth.Ink(b, tip, new Vector2(save.X - 20 - tw, r.Center.Y - Hearth.LineHeight(0.66f) / 2), Hearth.QuillPale, 0.66f);
 		}
 	}
 
 	private static int SmallButton(SpriteBatch b, int x, Rectangle bar, string label, Hits hits, Action action)
 	{
-		Rectangle r = new Rectangle(x, bar.Center.Y - 22, (int)AisvTheme.Width(label, 0.75f) + 36, 44);
-		AisvTheme.Button(b, r, label, hover: AisvTheme.Hover(r), scale: 0.75f);
+		Rectangle r = new Rectangle(x, bar.Center.Y - 22, (int)Hearth.Width(label, 0.75f) + 36, 44);
+		Hearth.PressPlate(b, r, label, hover: Hearth.Hover(r), scale: 0.75f);
 		hits.Add(r, action);
 		return r.Right;
 	}

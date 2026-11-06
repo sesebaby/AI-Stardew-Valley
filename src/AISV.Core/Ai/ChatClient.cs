@@ -137,9 +137,10 @@ public sealed class ChatClient
 					_quirks[quirksKey] = adjusted;
 					continue;
 				}
-				_log.Error($"AI 请求出错（{status}）：{_mask(ForLog(text))}");
+				string Hidden(string s) => endpoint.ApiKey.Length >= 6 ? _mask(s).Replace(endpoint.ApiKey, "***") : _mask(s);
+				_log.Error($"AI 请求出错（{status}）：{ForLog(Hidden(text))}");
 				FailureKind failure = ProviderErrors.Classify(response.StatusCode, text);
-				return AiResult.Fail(failure, _mask(ProviderErrors.Message(text)), retryAfter: failure == FailureKind.RateLimit ? RetryAfter(response) : null);
+				return AiResult.Fail(failure, ProviderErrors.Message(Hidden(text)), retryAfter: failure == FailureKind.RateLimit ? RetryAfter(response) : null);
 			}
 		}
 		catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

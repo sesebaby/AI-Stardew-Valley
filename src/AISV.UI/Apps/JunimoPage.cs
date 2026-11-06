@@ -59,11 +59,11 @@ internal sealed class JunimoPage : ShellPage
 			: new Rectangle(room.Right + pad, area.Y + 20, area.Right - pad - room.Right - pad, area.Height - 40);
 		if (!s.Adopted)
 		{
-			AisvTheme.DrawCard(b, room);
-			AisvTheme.TextCentered(b, Tr.Get("junimo.none", "家里还没有 Junimo。"), new Rectangle(room.X, room.Center.Y - 80, room.Width, 40), AisvTheme.Text, 1f);
-			AisvTheme.TextCentered(b, Tr.Get("junimo.noneHint", "有了孩子以后会自己跑来一只，也可以现在就领养。"), new Rectangle(room.X + 20, room.Center.Y - 30, room.Width - 40, 30), AisvTheme.TextMuted, 0.74f);
+			Hearth.CardSlip(b, room);
+			Hearth.InkMiddle(b, Tr.Get("junimo.none", "家里还没有 Junimo。"), new Rectangle(room.X, room.Center.Y - 80, room.Width, 40), Hearth.Quill, 1f);
+			Hearth.InkMiddle(b, Tr.Get("junimo.noneHint", "有了孩子以后会自己跑来一只，也可以现在就领养。"), new Rectangle(room.X + 20, room.Center.Y - 30, room.Width - 40, 30), Hearth.QuillSoft, 0.74f);
 			Rectangle btn = new Rectangle(room.Center.X - 110, room.Center.Y + 30, 220, 54);
-			AisvTheme.Button(b, btn, Tr.Get("junimo.adopt", "领养一只"), primary: true, hover: AisvTheme.Hover(btn));
+			Hearth.PressPlate(b, btn, Tr.Get("junimo.adopt", "领养一只"), primary: true, hover: Hearth.Hover(btn));
 			hits.Add(btn, () =>
 			{
 				Ctx.Apps?.Adopt();
@@ -77,17 +77,17 @@ internal sealed class JunimoPage : ShellPage
 
 	private void Room(SpriteBatch b, Rectangle r, JunimoState s)
 	{
-		AisvTheme.DrawShadow(b, r, 16, 5);
-		AisvTheme.FillRounded(b, r, Wall, 16);
+		Hearth.CastShadow(b, r, 16, 5);
+		Hearth.FillRounded(b, r, Wall, 16);
 		int floorY = r.Y + r.Height * 2 / 3;
-		AisvTheme.Fill(b, new Rectangle(r.X + 8, floorY, r.Width - 16, r.Bottom - floorY - 8), Floor);
+		Hearth.Fill(b, new Rectangle(r.X + 8, floorY, r.Width - 16, r.Bottom - floorY - 8), Floor);
 		for (int i = 0; i < 6; i++)
 		{
-			AisvTheme.Fill(b, new Rectangle(r.X + 8, floorY + i * 18, r.Width - 16, 2), Color.Black * 0.06f);
+			Hearth.Fill(b, new Rectangle(r.X + 8, floorY + i * 18, r.Width - 16, 2), Color.Black * 0.06f);
 		}
 		Rectangle window = new Rectangle(r.X + r.Width / 6, r.Y + 36, r.Width / 4, r.Height / 4);
-		AisvTheme.Bordered(b, window, Game1.isDarkOut(Game1.currentLocation) ? new Color(40, 46, 90) : new Color(170, 214, 240), new Color(140, 96, 60), 6, 6);
-		AisvTheme.VLine(b, window.Center.X - 2, window.Y, window.Height, new Color(140, 96, 60), 4);
+		Hearth.Bordered(b, window, Game1.isDarkOut(Game1.currentLocation) ? new Color(40, 46, 90) : new Color(170, 214, 240), new Color(140, 96, 60), 6, 6);
+		Hearth.VLine(b, window.Center.X - 2, window.Y, window.Height, new Color(140, 96, 60), 4);
 		JunimoMood mood = JunimoRules.Mood(s);
 		double t = Game1.currentGameTime?.TotalGameTime.TotalSeconds ?? 0;
 		int scale = Math.Max(4, Math.Min(10, r.Height / 50));
@@ -106,7 +106,7 @@ internal sealed class JunimoPage : ShellPage
 		}
 		int x = r.Center.X - size / 2;
 		int y = floorY + 10 - size;
-		AisvTheme.FillRounded(b, new Rectangle(x + size / 8, floorY + 4, size * 3 / 4, scale * 3), Color.Black * 0.15f, scale * 2);
+		Hearth.FillRounded(b, new Rectangle(x + size / 8, floorY + 4, size * 3 / 4, scale * 3), Color.Black * 0.15f, scale * 2);
 		if (_sprite != null)
 		{
 			Rectangle src = new Rectangle(frame * 16, mood == JunimoMood.Lonely ? 32 : 0, 16, 16);
@@ -122,19 +122,19 @@ internal sealed class JunimoPage : ShellPage
 		}
 		if (mood == JunimoMood.Happy && (int)(t * 2) % 3 == 0)
 		{
-			AisvTheme.Heart(b, new Rectangle(x + size, y - scale * 4, scale * 4, scale * 4));
+			Hearth.Heart(b, new Rectangle(x + size, y - scale * 4, scale * 4, scale * 4));
 		}
-		AisvTheme.Bold(b, s.Name, new Vector2(r.X + 28, r.Bottom - 66), Color.White, 1f);
-		AisvTheme.DrawText(b, JunimoRules.MoodLabel(mood), new Vector2(r.X + 28, r.Bottom - 34), new Color(255, 246, 226), 0.72f);
+		Hearth.InkBold(b, s.Name, new Vector2(r.X + 28, r.Bottom - 66), Color.White, 1f);
+		Hearth.Ink(b, JunimoRules.MoodLabel(mood), new Vector2(r.X + 28, r.Bottom - 34), new Color(255, 246, 226), 0.72f);
 	}
 
 	private void Panel(SpriteBatch b, Rectangle r, JunimoState s, Hits hits)
 	{
-		AisvTheme.DrawCard(b, r);
+		Hearth.CardSlip(b, r);
 		int x = r.X + 24, w = r.Width - 48;
 		int y = r.Y + 22;
-		y = Bar(b, Tr.Get("junimo.full", "吃饱"), s.Fullness, AisvTheme.Gold, x, y, w);
-		y = Bar(b, Tr.Get("junimo.joy", "开心"), s.Joy, AisvTheme.Pink, x, y, w);
+		y = Bar(b, Tr.Get("junimo.full", "吃饱"), s.Fullness, Hearth.Amber, x, y, w);
+		y = Bar(b, Tr.Get("junimo.joy", "开心"), s.Joy, Hearth.Rose, x, y, w);
 		int today = AppData.Today;
 		(string Act, string Label, bool Done)[] acts =
 		{
@@ -147,7 +147,7 @@ internal sealed class JunimoPage : ShellPage
 		{
 			Rectangle btn = new Rectangle(x + i * (bw + 8), y, bw, 48);
 			(string act, string label, bool done) = acts[i];
-			AisvTheme.Button(b, btn, label, primary: !done, hover: !done && AisvTheme.Hover(btn), disabled: done, scale: 0.8f);
+			Hearth.PressPlate(b, btn, label, primary: !done, hover: !done && Hearth.Hover(btn), disabled: done, scale: 0.8f);
 			if (!done)
 			{
 				hits.Add(btn, () =>
@@ -160,31 +160,31 @@ internal sealed class JunimoPage : ShellPage
 		y += 62;
 		if (_said.Length > 0)
 		{
-			foreach (string line in AisvTheme.WrapLines(_said, w, 0.74f).Take(2))
+			foreach (string line in Hearth.WrapLines(_said, w, 0.74f).Take(2))
 			{
-				AisvTheme.DrawText(b, line, new Vector2(x, y), AisvTheme.AccentDark, 0.74f);
-				y += AisvTheme.LineHeight(0.74f);
+				Hearth.Ink(b, line, new Vector2(x, y), Hearth.LeafDeep, 0.74f);
+				y += Hearth.LineHeight(0.74f);
 			}
 			y += 8;
 		}
-		AisvTheme.HLine(b, x, y, w, AisvTheme.Divider, 1);
+		Hearth.HLine(b, x, y, w, Hearth.Seam, 1);
 		y += 14;
-		AisvTheme.Bold(b, Tr.Get("junimo.log", "这些天"), new Vector2(x, y), AisvTheme.TextMuted, 0.74f);
+		Hearth.InkBold(b, Tr.Get("junimo.log", "这些天"), new Vector2(x, y), Hearth.QuillSoft, 0.74f);
 		y += 32;
 		foreach (JunimoLog e in s.Log)
 		{
 			int ago = today - e.Day;
 			string when = ago <= 0 ? Tr.Get("townLedger.today", "今天") : Tr.Get("townLedger.ago", "{{n}} 天前", ("n", ago));
-			var lines = AisvTheme.WrapLines(ShellText.Clean(e.Text), w - 76, 0.7f).Take(2).ToList();
-			if (y + lines.Count * AisvTheme.LineHeight(0.7f) > r.Bottom - 16)
+			var lines = Hearth.WrapLines(ShellText.Clean(e.Text), w - 76, 0.7f).Take(2).ToList();
+			if (y + lines.Count * Hearth.LineHeight(0.7f) > r.Bottom - 16)
 			{
 				break;
 			}
-			AisvTheme.DrawText(b, when, new Vector2(x, y), AisvTheme.TextFaint, 0.62f);
+			Hearth.Ink(b, when, new Vector2(x, y), Hearth.QuillPale, 0.62f);
 			foreach (string line in lines)
 			{
-				AisvTheme.DrawText(b, line, new Vector2(x + 76, y), AisvTheme.Text, 0.7f);
-				y += AisvTheme.LineHeight(0.7f);
+				Hearth.Ink(b, line, new Vector2(x + 76, y), Hearth.Quill, 0.7f);
+				y += Hearth.LineHeight(0.7f);
 			}
 			y += 8;
 		}
@@ -192,10 +192,10 @@ internal sealed class JunimoPage : ShellPage
 
 	private static int Bar(SpriteBatch b, string label, int value, Color color, int x, int y, int w)
 	{
-		AisvTheme.DrawText(b, label, new Vector2(x, y), AisvTheme.TextMuted, 0.74f);
+		Hearth.Ink(b, label, new Vector2(x, y), Hearth.QuillSoft, 0.74f);
 		string v = value.ToString();
-		AisvTheme.Bold(b, v, new Vector2(x + w - AisvTheme.Width(v, 0.74f), y), AisvTheme.Text, 0.74f);
-		AisvTheme.Progress(b, new Rectangle(x, y + 32, w, 12), value / 100f, color);
+		Hearth.InkBold(b, v, new Vector2(x + w - Hearth.Width(v, 0.74f), y), Hearth.Quill, 0.74f);
+		Hearth.Gauge(b, new Rectangle(x, y + 32, w, 12), value / 100f, color);
 		return y + 62;
 	}
 }

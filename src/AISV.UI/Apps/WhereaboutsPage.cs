@@ -123,19 +123,33 @@ internal sealed class WhereaboutsPage : ShellPage
 	public override void Draw(SpriteBatch b, Rectangle area, Hits hits)
 	{
 		Rectangle bar = new Rectangle(area.X, area.Y, area.Width, 60);
-		AisvTheme.Fill(b, bar, AisvTheme.PageDeep);
-		AisvTheme.HLine(b, bar.X, bar.Bottom - 2, bar.Width, AisvTheme.Divider);
+		Hearth.Fill(b, bar, Hearth.ParchmentDeep);
+		Hearth.HLine(b, bar.X, bar.Bottom - 2, bar.Width, Hearth.Seam);
 		Rectangle list = new Rectangle(bar.X + 16, bar.Y + 10, 96, 40), map = new Rectangle(list.Right + 8, list.Y, 96, 40);
-		AisvTheme.Button(b, list, Tr.Get("where.tabList", "列表"), primary: !_mapMode, hover: AisvTheme.Hover(list), scale: 0.8f);
-		AisvTheme.Button(b, map, Tr.Get("where.tabMap", "地图"), primary: _mapMode, hover: AisvTheme.Hover(map), scale: 0.8f);
+		Hearth.PressPlate(b, list, Tr.Get("where.tabList", "列表"), primary: !_mapMode, hover: Hearth.Hover(list), scale: 0.8f);
+		Hearth.PressPlate(b, map, Tr.Get("where.tabMap", "地图"), primary: _mapMode, hover: Hearth.Hover(map), scale: 0.8f);
 		hits.Add(list, () => _mapMode = false);
 		hits.Add(map, () => _mapMode = true);
 		string clock = Tr.Get("where.now", "现在 {{time}}", ("time", Game1.getTimeOfDayString(Game1.timeOfDay)));
-		AisvTheme.DrawText(b, clock, new Vector2(bar.Right - 20 - AisvTheme.Width(clock, 0.8f), bar.Y + 18), AisvTheme.TextMuted, 0.8f);
+		Hearth.Ink(b, clock, new Vector2(bar.Right - 20 - Hearth.Width(clock, 0.8f), bar.Y + 18), Hearth.QuillSoft, 0.8f);
 		Rectangle body = new Rectangle(area.X, bar.Bottom, area.Width, area.Bottom - bar.Bottom);
 		if (_mapMode)
 		{
 			DrawMap(b, body, hits);
+			return;
+		}
+		if (Flip.Applies(body))
+		{
+			_flip.Draw(b, body, hits, r =>
+			{
+				_detail = Rectangle.Empty;
+				DrawGroups(b, r, hits);
+			}, r =>
+			{
+				_listView = Rectangle.Empty;
+				_detail = r;
+				DrawDetail(b);
+			});
 			return;
 		}
 		int listW = Math.Clamp(body.Width * 44 / 100, 380, 560);
@@ -145,19 +159,23 @@ internal sealed class WhereaboutsPage : ShellPage
 		DrawDetail(b);
 	}
 
+	private readonly Flip _flip = new Flip();
+
+	public override bool StepBack() => _flip.StepBack();
+
 	private void DrawGroups(SpriteBatch b, Rectangle panel, Hits hits)
 	{
-		AisvTheme.Fill(b, panel, AisvTheme.Card);
-		AisvTheme.VLine(b, panel.Right - 2, panel.Y, panel.Height, AisvTheme.Divider);
-		_listView = AisvTheme.Inflate(panel, -6);
-		AisvTheme.BeginClip(b, _listView);
+		Hearth.Fill(b, panel, Hearth.Slip);
+		Hearth.VLine(b, panel.Right - 2, panel.Y, panel.Height, Hearth.Seam);
+		_listView = Hearth.Inflate(panel, -6);
+		Hearth.BeginClip(b, _listView);
 		int y = _listView.Y - _listScroll.Offset;
 		const int rowH = 66;
 		foreach (WhereGroup group in _groups)
 		{
-			AisvTheme.Bold(b, AisvTheme.Truncate(ShellText.Clean(group.Name), _listView.Width - 80, 0.82f), new Vector2(_listView.X + 12, y + 8), AisvTheme.AccentDark, 0.82f);
+			Hearth.InkBold(b, Hearth.Truncate(ShellText.Clean(group.Name), _listView.Width - 80, 0.82f), new Vector2(_listView.X + 12, y + 8), Hearth.LeafDeep, 0.82f);
 			string count = group.People.Count.ToString();
-			AisvTheme.DrawText(b, count, new Vector2(_listView.Right - 24 - AisvTheme.Width(count, 0.72f), y + 10), AisvTheme.TextFaint, 0.72f);
+			Hearth.Ink(b, count, new Vector2(_listView.Right - 24 - Hearth.Width(count, 0.72f), y + 10), Hearth.QuillPale, 0.72f);
 			y += 40;
 			foreach (WherePlan plan in group.People)
 			{
@@ -172,7 +190,7 @@ internal sealed class WhereaboutsPage : ShellPage
 			}
 			y += 6;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_listScroll.Finish(b, _listView, y, 6);
 	}
 
@@ -190,22 +208,22 @@ internal sealed class WhereaboutsPage : ShellPage
 	{
 		if (plan.Who.Npc == _selected)
 		{
-			AisvTheme.FillRounded(b, row, AisvTheme.SelectedRow, 10);
-			AisvTheme.Fill(b, new Rectangle(row.X, row.Y + 8, 4, row.Height - 16), AisvTheme.Accent);
+			Hearth.FillRounded(b, row, Hearth.Honey, 10);
+			Hearth.Fill(b, new Rectangle(row.X, row.Y + 8, 4, row.Height - 16), Hearth.Leaf);
 		}
-		else if (AisvTheme.Hover(row, _listView))
+		else if (Hearth.Hover(row, _listView))
 		{
-			AisvTheme.FillRounded(b, row, AisvTheme.PageDeep, 10);
+			Hearth.FillRounded(b, row, Hearth.ParchmentDeep, 10);
 		}
 		Kit.Avatar(b, new Rectangle(row.X + 12, row.Center.Y - 22, 44, 44), Ctx, plan.Who.Npc);
 		string state = StateWord(plan);
-		int cw = AisvTheme.ChipWidth(state, 0.62f);
-		AisvTheme.Chip(b, new Vector2(row.Right - 12 - cw, row.Y + 10), state, plan.State == WhereState.Walking ? AisvTheme.GoldSoft : AisvTheme.PageDeep, AisvTheme.TextMuted, 0.62f);
+		int cw = Hearth.TagWidth(state, 0.62f);
+		Hearth.Tag(b, new Vector2(row.Right - 12 - cw, row.Y + 10), state, plan.State == WhereState.Walking ? Hearth.AmberPale : Hearth.ParchmentDeep, Hearth.QuillSoft, 0.62f);
 		int tx = row.X + 68, right = row.Right - 12;
-		AisvTheme.DrawText(b, AisvTheme.Truncate(plan.Who.Name, right - cw - 8 - tx, 0.9f), new Vector2(tx, row.Y + 8), AisvTheme.Text, 0.9f);
+		Hearth.Ink(b, Hearth.Truncate(plan.Who.Name, right - cw - 8 - tx, 0.9f), new Vector2(tx, row.Y + 8), Hearth.Quill, 0.9f);
 		string next = NextLine(plan);
 		bool soon = plan.Next != null && Whereabouts.IsSoon(Game1.timeOfDay, plan.Next.Time);
-		AisvTheme.DrawText(b, AisvTheme.Truncate(next, right - tx, 0.7f), new Vector2(tx, row.Y + 38), soon ? AisvTheme.AccentDark : AisvTheme.TextFaint, 0.7f);
+		Hearth.Ink(b, Hearth.Truncate(next, right - tx, 0.7f), new Vector2(tx, row.Y + 38), soon ? Hearth.LeafDeep : Hearth.QuillPale, 0.7f);
 	}
 
 	private static string StateWord(WherePlan plan) => plan.State switch
@@ -245,23 +263,23 @@ internal sealed class WhereaboutsPage : ShellPage
 		WherePlan? plan = _groups.SelectMany(g => g.People).FirstOrDefault(p => p.Who.Npc == _selected);
 		if (plan == null)
 		{
-			AisvTheme.TextCentered(b, Tr.Get("where.pick", "选一位村民看看。"), _detail, AisvTheme.TextMuted);
+			Hearth.InkMiddle(b, Tr.Get("where.pick", "选一位村民看看。"), _detail, Hearth.QuillSoft);
 			return;
 		}
-		AisvTheme.BeginClip(b, _detail);
+		Hearth.BeginClip(b, _detail);
 		int w = Math.Min(_detail.Width - 48, 640), x = _detail.X + (_detail.Width - w) / 2;
 		int y = _detail.Y + 18 - _detailScroll.Offset;
 		Rectangle head = new Rectangle(x, y, w, 148);
-		AisvTheme.DrawCard(b, head);
+		Hearth.CardSlip(b, head);
 		Kit.Avatar(b, new Rectangle(head.X + 18, head.Y + 20, 108, 108), Ctx, plan.Who.Npc);
 		int tx = head.X + 144, tw = head.Right - 16 - tx;
-		AisvTheme.Bold(b, AisvTheme.Truncate(plan.Who.Name, tw, 1.15f), new Vector2(tx, head.Y + 18), AisvTheme.Text, 1.15f);
+		Hearth.InkBold(b, Hearth.Truncate(plan.Who.Name, tw, 1.15f), new Vector2(tx, head.Y + 18), Hearth.Quill, 1.15f);
 		string now = plan.State == WhereState.Hidden ? Tr.Get("where.next.hidden", "不知道去哪了") : Tr.Get("agenda.at", "现在在{{place}}", ("place", ShellText.Clean(plan.Who.PlaceName)));
-		AisvTheme.DrawText(b, AisvTheme.Truncate(now, tw, 0.8f), new Vector2(tx, head.Y + 58), AisvTheme.AccentDark, 0.8f);
-		AisvTheme.DrawText(b, AisvTheme.Truncate(HomeLine(plan), tw, 0.76f), new Vector2(tx, head.Y + 92), AisvTheme.TextMuted, 0.76f);
+		Hearth.Ink(b, Hearth.Truncate(now, tw, 0.8f), new Vector2(tx, head.Y + 58), Hearth.LeafDeep, 0.8f);
+		Hearth.Ink(b, Hearth.Truncate(HomeLine(plan), tw, 0.76f), new Vector2(tx, head.Y + 92), Hearth.QuillSoft, 0.76f);
 		y = head.Bottom + 14;
 		y = DrawRoute(b, plan, x, y, w);
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_detailScroll.Finish(b, _detail, y + 12);
 	}
 
@@ -270,23 +288,23 @@ internal sealed class WhereaboutsPage : ShellPage
 		List<WhereStop> stops = plan.Who.Stops.OrderBy(s => s.Time).ToList();
 		const int rowH = 46;
 		Rectangle card = new Rectangle(x, y, w, 56 + Math.Max(1, stops.Count) * rowH + 8);
-		AisvTheme.DrawCard(b, card);
+		Hearth.CardSlip(b, card);
 		Kit.SectionTitle(b, Tr.Get("where.route", "今天的路线"), x + 20, y + 18);
 		int ry = y + 54;
 		if (stops.Count == 0)
 		{
-			AisvTheme.DrawText(b, Tr.Get("where.noRoute", "今天没有固定的路线。"), new Vector2(x + 24, ry + 8), AisvTheme.TextFaint, 0.8f);
+			Hearth.Ink(b, Tr.Get("where.noRoute", "今天没有固定的路线。"), new Vector2(x + 24, ry + 8), Hearth.QuillPale, 0.8f);
 		}
 		for (int i = 0; i < stops.Count; i++)
 		{
 			bool current = i == plan.CurrentStop, past = i < plan.CurrentStop;
-			Color ink = current ? AisvTheme.AccentDark : past ? AisvTheme.TextFaint : AisvTheme.Text;
+			Color ink = current ? Hearth.LeafDeep : past ? Hearth.QuillPale : Hearth.Quill;
 			if (current)
 			{
-				AisvTheme.FillRounded(b, new Rectangle(x + 8, ry, w - 16, rowH - 4), AisvTheme.SelectedRow, 8);
+				Hearth.FillRounded(b, new Rectangle(x + 8, ry, w - 16, rowH - 4), Hearth.Honey, 8);
 			}
-			AisvTheme.DrawText(b, Game1.getTimeOfDayString(stops[i].Time), new Vector2(x + 24, ry + 8), ink, 0.8f);
-			AisvTheme.DrawText(b, AisvTheme.Truncate(ShellText.Clean(stops[i].Name), w - 190, 0.82f), new Vector2(x + 150, ry + 8), ink, 0.82f);
+			Hearth.Ink(b, Game1.getTimeOfDayString(stops[i].Time), new Vector2(x + 24, ry + 8), ink, 0.8f);
+			Hearth.Ink(b, Hearth.Truncate(ShellText.Clean(stops[i].Name), w - 190, 0.82f), new Vector2(x + 150, ry + 8), ink, 0.82f);
 			ry += rowH;
 		}
 		return card.Bottom;
@@ -309,7 +327,7 @@ internal sealed class WhereaboutsPage : ShellPage
 		}
 		if (_map == null)
 		{
-			AisvTheme.TextCentered(b, Tr.Get("where.noMap", "这里看不了地图，用列表吧。"), body, AisvTheme.TextMuted);
+			Hearth.InkMiddle(b, Tr.Get("where.noMap", "这里看不了地图，用列表吧。"), body, Hearth.QuillSoft);
 			return;
 		}
 		Rectangle off = new Rectangle(body.X + 16, body.Bottom - 62, body.Width - 32, 54);
@@ -334,8 +352,8 @@ internal sealed class WhereaboutsPage : ShellPage
 		}
 		List<WherePlan> away = everyone.Where(p => p.State != WhereState.Hidden && (!_points.TryGetValue(p.Who.Npc, out var at) || !string.Equals(at.Region, _map.Region, StringComparison.OrdinalIgnoreCase))).ToList();
 		string label = away.Count > 0 ? Tr.Get("where.offMap", "不在这张地图上：") : "";
-		AisvTheme.DrawText(b, label, new Vector2(off.X, off.Y + 14), AisvTheme.TextMuted, 0.76f);
-		int fx = off.X + (int)AisvTheme.Width(label, 0.76f) + 8;
+		Hearth.Ink(b, label, new Vector2(off.X, off.Y + 14), Hearth.QuillSoft, 0.76f);
+		int fx = off.X + (int)Hearth.Width(label, 0.76f) + 8;
 		foreach (WherePlan plan in away)
 		{
 			if (fx + 44 > off.Right - 260)
@@ -347,7 +365,7 @@ internal sealed class WhereaboutsPage : ShellPage
 		}
 		if (hover.Length > 0)
 		{
-			AisvTheme.DrawText(b, AisvTheme.Truncate(hover, 250, 0.76f), new Vector2(off.Right - 250, off.Y + 14), AisvTheme.Text, 0.76f);
+			Hearth.Ink(b, Hearth.Truncate(hover, 250, 0.76f), new Vector2(off.Right - 250, off.Y + 14), Hearth.Quill, 0.76f);
 		}
 	}
 
@@ -361,6 +379,6 @@ internal sealed class WhereaboutsPage : ShellPage
 			Select(npc);
 			_mapMode = false;
 		}, clip);
-		return AisvTheme.Hover(face, clip) ? plan.Who.Name + " · " + ShellText.Clean(plan.Who.PlaceName) : null;
+		return Hearth.Hover(face, clip) ? plan.Who.Name + " · " + ShellText.Clean(plan.Who.PlaceName) : null;
 	}
 }

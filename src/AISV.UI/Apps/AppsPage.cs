@@ -15,7 +15,7 @@ namespace AISV.UI.Apps;
 /// <summary>应用：七个读 AI 数据的小应用排成图标格子，每个下面一行实时的摘要。</summary>
 internal sealed class AppsPage : ShellPage
 {
-	internal sealed record App(string Id, PixelGlyph Icon, Color Tint, string Name, Func<string> Summary, Action Open);
+	internal sealed record App(string Id, PixelArt Icon, Color Tint, string Name, Func<string> Summary, Action Open);
 
 	private readonly Scroller _scroll = new Scroller();
 
@@ -46,6 +46,13 @@ internal sealed class AppsPage : ShellPage
 			new App("ads", AppIcons.Board, new Color(246, 234, 214), Tr.Get("apps.ads", "分类广告"), AdsSummary, () => Host.Push(new ClassifiedsPage(Ctx))),
 			new App("whosaid", AppIcons.Quote, new Color(240, 240, 236), Tr.Get("apps.whosaid", "谁说的"), WhoSummary, () => Host.Push(new WhoSaidItPage(Ctx))),
 			new App("junimo", AppIcons.Junimo, new Color(228, 246, 220), Tr.Get("apps.junimo", "Junimo 宠物"), JunimoSummary, () => Host.Push(new JunimoPage(Ctx))),
+			new App("perfection", AppIcons.Perfection, new Color(255, 236, 170), Tr.Get("tools.perfection", "完美度"), () => PerfectionPage.Score().ToString("0.0") + "%", () => Host.Push(new PerfectionPage(Ctx))),
+			new App("todo", AppIcons.Todo, new Color(240, 234, 214), Tr.Get("tools.todo", "待办"), TodoSummary, () => Host.Push(new TodoPage(Ctx))),
+			new App("focus", AppIcons.Focus, new Color(250, 222, 210), Tr.Get("tools.focus", "番茄钟"), () => Tr.Get("tools.focus.line", "专心 25 分钟，歇 5 分钟"), () => Host.Push(new FocusPage(Ctx))),
+			new App("birthdays", AppIcons.Birthdays, new Color(252, 226, 236), Tr.Get("tools.birthdays", "生日"), () => Tr.Get("tools.birthdays.line", "这一季谁过生日，一看就知道"), () => Host.Push(new BirthdaysPage(Ctx))),
+			new App("aquarium", AppIcons.Aquarium, new Color(212, 234, 248), Tr.Get("tools.aquarium", "鱼缸"), () => Tr.Get("tools.aquarium.line", "钓到过的鱼都在这儿游"), () => Host.Push(new CollectionPage(Ctx, Tr.Get("tools.aquarium", "鱼缸"), Tr.Get("tools.aquarium.lead", "你钓到过的鱼。"), CollectionPage.Fish, tank: true))),
+			new App("cookbook", AppIcons.Cookbook, new Color(248, 232, 206), Tr.Get("tools.cookbook", "食谱"), () => Tr.Get("tools.cookbook.line", "学会了哪些菜，做过哪些"), () => Host.Push(new CollectionPage(Ctx, Tr.Get("tools.cookbook", "食谱"), Tr.Get("tools.cookbook.lead", "彩色的是做过的。"), CollectionPage.Recipes))),
+			new App("museum", AppIcons.Museum, new Color(232, 228, 216), Tr.Get("tools.museum", "博物馆"), () => Tr.Get("tools.museum.line", "捐了什么，还差什么"), () => Host.Push(new CollectionPage(Ctx, Tr.Get("tools.museum", "博物馆"), Tr.Get("tools.museum.lead", "彩色的是已经捐出去的。"), CollectionPage.Museum))),
 			new App("thanks", AppIcons.Thanks, new Color(252, 232, 238), Tr.Get("apps.thanks", "致谢"), () => Tr.Get("apps.thanks.line", "谢谢每一位帮过这个 mod 的老乡"), () => Host.Push(new ThanksPage(Ctx)))
 		};
 	}
@@ -101,15 +108,15 @@ internal sealed class AppsPage : ShellPage
 		_view = area;
 		const int pad = 32;
 		int x = area.X + pad, w = area.Width - pad * 2;
-		AisvTheme.BeginClip(b, area);
+		Hearth.BeginClip(b, area);
 		int y = area.Y + 24 - _scroll.Offset;
-		AisvTheme.Bold(b, Tr.Get("apps.title", "应用"), new Vector2(x, y), AisvTheme.Text, 1.25f);
+		Hearth.InkBold(b, Tr.Get("apps.title", "应用"), new Vector2(x, y), Hearth.Quill, 1.25f);
 		string manageLabel = Tr.Get("apps.manage", "管理应用");
-		int mw = (int)AisvTheme.Width(manageLabel, 0.76f) + 36;
+		int mw = (int)Hearth.Width(manageLabel, 0.76f) + 36;
 		Rectangle manage = new Rectangle(x + w - mw, y, mw, 42);
-		AisvTheme.Button(b, manage, manageLabel, hover: AisvTheme.Hover(manage, area), scale: 0.76f);
+		Hearth.PressPlate(b, manage, manageLabel, hover: Hearth.Hover(manage, area), scale: 0.76f);
 		hits.Add(manage, () => Host.Push(new AppShelfPage(Ctx)), area);
-		AisvTheme.DrawText(b, Tr.Get("apps.sub", "从别的角度看看山谷：心情、日程、星象、八卦、关系、口碑和这一年。"), new Vector2(x + 2, y + 46), AisvTheme.TextMuted, 0.78f);
+		Hearth.Ink(b, Tr.Get("apps.sub", "从别的角度看看山谷：心情、日程、星象、八卦、关系、口碑和这一年。"), new Vector2(x + 2, y + 46), Hearth.QuillSoft, 0.78f);
 		y += 96;
 		int cols = w >= 1180 ? 3 : w >= 720 ? 2 : 1;
 		const int gap = 22, h = 150;
@@ -121,7 +128,7 @@ internal sealed class AppsPage : ShellPage
 			if (r.Bottom >= area.Y && r.Y <= area.Bottom)
 			{
 				App app = apps[i];
-				Tile(b, r, app, AisvTheme.Hover(r, area));
+				Tile(b, r, app, Hearth.Hover(r, area));
 				hits.Add(r, () =>
 				{
 					Game1.playSound("smallSelect");
@@ -130,33 +137,32 @@ internal sealed class AppsPage : ShellPage
 			}
 		}
 		int bottom = y + (apps.Count + cols - 1) / cols * (h + gap) + 8;
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, area, bottom, 12);
 	}
 
 	private void Tile(SpriteBatch b, Rectangle r, App app, bool hover)
 	{
 		Rectangle card = hover ? new Rectangle(r.X, r.Y - 3, r.Width, r.Height) : r;
-		AisvTheme.DrawShadow(b, card, 14, hover ? 7 : 4);
-		AisvTheme.Bordered(b, card, AisvTheme.Card, hover ? AisvTheme.Accent : AisvTheme.CardBorder, 14);
+		Hearth.CardSlip(b, card, hover);
 		Rectangle well = new Rectangle(card.X + 22, card.Center.Y - 50, 100, 100);
-		AisvTheme.FillRounded(b, well, app.Tint, 22);
-		AisvTheme.FillRounded(b, new Rectangle(well.X + 6, well.Y + 6, well.Width - 12, 18), Color.White * 0.35f, 9);
+		Hearth.Bordered(b, well, app.Tint, Hearth.Bark, 8, 4);
+		Hearth.Fill(b, new Rectangle(well.X + 8, well.Y + 8, well.Width - 16, 4), Color.White * 0.5f);
 		app.Icon.Draw(b, well.Center.X - 32, well.Center.Y - 32, 4);
 		int tx = well.Right + 22, tr = card.Right - 44;
-		AisvTheme.Bold(b, app.Name, new Vector2(tx, card.Y + 30), AisvTheme.Text, 1.0f);
+		Hearth.InkBold(b, app.Name, new Vector2(tx, card.Y + 30), Hearth.Quill, 1.0f);
 		string summary = _summaries.TryGetValue(app.Id, out string? s) ? s : "";
 		if (summary.Length == 0)
 		{
 			summary = Tr.Get("apps.nothing", "还没什么可看的");
 		}
 		int ly = card.Y + 72;
-		foreach (string line in AisvTheme.WrapLines(summary, tr - tx, 0.74f).Take(2))
+		foreach (string line in Hearth.WrapLines(summary, tr - tx, 0.74f).Take(2))
 		{
-			AisvTheme.DrawText(b, line, new Vector2(tx, ly), AisvTheme.TextMuted, 0.74f);
-			ly += AisvTheme.LineHeight(0.74f);
+			Hearth.Ink(b, line, new Vector2(tx, ly), Hearth.QuillSoft, 0.74f);
+			ly += Hearth.LineHeight(0.74f);
 		}
-		AisvTheme.Chevron(b, new Vector2(card.Right - 26, card.Center.Y), left: false, hover ? AisvTheme.AccentDark : AisvTheme.TextFaint);
+		Hearth.Chevron(b, new Vector2(card.Right - 26, card.Center.Y), left: false, hover ? Hearth.LeafDeep : Hearth.QuillPale);
 	}
 
 	private string MessengerSummary()
@@ -217,6 +223,12 @@ internal sealed class AppsPage : ShellPage
 		return best == null
 			? Tr.Get("apps.web.count", "牵着 {{count}} 个人", ("count", map.Ties.Count))
 			: Tr.Get("apps.web.line", "{{count}} 段关系，最要好的是{{a}}和{{b}}", ("count", map.Ties.Count), ("a", Ctx.Display(best.A)), ("b", Ctx.Display(best.B)));
+	}
+
+	private string TodoSummary()
+	{
+		int open = new TodoPad(Ctx.Store).InOrder().Count(n => !n.Ticked);
+		return open == 0 ? Tr.Get("tools.todo.line", "把要做的事记下来") : Tr.Get("tools.todo.open", "还有 {{n}} 件没做", ("n", open));
 	}
 
 	private string FamilySummary()

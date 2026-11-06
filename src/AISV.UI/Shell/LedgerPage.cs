@@ -81,11 +81,11 @@ internal sealed class LedgerPage : ShellPage
 		foreach (View v in Enum.GetValues<View>())
 		{
 			string label = Label(v);
-			int tw = (int)AisvTheme.Width(label, 0.85f) + 40;
+			int tw = (int)Hearth.Width(label, 0.85f) + 40;
 			Rectangle r = new Rectangle(tx, ty, tw, 42);
 			bool sel = v == _view;
-			AisvTheme.Bordered(b, r, sel ? AisvTheme.AccentSoft : AisvTheme.Hover(r) ? AisvTheme.Card : AisvTheme.Page, sel ? AisvTheme.Accent : AisvTheme.CardBorder, 21);
-			AisvTheme.TextCentered(b, label, r, sel ? AisvTheme.AccentDark : AisvTheme.TextMuted, 0.85f);
+			Hearth.Bordered(b, r, sel ? Hearth.LeafPale : Hearth.Hover(r) ? Hearth.Slip : Hearth.Parchment, sel ? Hearth.Leaf : Hearth.SlipEdge, 21);
+			Hearth.InkMiddle(b, label, r, sel ? Hearth.LeafDeep : Hearth.QuillSoft, 0.85f);
 			hits.Add(r, () =>
 			{
 				if (_view != v)
@@ -98,7 +98,7 @@ internal sealed class LedgerPage : ShellPage
 			tx = r.Right + 8;
 		}
 		_body = new Rectangle(area.X, ty + 56, area.Width, area.Bottom - ty - 56);
-		AisvTheme.BeginClip(b, _body);
+		Hearth.BeginClip(b, _body);
 		int x = _body.X + pad, cw = _body.Width - pad * 2 - 12;
 		int y = _body.Y + 8 - _scroll.Offset;
 		y = _view switch
@@ -108,7 +108,7 @@ internal sealed class LedgerPage : ShellPage
 			View.Log => DrawLog(b, w, x, y, cw),
 			_ => DrawLoan(b, service, w, x, y, cw, hits)
 		};
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, _body, y + 16);
 		if (_tip is var (bounds, text))
 		{
@@ -118,26 +118,26 @@ internal sealed class LedgerPage : ShellPage
 
 	private void DrawHead(SpriteBatch b, LedgerService service, NpcWallet w, Rectangle r)
 	{
-		AisvTheme.DrawCard(b, r);
+		Hearth.CardSlip(b, r);
 		Rectangle face = new Rectangle(r.X + 20, r.Y + 16, 72, 72);
 		Kit.Avatar(b, face, Ctx, _npc);
 		int tx = face.Right + 18;
 		Occupation job = service.Job(_npc);
 		int right = r.Right - 24;
-		right = Money(b, Tr.Get("ledgerPage.savings", "存款"), w.Savings, right, r.Y + 22, AisvTheme.TextMuted) - 28;
-		right = Money(b, Tr.Get("ledgerPage.gold", "身上"), w.Gold, right, r.Y + 22, AisvTheme.Gold);
+		right = Money(b, Tr.Get("ledgerPage.savings", "存款"), w.Savings, right, r.Y + 22, Hearth.QuillSoft) - 28;
+		right = Money(b, Tr.Get("ledgerPage.gold", "身上"), w.Gold, right, r.Y + 22, Hearth.Amber);
 		int nameW = Math.Max(40, right - 16 - tx);
-		AisvTheme.Bold(b, AisvTheme.Truncate(Ctx.Display(_npc), nameW, 1f), new Vector2(tx, r.Y + 18), AisvTheme.Text, 1f);
-		AisvTheme.DrawText(b, AisvTheme.Truncate(job.Job + (job.Wage > 0 ? Tr.Get("ledgerPage.wage", " · 周薪 {{n}}g", ("n", job.Wage)) : ""), nameW, 0.72f), new Vector2(tx, r.Y + 54), AisvTheme.TextMuted, 0.72f);
+		Hearth.InkBold(b, Hearth.Truncate(Ctx.Display(_npc), nameW, 1f), new Vector2(tx, r.Y + 18), Hearth.Quill, 1f);
+		Hearth.Ink(b, Hearth.Truncate(job.Job + (job.Wage > 0 ? Tr.Get("ledgerPage.wage", " · 周薪 {{n}}g", ("n", job.Wage)) : ""), nameW, 0.72f), new Vector2(tx, r.Y + 54), Hearth.QuillSoft, 0.72f);
 	}
 
 	/// <summary>右对齐画一组"标题 + 金额"，返回左边的 x。</summary>
 	private static int Money(SpriteBatch b, string label, int amount, int right, int y, Color color)
 	{
 		string value = $"{amount:N0}g";
-		float w = Math.Max(AisvTheme.Width(value, 1f), AisvTheme.Width(label, 0.7f));
-		AisvTheme.DrawText(b, label, new Vector2(right - AisvTheme.Width(label, 0.7f), y), AisvTheme.TextFaint, 0.7f);
-		AisvTheme.Bold(b, value, new Vector2(right - AisvTheme.Width(value, 1f), y + 26), color, 1f);
+		float w = Math.Max(Hearth.Width(value, 1f), Hearth.Width(label, 0.7f));
+		Hearth.Ink(b, label, new Vector2(right - Hearth.Width(label, 0.7f), y), Hearth.QuillPale, 0.7f);
+		Hearth.InkBold(b, value, new Vector2(right - Hearth.Width(value, 1f), y + 26), color, 1f);
 		return right - (int)w;
 	}
 
@@ -146,8 +146,8 @@ internal sealed class LedgerPage : ShellPage
 		const int cell = 72, gap = 10;
 		int cols = Math.Max(1, (w + gap) / (cell + gap));
 		string count = Tr.Get("ledgerPage.slots", "{{n}}/{{max}} 格", ("n", items.Count), ("max", slots));
-		AisvTheme.DrawText(b, count, new Vector2(x, y), AisvTheme.TextFaint, 0.7f);
-		y += AisvTheme.LineHeight(0.7f) + 10;
+		Hearth.Ink(b, count, new Vector2(x, y), Hearth.QuillPale, 0.7f);
+		y += Hearth.LineHeight(0.7f) + 10;
 		for (int i = 0; i < slots; i++)
 		{
 			Rectangle r = new Rectangle(x + i % cols * (cell + gap), y + i / cols * (cell + gap), cell, cell);
@@ -156,8 +156,8 @@ internal sealed class LedgerPage : ShellPage
 				continue;
 			}
 			LedgerItem? item = i < items.Count ? items[i] : null;
-			bool hover = item != null && AisvTheme.Hover(r, _body);
-			AisvTheme.Bordered(b, r, item == null ? AisvTheme.Page : hover ? AisvTheme.Card : AisvTheme.PageDeep, hover ? AisvTheme.Gold : AisvTheme.CardBorder, 10);
+			bool hover = item != null && Hearth.Hover(r, _body);
+			Hearth.Bordered(b, r, item == null ? Hearth.Parchment : hover ? Hearth.Slip : Hearth.ParchmentDeep, hover ? Hearth.Amber : Hearth.SlipEdge, 10);
 			if (item == null)
 			{
 				continue;
@@ -165,17 +165,17 @@ internal sealed class LedgerPage : ShellPage
 			ParsedItemData? data = ItemRegistry.GetData(item.Id);
 			if (data != null && !data.IsErrorItem)
 			{
-				b.Draw(data.GetTexture(), AisvTheme.Inflate(r, -12), data.GetSourceRect(), Color.White);
+				b.Draw(data.GetTexture(), Hearth.Inflate(r, -12), data.GetSourceRect(), Color.White);
 			}
 			if (item.Quality > 0)
 			{
-				Color star = item.Quality >= 4 ? new Color(180, 90, 200) : item.Quality == 2 ? AisvTheme.Gold : new Color(170, 170, 180);
-				AisvTheme.FillRounded(b, new Rectangle(r.X + 6, r.Bottom - 16, 10, 10), star, 5);
+				Color star = item.Quality >= 4 ? new Color(180, 90, 200) : item.Quality == 2 ? Hearth.Amber : new Color(170, 170, 180);
+				Hearth.FillRounded(b, new Rectangle(r.X + 6, r.Bottom - 16, 10, 10), star, 5);
 			}
 			if (item.Count > 1)
 			{
 				string n = item.Count.ToString();
-				AisvTheme.Bold(b, n, new Vector2(r.Right - 8 - AisvTheme.Width(n, 0.62f), r.Bottom - 6 - AisvTheme.LineHeight(0.62f)), AisvTheme.Text, 0.62f);
+				Hearth.InkBold(b, n, new Vector2(r.Right - 8 - Hearth.Width(n, 0.62f), r.Bottom - 6 - Hearth.LineHeight(0.62f)), Hearth.Quill, 0.62f);
 			}
 			if (hover)
 			{
@@ -190,7 +190,7 @@ internal sealed class LedgerPage : ShellPage
 	{
 		if (w.Log.Count == 0)
 		{
-			AisvTheme.DrawText(b, Tr.Get("ledgerPage.noLog", "还没有记过账。"), new Vector2(x, y), AisvTheme.TextMuted, 0.8f);
+			Hearth.Ink(b, Tr.Get("ledgerPage.noLog", "还没有记过账。"), new Vector2(x, y), Hearth.QuillSoft, 0.8f);
 			return y + 30;
 		}
 		int lastDay = int.MinValue;
@@ -201,19 +201,19 @@ internal sealed class LedgerPage : ShellPage
 			{
 				lastDay = e.Day;
 				y += 6;
-				AisvTheme.Bold(b, DayLabel(e.Day), new Vector2(x, y), AisvTheme.AccentDark, 0.75f);
-				y += AisvTheme.LineHeight(0.75f) + 6;
+				Hearth.InkBold(b, DayLabel(e.Day), new Vector2(x, y), Hearth.LeafDeep, 0.75f);
+				y += Hearth.LineHeight(0.75f) + 6;
 			}
 			Rectangle row = new Rectangle(x, y, width, rowH);
 			if (row.Bottom >= _body.Y && row.Y <= _body.Bottom)
 			{
-				AisvTheme.Bordered(b, row, AisvTheme.Card, AisvTheme.Divider, 10);
+				Hearth.Bordered(b, row, Hearth.Slip, Hearth.Seam, 10);
 				string kind = LedgerRules.KindLabel(e.Kind);
-				Rectangle chip = AisvTheme.Chip(b, new Vector2(row.X + 14, row.Y + 13), kind, e.Amount >= 0 ? AisvTheme.AccentSoft : AisvTheme.Divider, e.Amount >= 0 ? AisvTheme.AccentDark : AisvTheme.TextMuted, 0.62f);
+				Rectangle chip = Hearth.Tag(b, new Vector2(row.X + 14, row.Y + 13), kind, e.Amount >= 0 ? Hearth.LeafPale : Hearth.Seam, e.Amount >= 0 ? Hearth.LeafDeep : Hearth.QuillSoft, 0.62f);
 				string amount = e.Amount == 0 ? "" : $"{e.Amount:+#,0;-#,0}g";
-				float aw = AisvTheme.Width(amount, 0.85f);
-				AisvTheme.Bold(b, amount, new Vector2(row.Right - 16 - aw, row.Y + 12), e.Amount >= 0 ? AisvTheme.Accent : AisvTheme.Danger, 0.85f);
-				AisvTheme.DrawText(b, AisvTheme.Truncate(ShellText.Clean(e.Note), row.Right - 32 - aw - chip.Right, 0.75f), new Vector2(chip.Right + 12, row.Y + 13), AisvTheme.Text, 0.75f);
+				float aw = Hearth.Width(amount, 0.85f);
+				Hearth.InkBold(b, amount, new Vector2(row.Right - 16 - aw, row.Y + 12), e.Amount >= 0 ? Hearth.Leaf : Hearth.Berry, 0.85f);
+				Hearth.Ink(b, Hearth.Truncate(ShellText.Clean(e.Note), row.Right - 32 - aw - chip.Right, 0.75f), new Vector2(chip.Right + 12, row.Y + 13), Hearth.Quill, 0.75f);
 			}
 			y += rowH + 6;
 		}
@@ -240,25 +240,25 @@ internal sealed class LedgerPage : ShellPage
 			int today = (Game1.Date?.TotalDays ?? 0) + 1;
 			int left = debt.DueDay - today;
 			Rectangle card = new Rectangle(x, y, cardW, 190);
-			AisvTheme.DrawCard(b, card, highlight: left < 0);
-			AisvTheme.Bold(b, Tr.Get("ledgerPage.owe", "你欠{{name}} {{gold}}g", ("name", Ctx.Display(_npc)), ("gold", debt.Owed)), new Vector2(card.X + 24, card.Y + 20), left < 0 ? AisvTheme.Danger : AisvTheme.Text, 1f);
+			Hearth.CardSlip(b, card, highlight: left < 0);
+			Hearth.InkBold(b, Tr.Get("ledgerPage.owe", "你欠{{name}} {{gold}}g", ("name", Ctx.Display(_npc)), ("gold", debt.Owed)), new Vector2(card.X + 24, card.Y + 20), left < 0 ? Hearth.Berry : Hearth.Quill, 1f);
 			string due = left > 0 ? Tr.Get("ledgerPage.dueIn", "{{n}} 天后到期", ("n", left)) : left == 0 ? Tr.Get("ledgerPage.dueToday", "今天到期") : Tr.Get("ledgerPage.overdue", "已经过期 {{n}} 天", ("n", -left));
 			string owedLine = debt.Tab
 				? Tr.Get("ledgerPage.tab", "赊了 {{gold}}g 的账，已还 {{paid}}g · {{due}}", ("gold", debt.Amount), ("paid", debt.Repaid), ("due", due))
 				: Tr.Get("ledgerPage.borrowed", "借了 {{gold}}g，已还 {{paid}}g · {{due}}", ("gold", debt.Amount), ("paid", debt.Repaid), ("due", due));
-			AisvTheme.DrawText(b, owedLine, new Vector2(card.X + 24, card.Y + 60), AisvTheme.TextMuted, 0.78f);
-			AisvTheme.DrawText(b, StyleNote(debt.Style), new Vector2(card.X + 24, card.Y + 92), AisvTheme.Warn, 0.7f);
+			Hearth.Ink(b, owedLine, new Vector2(card.X + 24, card.Y + 60), Hearth.QuillSoft, 0.78f);
+			Hearth.Ink(b, StyleNote(debt.Style), new Vector2(card.X + 24, card.Y + 92), Hearth.Rust, 0.7f);
 			Rectangle all = new Rectangle(card.X + 24, card.Bottom - 20 - 48, 200, 48);
 			Rectangle part = new Rectangle(all.Right + 12, all.Y, 160, 48);
 			bool canAll = Game1.player.Money >= debt.Owed;
-			AisvTheme.Button(b, all, Tr.Get("ledgerPage.repayAll", "全部还清"), primary: true, hover: AisvTheme.Hover(all, _body), disabled: !canAll, scale: 0.8f);
+			Hearth.PressPlate(b, all, Tr.Get("ledgerPage.repayAll", "全部还清"), primary: true, hover: Hearth.Hover(all, _body), disabled: !canAll, scale: 0.8f);
 			if (canAll)
 			{
 				hits.Add(all, () => Repay(service, debt.Owed), _body);
 			}
 			int half = Math.Min(debt.Owed, Math.Max(10, debt.Owed / 2 / 10 * 10));
 			bool canPart = Game1.player.Money >= half && half < debt.Owed;
-			AisvTheme.Button(b, part, Tr.Get("ledgerPage.repayPart", "先还 {{n}}g", ("n", half)), hover: AisvTheme.Hover(part, _body), disabled: !canPart, scale: 0.8f);
+			Hearth.PressPlate(b, part, Tr.Get("ledgerPage.repayPart", "先还 {{n}}g", ("n", half)), hover: Hearth.Hover(part, _body), disabled: !canPart, scale: 0.8f);
 			if (canPart)
 			{
 				hits.Add(part, () => Repay(service, half), _body);
@@ -270,32 +270,32 @@ internal sealed class LedgerPage : ShellPage
 			int limit = service.LoanLimit(_npc);
 			_amount = Math.Clamp(_amount <= 0 ? Math.Min(limit, 500) / 10 * 10 : _amount, 10, Math.Max(10, limit));
 			string daysLabel = Tr.Get("ledgerPage.days", "几天还");
-			int pillsW = LedgerRules.LoanDays.Sum(d => (int)AisvTheme.Width(Tr.Get("ledgerPage.dayN", "{{n}} 天", ("n", d)), 0.75f) + 28 + 6);
+			int pillsW = LedgerRules.LoanDays.Sum(d => (int)Hearth.Width(Tr.Get("ledgerPage.dayN", "{{n}} 天", ("n", d)), 0.75f) + 28 + 6);
 			int stepperEnd = x + 130 + 40 + 4 + 130 + 4 + 40;
-			bool wrap = stepperEnd + 30 + (int)AisvTheme.Width(daysLabel, 0.8f) + 14 + pillsW > x + cardW - 24;
+			bool wrap = stepperEnd + 30 + (int)Hearth.Width(daysLabel, 0.8f) + 14 + pillsW > x + cardW - 24;
 			Rectangle card = new Rectangle(x, y, cardW, wrap ? 310 : 250);
-			AisvTheme.DrawCard(b, card);
-			AisvTheme.Bold(b, Tr.Get("ledgerPage.askLoan", "向{{name}}借钱", ("name", Ctx.Display(_npc))), new Vector2(card.X + 24, card.Y + 20), AisvTheme.Text, 1f);
+			Hearth.CardSlip(b, card);
+			Hearth.InkBold(b, Tr.Get("ledgerPage.askLoan", "向{{name}}借钱", ("name", Ctx.Display(_npc))), new Vector2(card.X + 24, card.Y + 20), Hearth.Quill, 1f);
 			string? problem = service.LoanProblem(_npc, _amount);
 			string hint = limit >= 10 ? Tr.Get("ledgerPage.limit", "看交情和他身上的钱，最多能借 {{n}}g。", ("n", limit)) : problem ?? "";
-			AisvTheme.DrawText(b, hint, new Vector2(card.X + 24, card.Y + 58), AisvTheme.TextMuted, 0.74f);
+			Hearth.Ink(b, hint, new Vector2(card.X + 24, card.Y + 58), Hearth.QuillSoft, 0.74f);
 			int cy = card.Y + 120;
-			AisvTheme.DrawText(b, Tr.Get("ledgerPage.amount", "借多少"), new Vector2(card.X + 24, cy - 12), AisvTheme.TextMuted, 0.8f);
+			Hearth.Ink(b, Tr.Get("ledgerPage.amount", "借多少"), new Vector2(card.X + 24, cy - 12), Hearth.QuillSoft, 0.8f);
 			int end = Stepper(b, card.X + 130, cy, $"{_amount}g", 130, hits, () => StepAmount(-1, limit), () => StepAmount(1, limit));
 			int lx = wrap ? card.X + 24 : end + 30;
 			if (wrap)
 			{
 				cy += 60;
 			}
-			AisvTheme.DrawText(b, daysLabel, new Vector2(lx, cy - 12), AisvTheme.TextMuted, 0.8f);
-			int dx = wrap ? card.X + 130 : lx + (int)AisvTheme.Width(daysLabel, 0.8f) + 14;
+			Hearth.Ink(b, daysLabel, new Vector2(lx, cy - 12), Hearth.QuillSoft, 0.8f);
+			int dx = wrap ? card.X + 130 : lx + (int)Hearth.Width(daysLabel, 0.8f) + 14;
 			foreach (int d in LedgerRules.LoanDays)
 			{
 				string label = Tr.Get("ledgerPage.dayN", "{{n}} 天", ("n", d));
-				Rectangle r = new Rectangle(dx, cy - 19, (int)AisvTheme.Width(label, 0.75f) + 28, 38);
+				Rectangle r = new Rectangle(dx, cy - 19, (int)Hearth.Width(label, 0.75f) + 28, 38);
 				bool sel = d == _days;
-				AisvTheme.Bordered(b, r, sel ? AisvTheme.GoldSoft : AisvTheme.Page, sel ? AisvTheme.Gold : AisvTheme.CardBorder, 19);
-				AisvTheme.TextCentered(b, label, r, sel ? AisvTheme.Gold : AisvTheme.TextMuted, 0.75f);
+				Hearth.Bordered(b, r, sel ? Hearth.AmberPale : Hearth.Parchment, sel ? Hearth.Amber : Hearth.SlipEdge, 19);
+				Hearth.InkMiddle(b, label, r, sel ? Hearth.Amber : Hearth.QuillSoft, 0.75f);
 				int days = d;
 				hits.Add(r, () =>
 				{
@@ -308,27 +308,27 @@ internal sealed class LedgerPage : ShellPage
 			}
 			Rectangle ask = new Rectangle(card.X + 24, card.Bottom - 20 - 50, 200, 50);
 			bool can = problem == null && !_waiting;
-			AisvTheme.Button(b, ask, _waiting ? Tr.Get("ledgerPage.asking", "等他回话…") : Tr.Get("ledgerPage.ask", "开口借"), primary: true, hover: AisvTheme.Hover(ask, _body), disabled: !can, scale: 0.85f);
+			Hearth.PressPlate(b, ask, _waiting ? Tr.Get("ledgerPage.asking", "等他回话…") : Tr.Get("ledgerPage.ask", "开口借"), primary: true, hover: Hearth.Hover(ask, _body), disabled: !can, scale: 0.85f);
 			if (can)
 			{
 				hits.Add(ask, () => Ask(service), _body);
 			}
 			if (problem != null && limit >= 10)
 			{
-				AisvTheme.DrawText(b, AisvTheme.Truncate(problem, card.Right - 24 - ask.Right - 16, 0.7f), new Vector2(ask.Right + 16, ask.Y + 14), AisvTheme.Warn, 0.7f);
+				Hearth.Ink(b, Hearth.Truncate(problem, card.Right - 24 - ask.Right - 16, 0.7f), new Vector2(ask.Right + 16, ask.Y + 14), Hearth.Rust, 0.7f);
 			}
 			y = card.Bottom + 16;
 		}
 		if (_answer.Length > 0)
 		{
-			List<string> lines = AisvTheme.WrapLines("“" + ShellText.Clean(_answer) + "”", cardW - 48, 0.85f);
-			Rectangle bubble = new Rectangle(x, y, cardW, 28 + lines.Count * AisvTheme.LineHeight(0.85f));
-			AisvTheme.Bordered(b, bubble, AisvTheme.GoldSoft, AisvTheme.Gold * 0.5f);
+			List<string> lines = Hearth.WrapLines("“" + ShellText.Clean(_answer) + "”", cardW - 48, 0.85f);
+			Rectangle bubble = new Rectangle(x, y, cardW, 28 + lines.Count * Hearth.LineHeight(0.85f));
+			Hearth.Bordered(b, bubble, Hearth.AmberPale, Hearth.Amber * 0.5f);
 			int ly = bubble.Y + 14;
 			foreach (string line in lines)
 			{
-				AisvTheme.DrawText(b, line, new Vector2(bubble.X + 24, ly), AisvTheme.Text, 0.85f);
-				ly += AisvTheme.LineHeight(0.85f);
+				Hearth.Ink(b, line, new Vector2(bubble.X + 24, ly), Hearth.Quill, 0.85f);
+				ly += Hearth.LineHeight(0.85f);
 			}
 			y = bubble.Bottom + 16;
 		}
@@ -340,8 +340,8 @@ internal sealed class LedgerPage : ShellPage
 				DebtStates.Collected => Tr.Get("ledgerPage.collected", "被他自己拿回去了"),
 				_ => Tr.Get("ledgerPage.forgiven", "不了了之")
 			};
-			AisvTheme.DrawText(b, Tr.Get("ledgerPage.past", "{{when}}借过 {{gold}}g，{{state}}", ("when", DayLabel(d.Day)), ("gold", d.Amount), ("state", state)), new Vector2(x + 4, y), AisvTheme.TextFaint, 0.72f);
-			y += AisvTheme.LineHeight(0.72f) + 6;
+			Hearth.Ink(b, Tr.Get("ledgerPage.past", "{{when}}借过 {{gold}}g，{{state}}", ("when", DayLabel(d.Day)), ("gold", d.Amount), ("state", state)), new Vector2(x + 4, y), Hearth.QuillPale, 0.72f);
+			y += Hearth.LineHeight(0.72f) + 6;
 		}
 		return y;
 	}
@@ -395,12 +395,12 @@ internal sealed class LedgerPage : ShellPage
 		Rectangle left = new Rectangle(x, cy - 20, 40, 40);
 		Rectangle mid = new Rectangle(left.Right + 4, cy - 22, w, 44);
 		Rectangle right = new Rectangle(mid.Right + 4, cy - 20, 40, 40);
-		AisvTheme.FillRounded(b, left, AisvTheme.Hover(left, _body) ? AisvTheme.AccentSoft : AisvTheme.PageDeep, 20);
-		AisvTheme.FillRounded(b, right, AisvTheme.Hover(right, _body) ? AisvTheme.AccentSoft : AisvTheme.PageDeep, 20);
-		AisvTheme.Chevron(b, new Vector2(left.Center.X + 2, cy), left: true, AisvTheme.AccentDark);
-		AisvTheme.Chevron(b, new Vector2(right.Center.X - 2, cy), left: false, AisvTheme.AccentDark);
-		AisvTheme.Bordered(b, mid, AisvTheme.Card, AisvTheme.CardBorder, 10);
-		AisvTheme.TextCentered(b, label, mid, AisvTheme.Text, 0.85f);
+		Hearth.FillRounded(b, left, Hearth.Hover(left, _body) ? Hearth.LeafPale : Hearth.ParchmentDeep, 20);
+		Hearth.FillRounded(b, right, Hearth.Hover(right, _body) ? Hearth.LeafPale : Hearth.ParchmentDeep, 20);
+		Hearth.Chevron(b, new Vector2(left.Center.X + 2, cy), left: true, Hearth.LeafDeep);
+		Hearth.Chevron(b, new Vector2(right.Center.X - 2, cy), left: false, Hearth.LeafDeep);
+		Hearth.Bordered(b, mid, Hearth.Slip, Hearth.SlipEdge, 10);
+		Hearth.InkMiddle(b, label, mid, Hearth.Quill, 0.85f);
 		hits.Add(left, prev, _body);
 		hits.Add(right, next, _body);
 		return right.Right;
@@ -408,14 +408,14 @@ internal sealed class LedgerPage : ShellPage
 
 	internal static void Tooltip(SpriteBatch b, Rectangle anchor, string text)
 	{
-		int w = (int)AisvTheme.Width(text, 0.7f) + 24;
+		int w = (int)Hearth.Width(text, 0.7f) + 24;
 		Rectangle r = new Rectangle(Math.Min(anchor.X, Game1.uiViewport.Width - w - 8), anchor.Bottom + 6, w, 34);
 		if (r.Bottom > Game1.uiViewport.Height - 8)
 		{
 			r.Y = anchor.Y - 40;
 		}
-		AisvTheme.DrawShadow(b, r, 8, 3);
-		AisvTheme.Bordered(b, r, AisvTheme.Text, AisvTheme.Text, 8);
-		AisvTheme.TextCentered(b, text, r, Color.White, 0.7f);
+		Hearth.CastShadow(b, r, 8, 3);
+		Hearth.Bordered(b, r, Hearth.Quill, Hearth.Quill, 8);
+		Hearth.InkMiddle(b, text, r, Color.White, 0.7f);
 	}
 }

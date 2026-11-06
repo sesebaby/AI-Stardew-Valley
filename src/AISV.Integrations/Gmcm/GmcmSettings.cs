@@ -109,6 +109,7 @@ public static class GmcmSettings
 		api.AddNumberOption(manifest, () => get().ReturnHintPercent, v => get().ReturnHintPercent = v, () => Tr.Get("config.leaveTownReturnChance", "回来的故事出现的机会（%）"), min: 0, max: 100);
 
 		api.AddSectionTitle(manifest, () => Tr.Get("config.social", "镇上的生活"));
+		api.AddTextOption(manifest, () => get().KeyPhone, v => get().KeyPhone = v.Trim(), () => Tr.Get("config.phoneKey", "打开手机"), () => Tr.Get("config.phoneKeyTip", "手机里是同样的内容，排成竖屏"));
 		api.AddTextOption(manifest, () => get().KeyShell, v => get().KeyShell = v.Trim(), () => Tr.Get("config.shellKey", "打开外壳的按键"));
 		api.AddTextOption(manifest, () => get().KeyRumors, v => get().KeyRumors = v.Trim(), () => Tr.Get("config.gossipKey", "打开八卦页的按键"));
 		api.AddTextOption(manifest, () => get().KeyAboutMe, v => get().KeyAboutMe = v.Trim(), () => Tr.Get("config.profileKey", "打开“我的设定”的按键"));

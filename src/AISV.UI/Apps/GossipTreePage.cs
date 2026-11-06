@@ -50,7 +50,7 @@ internal sealed class GossipTreePage : ShellPage
 
 	public override void Scroll(int direction)
 	{
-		if (AisvTheme.Hover(_list))
+		if (Hearth.Hover(_list))
 		{
 			_listScroll.Wheel(direction);
 		}
@@ -88,56 +88,73 @@ internal sealed class GossipTreePage : ShellPage
 			Kit.Empty(b, new Rectangle(area.X, area.Y + area.Height / 3, area.Width, 80), Tr.Get("gtree.empty", "山谷里还没人说八卦"), Tr.Get("gtree.emptyHint", "过一两天，等村里有了新鲜事再来看。"));
 			return;
 		}
+		if (Flip.Applies(area))
+		{
+			_flip.Draw(b, area, hits, r =>
+			{
+				_list = Hearth.Inflate(r, -12);
+				List(b, hits);
+			}, r =>
+			{
+				_list = Rectangle.Empty;
+				Story(b, Hearth.Inflate(r, -12), _cases[_index], hits);
+			});
+			return;
+		}
 		_list = new Rectangle(area.X + 12, area.Y + 12, Math.Clamp(area.Width / 3, 300, 400), area.Height - 24);
 		List(b, hits);
 		Rectangle right = new Rectangle(_list.Right + 18, area.Y + 12, area.Right - 12 - _list.Right - 18, area.Height - 24);
 		Story(b, right, _cases[_index], hits);
 	}
 
+	private readonly Flip _flip = new Flip();
+
+	public override bool StepBack() => _flip.StepBack();
+
 	private void List(SpriteBatch b, Hits hits)
 	{
-		AisvTheme.Bordered(b, _list, AisvTheme.PageDeep, AisvTheme.Divider, 12);
-		Rectangle view = AisvTheme.Inflate(_list, -6);
-		AisvTheme.BeginClip(b, view);
+		Hearth.Bordered(b, _list, Hearth.ParchmentDeep, Hearth.Seam, 12);
+		Rectangle view = Hearth.Inflate(_list, -6);
+		Hearth.BeginClip(b, view);
 		int y = view.Y + 4 - _listScroll.Offset;
 		for (int i = 0; i < _cases.Count; i++)
 		{
 			GossipCase g = _cases[i];
 			string headline = g.Told.Length > 0 ? g.Told : g.Fact;
-			List<string> lines = AisvTheme.WrapLines(headline, view.Width - 46, 0.74f).Take(2).ToList();
-			int h = 44 + lines.Count * AisvTheme.LineHeight(0.74f) + 10;
+			List<string> lines = Hearth.WrapLines(headline, view.Width - 46, 0.74f).Take(2).ToList();
+			int h = 44 + lines.Count * Hearth.LineHeight(0.74f) + 10;
 			Rectangle r = new Rectangle(view.X + 4, y, view.Width - 18, h);
 			if (r.Bottom >= view.Y && r.Y <= view.Bottom)
 			{
 				bool sel = i == _index;
 				if (sel)
 				{
-					AisvTheme.FillRounded(b, r, AisvTheme.Card, 10);
-					AisvTheme.FillRounded(b, new Rectangle(r.X, r.Y + 10, 4, r.Height - 20), AisvTheme.Accent, 2);
+					Hearth.FillRounded(b, r, Hearth.Slip, 10);
+					Hearth.FillRounded(b, new Rectangle(r.X, r.Y + 10, 4, r.Height - 20), Hearth.Leaf, 2);
 				}
-				else if (AisvTheme.Hover(r, view))
+				else if (Hearth.Hover(r, view))
 				{
-					AisvTheme.FillRounded(b, r, AisvTheme.Card * 0.6f, 10);
+					Hearth.FillRounded(b, r, Hearth.Slip * 0.6f, 10);
 				}
 				string date = ShellText.Date(g.Entry.Day, g.Entry.Season, g.Entry.Year);
-				AisvTheme.DrawText(b, date, new Vector2(r.X + 16, r.Y + 10), AisvTheme.TextFaint, 0.62f);
+				Hearth.Ink(b, date, new Vector2(r.X + 16, r.Y + 10), Hearth.QuillPale, 0.62f);
 				string known = Tr.Get("gtree.knownBy", "传到了 {{count}} 人耳朵里", ("count", g.Trail.KnownBy));
 				Color pip = FidelityColor(GossipTrail.FidelityOf(g.Trail.MaxDrift));
-				float kw = AisvTheme.Width(known, 0.62f);
-				AisvTheme.DrawText(b, known, new Vector2(r.Right - 14 - kw, r.Y + 10), AisvTheme.TextMuted, 0.62f);
-				AisvTheme.FillRounded(b, new Rectangle((int)(r.Right - 14 - kw - 16), r.Y + 15, 10, 10), pip, 5);
+				float kw = Hearth.Width(known, 0.62f);
+				Hearth.Ink(b, known, new Vector2(r.Right - 14 - kw, r.Y + 10), Hearth.QuillSoft, 0.62f);
+				Hearth.FillRounded(b, new Rectangle((int)(r.Right - 14 - kw - 16), r.Y + 15, 10, 10), pip, 5);
 				int ly = r.Y + 36;
 				foreach (string line in lines)
 				{
-					AisvTheme.DrawText(b, line, new Vector2(r.X + 16, ly), sel ? AisvTheme.Text : AisvTheme.TextMuted, 0.74f);
-					ly += AisvTheme.LineHeight(0.74f);
+					Hearth.Ink(b, line, new Vector2(r.X + 16, ly), sel ? Hearth.Quill : Hearth.QuillSoft, 0.74f);
+					ly += Hearth.LineHeight(0.74f);
 				}
 				int k = i;
 				hits.Add(r, () => Select(k), view);
 			}
 			y += h + 6;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_listScroll.Finish(b, view, y, 6);
 	}
 
@@ -146,28 +163,28 @@ internal sealed class GossipTreePage : ShellPage
 		int x = r.X, w = r.Width;
 		int y = r.Y;
 		// 事实（像一张便签）。
-		List<string> fact = AisvTheme.WrapLines(g.Fact, w - 60, 0.8f).Take(4).ToList();
-		Rectangle note = new Rectangle(x, y, w, 44 + fact.Count * AisvTheme.LineHeight(0.8f) + 16);
-		AisvTheme.Bordered(b, note, new Color(255, 250, 230), new Color(232, 214, 160), 12);
-		AisvTheme.Bold(b, Tr.Get("gtree.fact", "发生了什么"), new Vector2(note.X + 24, note.Y + 14), AisvTheme.Gold, 0.75f);
+		List<string> fact = Hearth.WrapLines(g.Fact, w - 60, 0.8f).Take(4).ToList();
+		Rectangle note = new Rectangle(x, y, w, 44 + fact.Count * Hearth.LineHeight(0.8f) + 16);
+		Hearth.Bordered(b, note, new Color(255, 250, 230), new Color(232, 214, 160), 12);
+		Hearth.InkBold(b, Tr.Get("gtree.fact", "发生了什么"), new Vector2(note.X + 24, note.Y + 14), Hearth.Amber, 0.75f);
 		int ly = note.Y + 44;
 		foreach (string line in fact)
 		{
-			AisvTheme.DrawText(b, line, new Vector2(note.X + 24, ly), AisvTheme.Text, 0.8f);
-			ly += AisvTheme.LineHeight(0.8f);
+			Hearth.Ink(b, line, new Vector2(note.X + 24, ly), Hearth.Quill, 0.8f);
+			ly += Hearth.LineHeight(0.8f);
 		}
 		y = note.Bottom + 12;
 		if (g.Told.Length > 0)
 		{
-			List<string> told = AisvTheme.WrapLines("“" + g.Told + "”", w - 60, 0.76f).Take(3).ToList();
-			Rectangle bubble = new Rectangle(x, y, w, 40 + told.Count * AisvTheme.LineHeight(0.76f) + 14);
-			AisvTheme.Bordered(b, bubble, AisvTheme.PinkSoft, AisvTheme.Pink * 0.5f, 12);
-			AisvTheme.Bold(b, Tr.Get("gtree.told", "镇上是这么传的"), new Vector2(bubble.X + 24, bubble.Y + 12), AisvTheme.Pink, 0.72f);
+			List<string> told = Hearth.WrapLines("“" + g.Told + "”", w - 60, 0.76f).Take(3).ToList();
+			Rectangle bubble = new Rectangle(x, y, w, 40 + told.Count * Hearth.LineHeight(0.76f) + 14);
+			Hearth.Bordered(b, bubble, Hearth.RosePale, Hearth.Rose * 0.5f, 12);
+			Hearth.InkBold(b, Tr.Get("gtree.told", "镇上是这么传的"), new Vector2(bubble.X + 24, bubble.Y + 12), Hearth.Rose, 0.72f);
 			ly = bubble.Y + 40;
 			foreach (string line in told)
 			{
-				AisvTheme.DrawText(b, line, new Vector2(bubble.X + 24, ly), AisvTheme.Text, 0.76f);
-				ly += AisvTheme.LineHeight(0.76f);
+				Hearth.Ink(b, line, new Vector2(bubble.X + 24, ly), Hearth.Quill, 0.76f);
+				ly += Hearth.LineHeight(0.76f);
 			}
 			y = bubble.Bottom + 12;
 		}
@@ -180,43 +197,43 @@ internal sealed class GossipTreePage : ShellPage
 	private int Meter(SpriteBatch b, Trail t, int x, int y, int w)
 	{
 		string spread = t.Steps == 0 ? Tr.Get("gtree.sameDay", "{{count}} 人知道，都是当天听说的", ("count", t.KnownBy)) : Tr.Get("gtree.days", "{{count}} 人听过，走了 {{days}} 天", ("count", t.KnownBy), ("days", t.Steps));
-		AisvTheme.DrawText(b, spread, new Vector2(x + 4, y), AisvTheme.TextMuted, 0.72f);
+		Hearth.Ink(b, spread, new Vector2(x + 4, y), Hearth.QuillSoft, 0.72f);
 		string hint = Tr.Get("gtree.meterHint", "最走样的版本离事实有多远");
-		AisvTheme.DrawText(b, hint, new Vector2(x + w - AisvTheme.Width(hint, 0.62f) - 4, y + 4), AisvTheme.TextFaint, 0.62f);
+		Hearth.Ink(b, hint, new Vector2(x + w - Hearth.Width(hint, 0.62f) - 4, y + 4), Hearth.QuillPale, 0.62f);
 		Rectangle bar = new Rectangle(x + 4, y + 34, w - 8, 14);
 		const int steps = 48;
 		for (int i = 0; i < steps; i++)
 		{
 			float f = i / (float)(steps - 1);
 			Color c = f < 0.5f ? Color.Lerp(FidelityColor(Fidelity.Faithful), FidelityColor(Fidelity.Stretched), f * 2) : Color.Lerp(FidelityColor(Fidelity.Stretched), FidelityColor(Fidelity.Distorted), (f - 0.5f) * 2);
-			AisvTheme.Fill(b, new Rectangle(bar.X + bar.Width * i / steps, bar.Y, bar.Width / steps + 1, bar.Height), c * 0.85f);
+			Hearth.Fill(b, new Rectangle(bar.X + bar.Width * i / steps, bar.Y, bar.Width / steps + 1, bar.Height), c * 0.85f);
 		}
 		int mx = bar.X + (int)(bar.Width * Math.Clamp(t.MaxDrift, 0f, 1f));
-		AisvTheme.Bordered(b, new Rectangle(mx - 9, bar.Center.Y - 13, 18, 26), AisvTheme.Card, AisvTheme.Text, 6, 3);
+		Hearth.Bordered(b, new Rectangle(mx - 9, bar.Center.Y - 13, 18, 26), Hearth.Slip, Hearth.Quill, 6, 3);
 		string[] labels = { FidelityName(Fidelity.Faithful), FidelityName(Fidelity.Stretched), FidelityName(Fidelity.Distorted) };
-		AisvTheme.DrawText(b, labels[0], new Vector2(bar.X, bar.Bottom + 6), AisvTheme.TextFaint, 0.6f);
-		AisvTheme.DrawText(b, labels[1], new Vector2(bar.Center.X - AisvTheme.Width(labels[1], 0.6f) / 2f, bar.Bottom + 6), AisvTheme.TextFaint, 0.6f);
-		AisvTheme.DrawText(b, labels[2], new Vector2(bar.Right - AisvTheme.Width(labels[2], 0.6f), bar.Bottom + 6), AisvTheme.TextFaint, 0.6f);
+		Hearth.Ink(b, labels[0], new Vector2(bar.X, bar.Bottom + 6), Hearth.QuillPale, 0.6f);
+		Hearth.Ink(b, labels[1], new Vector2(bar.Center.X - Hearth.Width(labels[1], 0.6f) / 2f, bar.Bottom + 6), Hearth.QuillPale, 0.6f);
+		Hearth.Ink(b, labels[2], new Vector2(bar.Right - Hearth.Width(labels[2], 0.6f), bar.Bottom + 6), Hearth.QuillPale, 0.6f);
 		return bar.Bottom + 34;
 	}
 
 	private void Tree(SpriteBatch b, Trail t, Hits hits)
 	{
-		AisvTheme.Bordered(b, _tree, AisvTheme.Card, AisvTheme.CardBorder, 12);
+		Hearth.Bordered(b, _tree, Hearth.Slip, Hearth.SlipEdge, 12);
 		Rectangle view = new Rectangle(_tree.X + 4, _tree.Y + 4, _tree.Width - 8, _tree.Height - 8);
 		TrailNode? focus = _focus == null ? null : t.Find(_focus);
 		HashSet<TrailNode> path = new HashSet<TrailNode>(focus?.PathFromRoot() ?? Array.Empty<TrailNode>());
-		AisvTheme.BeginClip(b, view);
+		Hearth.BeginClip(b, view);
 		int y = view.Y + 12 - _treeScroll.Offset;
-		AisvTheme.Bold(b, Tr.Get("gtree.tree", "谁告诉了谁"), new Vector2(view.X + 20, y), AisvTheme.AccentDark, 0.8f);
+		Hearth.InkBold(b, Tr.Get("gtree.tree", "谁告诉了谁"), new Vector2(view.X + 20, y), Hearth.LeafDeep, 0.8f);
 		y += 34;
 		if (focus != null && focus.Teller != null)
 		{
 			string chain = string.Join(" › ", focus.PathFromRoot().Select(n => n.Npc.Length > 0 ? Ctx.Display(n.Npc) : Tr.Get("gtree.village", "全村")));
-			foreach (string line in AisvTheme.WrapLines(Tr.Get("gtree.chain", "传话的路：{{chain}}", ("chain", chain)), view.Width - 40, 0.7f))
+			foreach (string line in Hearth.WrapLines(Tr.Get("gtree.chain", "传话的路：{{chain}}", ("chain", chain)), view.Width - 40, 0.7f))
 			{
-				AisvTheme.DrawText(b, line, new Vector2(view.X + 20, y), AisvTheme.Accent, 0.7f);
-				y += AisvTheme.LineHeight(0.7f);
+				Hearth.Ink(b, line, new Vector2(view.X + 20, y), Hearth.Leaf, 0.7f);
+				y += Hearth.LineHeight(0.7f);
 			}
 			y += 6;
 		}
@@ -237,10 +254,10 @@ internal sealed class GossipTreePage : ShellPage
 			{
 				int nx = view.X + 20 + n.Depth * indent;
 				int cy = y + 8 + av / 2;
-				Color line = path.Contains(n) ? AisvTheme.Accent : AisvTheme.Divider;
+				Color line = path.Contains(n) ? Hearth.Leaf : Hearth.Seam;
 				int thick = path.Contains(n) ? 3 : 2;
-				AisvTheme.Fill(b, new Rectangle(from.X - thick / 2, from.Y, thick, cy - from.Y), line);
-				AisvTheme.Fill(b, new Rectangle(from.X - thick / 2, cy - thick / 2, nx - from.X, thick), line);
+				Hearth.Fill(b, new Rectangle(from.X - thick / 2, from.Y, thick, cy - from.Y), line);
+				Hearth.Fill(b, new Rectangle(from.X - thick / 2, cy - thick / 2, nx - from.X, thick), line);
 			}
 			y += rowH;
 		}
@@ -252,11 +269,11 @@ internal sealed class GossipTreePage : ShellPage
 			bool on = path.Contains(n);
 			if (on)
 			{
-				AisvTheme.FillRounded(b, row, AisvTheme.SelectedRow, 10);
+				Hearth.FillRounded(b, row, Hearth.Honey, 10);
 			}
-			else if (AisvTheme.Hover(row, view))
+			else if (Hearth.Hover(row, view))
 			{
-				AisvTheme.FillRounded(b, row, AisvTheme.PageDeep, 10);
+				Hearth.FillRounded(b, row, Hearth.ParchmentDeep, 10);
 			}
 			Rectangle a = new Rectangle(nx, y + 8, av, av);
 			if (n.Npc.Length > 0)
@@ -265,19 +282,19 @@ internal sealed class GossipTreePage : ShellPage
 			}
 			else
 			{
-				AisvTheme.Glyph(b, a, AisvTheme.TextFaint, "?");
+				Hearth.Glyph(b, a, Hearth.QuillPale, "?");
 			}
 			string name = n.Npc.Length > 0 ? Ctx.Display(n.Npc) : Tr.Get("gtree.village", "全村");
 			int tx = a.Right + 12;
-			AisvTheme.Bold(b, name, new Vector2(tx, y + 8), AisvTheme.Text, 0.76f);
+			Hearth.InkBold(b, name, new Vector2(tx, y + 8), Hearth.Quill, 0.76f);
 			Fidelity fid = n.Fidelity;
 			bool firstHand = n.How is HeardHow.Origin or HeardHow.Witness;
 			string chip = firstHand ? Tr.Get("gtree.firsthand", "第一手") : FidelityName(fid);
-			Color cc = firstHand ? AisvTheme.AccentDark : FidelityColor(fid);
-			int cw = AisvTheme.ChipWidth(chip, 0.62f);
-			AisvTheme.Chip(b, new Vector2(row.Right - 10 - cw, y + 16), chip, Color.Lerp(cc, Color.White, 0.8f), Color.Lerp(cc, AisvTheme.Text, 0.3f), 0.62f);
+			Color cc = firstHand ? Hearth.LeafDeep : FidelityColor(fid);
+			int cw = Hearth.TagWidth(chip, 0.62f);
+			Hearth.Tag(b, new Vector2(row.Right - 10 - cw, y + 16), chip, Color.Lerp(cc, Color.White, 0.8f), Color.Lerp(cc, Hearth.Quill, 0.3f), 0.62f);
 			string how = HowText(n);
-			AisvTheme.DrawText(b, AisvTheme.Truncate(how, row.Right - 24 - cw - tx, 0.64f), new Vector2(tx, y + 32), AisvTheme.TextMuted, 0.64f);
+			Hearth.Ink(b, Hearth.Truncate(how, row.Right - 24 - cw - tx, 0.64f), new Vector2(tx, y + 32), Hearth.QuillSoft, 0.64f);
 			if (n.Npc.Length > 0)
 			{
 				string npc = n.Npc;
@@ -292,13 +309,13 @@ internal sealed class GossipTreePage : ShellPage
 		y += 10;
 		if (t.Approximate)
 		{
-			foreach (string line in AisvTheme.WrapLines(Tr.Get("gtree.approx", "有几步是推出来的：旧八卦、合并过的八卦，村里记不清每一步是谁传给谁。"), view.Width - 40, 0.64f))
+			foreach (string line in Hearth.WrapLines(Tr.Get("gtree.approx", "有几步是推出来的：旧八卦、合并过的八卦，村里记不清每一步是谁传给谁。"), view.Width - 40, 0.64f))
 			{
-				AisvTheme.DrawText(b, line, new Vector2(view.X + 20, y), AisvTheme.TextFaint, 0.64f);
-				y += AisvTheme.LineHeight(0.64f);
+				Hearth.Ink(b, line, new Vector2(view.X + 20, y), Hearth.QuillPale, 0.64f);
+				y += Hearth.LineHeight(0.64f);
 			}
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_treeScroll.Finish(b, view, y + 12, 8);
 	}
 

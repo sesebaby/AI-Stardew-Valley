@@ -51,7 +51,7 @@ internal sealed class GroupInputBar : IClickableMenu
 
 	private void Layout()
 	{
-		int lh = AisvTheme.LineHeight();
+		int lh = Hearth.LineHeight();
 		width = Math.Min(980, Game1.uiViewport.Width - 48);
 		int logH = 44 + LogLines * (lh + 2);
 		int inputH = 28 + lh * 2;
@@ -200,49 +200,49 @@ internal sealed class GroupInputBar : IClickableMenu
 	public override void draw(SpriteBatch b)
 	{
 		_chat.Draw(b);
-		AisvTheme.DrawShadow(b, _panel, 14, 6);
-		AisvTheme.Bordered(b, _panel, AisvTheme.Page * 0.97f, AisvTheme.CardBorder, 14);
+		Hearth.CastShadow(b, _panel, 14, 6);
+		Hearth.Bordered(b, _panel, Hearth.Parchment * 0.97f, Hearth.SlipEdge, 14);
 		DrawTitle(b);
 		DrawLog(b);
 		_box.Draw(b);
 		string count = _box.Text.Length + "/" + MaxChars;
 		Vector2 cs = Game1.smallFont.MeasureString(count) * 0.7f;
-		AisvTheme.DrawText(b, count, new Vector2(_box.Bounds.Right - cs.X - 12, _box.Bounds.Bottom - cs.Y - 6), _box.Text.Length >= MaxChars ? AisvTheme.Danger : AisvTheme.TextFaint, 0.7f);
+		Hearth.Ink(b, count, new Vector2(_box.Bounds.Right - cs.X - 12, _box.Bounds.Bottom - cs.Y - 6), _box.Text.Length >= MaxChars ? Hearth.Berry : Hearth.QuillPale, 0.7f);
 		int mx = Game1.getMouseX(), my = Game1.getMouseY();
-		AisvTheme.Button(b, _leaveButton, Tr.Get("group.leave", "离开"), hover: _leaveButton.Contains(mx, my));
-		AisvTheme.Button(b, _sendButton, Tr.Get("reply.send", "发送"), primary: true, hover: _sendButton.Contains(mx, my), disabled: _box.Text.Trim().Length == 0);
+		Hearth.PressPlate(b, _leaveButton, Tr.Get("group.leave", "离开"), hover: _leaveButton.Contains(mx, my));
+		Hearth.PressPlate(b, _sendButton, Tr.Get("reply.send", "发送"), primary: true, hover: _sendButton.Contains(mx, my), disabled: _box.Text.Trim().Length == 0);
 		drawMouse(b);
 	}
 
 	private void DrawTitle(SpriteBatch b)
 	{
-		AisvTheme.Bold(b, AisvTheme.Truncate(_chat.MemberNames(), _panel.Width / 2f, 0.85f), new Vector2(_panel.X + 20, _panel.Y + 14), AisvTheme.Text, 0.85f);
+		Hearth.InkBold(b, Hearth.Truncate(_chat.MemberNames(), _panel.Width / 2f, 0.85f), new Vector2(_panel.X + 20, _panel.Y + 14), Hearth.Quill, 0.85f);
 		string right = Tr.Get("group.repliesLeft", "还能说 {{count}} 句", ("count", _chat.RepliesLeft)) + "  ·  " + Tr.Get("group.inputHint", "回车发送 · ESC 离开");
-		float rw = AisvTheme.Width(right, 0.7f);
-		AisvTheme.DrawText(b, right, new Vector2(_panel.Right - 20 - rw, _panel.Y + 18), AisvTheme.TextFaint, 0.7f);
-		AisvTheme.HLine(b, _panel.X + 16, _panel.Y + 42, _panel.Width - 32, AisvTheme.Divider);
+		float rw = Hearth.Width(right, 0.7f);
+		Hearth.Ink(b, right, new Vector2(_panel.Right - 20 - rw, _panel.Y + 18), Hearth.QuillPale, 0.7f);
+		Hearth.HLine(b, _panel.X + 16, _panel.Y + 42, _panel.Width - 32, Hearth.Seam);
 	}
 
 	private void DrawLog(SpriteBatch b)
 	{
 		IReadOnlyList<MapGroupChat.LogLine> log = _chat.Log;
-		int lh = AisvTheme.LineHeight() + 2;
+		int lh = Hearth.LineHeight() + 2;
 		int y = _logRect.Bottom;
 		string you = Tr.Get("group.you", "你");
-		AisvTheme.BeginClip(b, _logRect);
+		Hearth.BeginClip(b, _logRect);
 		for (int i = log.Count - 1; i >= 0 && y > _logRect.Y; i--)
 		{
 			MapGroupChat.LogLine e = log[i];
 			string name = (e.Mine ? you : e.Name) + (MapGroupChat.Cjk ? "：" : ": ");
-			float nameW = AisvTheme.Width(name, 0.85f);
-			string[] lines = AisvTheme.Wrap(e.Text.Replace('\n', ' '), Math.Max(120, _logRect.Width - (int)nameW - 8)).Split('\n');
+			float nameW = Hearth.Width(name, 0.85f);
+			string[] lines = Hearth.Wrap(e.Text.Replace('\n', ' '), Math.Max(120, _logRect.Width - (int)nameW - 8)).Split('\n');
 			y -= lines.Length * lh;
-			AisvTheme.DrawText(b, name, new Vector2(_logRect.X, y + 2), e.Mine ? AisvTheme.AccentDark : AisvTheme.TextMuted, 0.85f);
+			Hearth.Ink(b, name, new Vector2(_logRect.X, y + 2), e.Mine ? Hearth.LeafDeep : Hearth.QuillSoft, 0.85f);
 			for (int j = 0; j < lines.Length; j++)
 			{
-				AisvTheme.DrawText(b, lines[j], new Vector2(_logRect.X + nameW + 4, y + j * lh), AisvTheme.Text);
+				Hearth.Ink(b, lines[j], new Vector2(_logRect.X + nameW + 4, y + j * lh), Hearth.Quill);
 			}
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 	}
 }

@@ -11,6 +11,8 @@ namespace AISV.UI.Shell;
 /// <summary>发一句很短的话试试 AI 通不通；结果回到主线程。</summary>
 internal static class ConnectionTest
 {
+	private static string BadKeysNote(AiService ai) => ai.BadKeysInLastTest > 0 ? Tr.Get("gateway.testBadKeys", "（有 {{n}} 把密钥用不了，已经换到能用的）", ("n", ai.BadKeysInLastTest)) : "";
+
 	public static void Run(AiService ai, Action<bool, string> done)
 	{
 		Task.Run(async () =>
@@ -21,7 +23,7 @@ internal static class ConnectionTest
 			{
 				AiResult r = await ai.SendAsync(new ChatRequest("connection_test", "这是一次连通测试。", "只回一个字：好", 64, 0.1));
 				ok = r.Ok;
-				text = ok ? Tr.Get("gateway.testOk", "通了，模型回了：{{text}}", ("text", (r.Text ?? "").Trim())) : FailureText.Describe(r.Failure, r.Message);
+				text = ok ? Tr.Get("gateway.testOk", "通了，模型回了：{{text}}", ("text", (r.Text ?? "").Trim())) + BadKeysNote(ai) : FailureText.Describe(r.Failure, r.Message);
 			}
 			catch (Exception ex)
 			{

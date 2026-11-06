@@ -63,6 +63,8 @@ internal sealed class DiaryBook : ShellPage
 
 	private List<AlbumItem> _items = new List<AlbumItem>();
 
+	private int _photoCount;
+
 	private const int PhotosPerPage = 2;
 
 	public DiaryBook(ShellContext ctx) : base(ctx)
@@ -78,16 +80,27 @@ internal sealed class DiaryBook : ShellPage
 	public override void Reload()
 	{
 		List<DiaryEntry> entries = Ctx.Social.Diary.All();
+		bool newText = entries.Count != _entries.Count || !entries.Select(e => e.Text).SequenceEqual(_entries.Select(e => e.Text));
+		int photoCount = Ctx.Messenger?.Photos.All().Count ?? 0;
+		if (newText || photoCount != _photoCount || _items.Count == 0)
+		{
+			_photoCount = photoCount;
+			ReadAlbum(entries);
+		}
+		if (newText)
+		{
+			_entries = entries;
+			_builtFor = Rectangle.Empty;
+		}
+	}
+
+	private void ReadAlbum(List<DiaryEntry> entries)
+	{
 		IEnumerable<AlbumItem> photos = (Ctx.Messenger?.Photos.All() ?? Array.Empty<AISV.Core.Messenger.PhotoRecord>())
 			.Select(r => new AlbumItem(new AISV.Core.Dialogue.GameDate(r.Day, r.Season, r.Year).TotalDays, () => Ctx.Messenger?.Photos.Image(r.Id), DiaryPictures.PhotoCaption(Ctx, r), true));
 		IEnumerable<AlbumItem> sketches = DiarySketches.Pin(entries, Ctx.Display)
 			.Select(p => new AlbumItem(new AISV.Core.Dialogue.GameDate(p.Entry.Day, p.Entry.Season, p.Entry.Year).TotalDays, () => DiaryPictures.Sketch(Ctx, p.Sketch.File), DiaryPictures.SketchCaption(Ctx, p), false));
 		_items = photos.Concat(sketches).OrderBy(i => i.TotalDay).ToList();
-		if (entries.Count != _entries.Count || !entries.Select(e => e.Text).SequenceEqual(_entries.Select(e => e.Text)))
-		{
-			_entries = entries;
-			_builtFor = Rectangle.Empty;
-		}
 	}
 
 	private void Paginate(Rectangle text)
@@ -98,7 +111,7 @@ internal sealed class DiaryBook : ShellPage
 		{
 			string weather = ShellText.DiaryWeather(e.Sky);
 			flow.Add((ShellText.Date(e.Day, e.Season, e.Year) + (weather.Length > 0 ? "（" + weather + "）" : ""), Kind.Date));
-			flow.AddRange(AisvTheme.WrapLines(ShellText.Clean(e.Text), text.Width, 1f, paragraphGap: true).Select(l => (l, Kind.Text)));
+			flow.AddRange(Hearth.WrapLines(ShellText.Clean(e.Text), text.Width, 1f, paragraphGap: true).Select(l => (l, Kind.Text)));
 			flow.Add(("", Kind.Text));
 		}
 		if (flow.Count == 0)
@@ -161,7 +174,7 @@ internal sealed class DiaryBook : ShellPage
 
 	public override void Draw(SpriteBatch b, Rectangle area, Hits hits)
 	{
-		_lineH = AisvTheme.LineHeight() + 6;
+		_lineH = Hearth.LineHeight() + 6;
 		(Rectangle cover, Rectangle left, Rectangle right) = Layout(area);
 		Rectangle leftText = TextArea(left), rightText = TextArea(right);
 		if (_builtFor != cover)
@@ -200,11 +213,11 @@ internal sealed class DiaryBook : ShellPage
 		int x = cover.X + 60;
 		foreach ((string label, bool album) in tabs)
 		{
-			int w = (int)AisvTheme.Width(label, 0.8f) + 36;
+			int w = (int)Hearth.Width(label, 0.8f) + 36;
 			bool on = _album == album;
 			Rectangle tab = new Rectangle(x, cover.Y - (on ? 40 : 32), w, 48);
-			AisvTheme.FillRounded(b, tab, on ? Paper : PaperEdge, 8);
-			AisvTheme.TextCentered(b, label, new Rectangle(tab.X, tab.Y + 2, tab.Width, 36), on ? DateInk : Faded, 0.8f);
+			Hearth.FillRounded(b, tab, on ? Paper : PaperEdge, 8);
+			Hearth.InkMiddle(b, label, new Rectangle(tab.X, tab.Y + 2, tab.Width, 36), on ? DateInk : Faded, 0.8f);
 			if (!on)
 			{
 				hits.Add(tab, () =>
@@ -226,7 +239,7 @@ internal sealed class DiaryBook : ShellPage
 		{
 			if (index == 0)
 			{
-				AisvTheme.DrawText(b, Tr.Get("shell.book.albumEmpty", "还没有照片。在信使里找人要一张吧。"), new Vector2(page.X + 40, page.Y + 60), Faded);
+				Hearth.Ink(b, Tr.Get("shell.book.albumEmpty", "还没有照片。在信使里找人要一张吧。"), new Vector2(page.X + 40, page.Y + 60), Faded);
 			}
 			return;
 		}
@@ -253,40 +266,40 @@ internal sealed class DiaryBook : ShellPage
 			}
 			int px = page.Center.X - w / 2 + (k % 2 == 0 ? -10 : 10), py = page.Y + 36 + k * slotH;
 			Rectangle frame = new Rectangle(px - 10, py - 10, w + 20, h + 20);
-			AisvTheme.Fill(b, new Rectangle(frame.X + 4, frame.Y + 5, frame.Width, frame.Height), Color.Black * 0.12f);
-			AisvTheme.Fill(b, frame, Color.White);
+			Hearth.Fill(b, new Rectangle(frame.X + 4, frame.Y + 5, frame.Width, frame.Height), Color.Black * 0.12f);
+			Hearth.Fill(b, frame, Color.White);
 			if (image != null)
 			{
 				b.Draw(image, new Rectangle(px, py, w, h), Color.White);
 			}
 			else
 			{
-				AisvTheme.Fill(b, new Rectangle(px, py, w, h), PaperEdge);
+				Hearth.Fill(b, new Rectangle(px, py, w, h), PaperEdge);
 			}
 			if (item.Taped)
 			{
-				AisvTheme.Fill(b, new Rectangle(frame.X - 12, frame.Y - 6, 44, 16), new Color(240, 226, 170) * 0.85f);
-				AisvTheme.Fill(b, new Rectangle(frame.Right - 32, frame.Y - 6, 44, 16), new Color(240, 226, 170) * 0.85f);
+				Hearth.Fill(b, new Rectangle(frame.X - 12, frame.Y - 6, 44, 16), new Color(240, 226, 170) * 0.85f);
+				Hearth.Fill(b, new Rectangle(frame.Right - 32, frame.Y - 6, 44, 16), new Color(240, 226, 170) * 0.85f);
 			}
 			string caption = item.Caption;
-			AisvTheme.DrawText(b, AisvTheme.Truncate(caption, page.Width - 80, 0.82f), new Vector2(page.Center.X - Math.Min(page.Width - 80, AisvTheme.Width(caption, 0.82f)) / 2f, frame.Bottom + 10), Ink, 0.82f);
+			Hearth.Ink(b, Hearth.Truncate(caption, page.Width - 80, 0.82f), new Vector2(page.Center.X - Math.Min(page.Width - 80, Hearth.Width(caption, 0.82f)) / 2f, frame.Bottom + 10), Ink, 0.82f);
 		}
 		string number = (index + 1).ToString();
-		AisvTheme.DrawText(b, number, new Vector2(page.Center.X - AisvTheme.Width(number) / 2f, page.Bottom - 40), Faded);
+		Hearth.Ink(b, number, new Vector2(page.Center.X - Hearth.Width(number) / 2f, page.Bottom - 40), Faded);
 	}
 
 	/// <summary>一页纸：边线和靠书脊的阴影。</summary>
 	internal static void Sheet(SpriteBatch b, Rectangle page, bool isLeft)
 	{
-		AisvTheme.Fill(b, page, Paper);
-		AisvTheme.HLine(b, page.X, page.Y, page.Width, PaperEdge);
-		AisvTheme.HLine(b, page.X, page.Bottom - 2, page.Width, PaperEdge);
-		AisvTheme.VLine(b, page.X, page.Y, page.Height, PaperEdge);
-		AisvTheme.VLine(b, page.Right - 2, page.Y, page.Height, PaperEdge);
+		Hearth.Fill(b, page, Paper);
+		Hearth.HLine(b, page.X, page.Y, page.Width, PaperEdge);
+		Hearth.HLine(b, page.X, page.Bottom - 2, page.Width, PaperEdge);
+		Hearth.VLine(b, page.X, page.Y, page.Height, PaperEdge);
+		Hearth.VLine(b, page.Right - 2, page.Y, page.Height, PaperEdge);
 		for (int i = 0; i < 6; i++)
 		{
 			int x = isLeft ? page.Right - (i + 1) * 4 : page.X + i * 4;
-			AisvTheme.Fill(b, new Rectangle(x, page.Y, 4, page.Height), Color.Black * (0.07f - i * 0.011f));
+			Hearth.Fill(b, new Rectangle(x, page.Y, 4, page.Height), Color.Black * (0.07f - i * 0.011f));
 		}
 	}
 
@@ -305,8 +318,8 @@ internal sealed class DiaryBook : ShellPage
 	internal static void DrawSpine(SpriteBatch b, Rectangle cover, Rectangle left)
 	{
 		Rectangle spine = new Rectangle(left.Right, cover.Y + 14, 28, cover.Height - 28);
-		AisvTheme.Fill(b, spine, Cover * 0.9f);
-		AisvTheme.Fill(b, new Rectangle(spine.Center.X - 1, spine.Y, 2, spine.Height), Color.Black * 0.35f);
+		Hearth.Fill(b, spine, Cover * 0.9f);
+		Hearth.Fill(b, new Rectangle(spine.Center.X - 1, spine.Y, 2, spine.Height), Color.Black * 0.35f);
 	}
 
 	private Rectangle TextArea(Rectangle page)
@@ -320,9 +333,9 @@ internal sealed class DiaryBook : ShellPage
 		Sheet(b, page, isLeft);
 		for (int y = text.Y + _lineH - 4; y <= text.Bottom; y += _lineH)
 		{
-			AisvTheme.Fill(b, new Rectangle(page.X + 10, y, page.Width - 20, 2), Rule);
+			Hearth.Fill(b, new Rectangle(page.X + 10, y, page.Width - 20, 2), Rule);
 		}
-		AisvTheme.Fill(b, new Rectangle(text.X - 16, page.Y + 6, 2, page.Height - 12), Margin);
+		Hearth.Fill(b, new Rectangle(text.X - 16, page.Y + 6, 2, page.Height - 12), Margin);
 		if (index >= _pages.Count)
 		{
 			return;
@@ -332,31 +345,31 @@ internal sealed class DiaryBook : ShellPage
 		{
 			int y = text.Y + row * _lineH + 2;
 			Color color = kind == Kind.Date ? DateInk : kind == Kind.Note ? Faded : Ink;
-			AisvTheme.DrawText(b, line, new Vector2(text.X, y), color);
+			Hearth.Ink(b, line, new Vector2(text.X, y), color);
 			if (kind == Kind.Date)
 			{
-				AisvTheme.Fill(b, new Rectangle(text.X, text.Y + row * _lineH + _lineH - 8, Math.Min(text.Width, (int)AisvTheme.Width(line)), 2), DateInk * 0.6f);
+				Hearth.Fill(b, new Rectangle(text.X, text.Y + row * _lineH + _lineH - 8, Math.Min(text.Width, (int)Hearth.Width(line)), 2), DateInk * 0.6f);
 			}
 			row++;
 		}
 		string number = (index + 1).ToString();
-		AisvTheme.DrawText(b, number, new Vector2(page.Center.X - AisvTheme.Width(number) / 2f, page.Bottom - 40), Faded);
+		Hearth.Ink(b, number, new Vector2(page.Center.X - Hearth.Width(number) / 2f, page.Bottom - 40), Faded);
 	}
 
 	private static void DrawRibbon(SpriteBatch b, int x, int y, int h)
 	{
-		AisvTheme.Fill(b, new Rectangle(x, y, 16, h), Ribbon);
-		AisvTheme.Fill(b, new Rectangle(x + 12, y, 4, h), Color.Black * 0.2f);
+		Hearth.Fill(b, new Rectangle(x, y, 16, h), Ribbon);
+		Hearth.Fill(b, new Rectangle(x + 12, y, 4, h), Color.Black * 0.2f);
 		for (int i = 0; i < 8; i++)
 		{
-			AisvTheme.Fill(b, new Rectangle(x, y + h + i, 8 - i, 1), Ribbon);
-			AisvTheme.Fill(b, new Rectangle(x + 8 + i, y + h + i, 8 - i, 1), Ribbon);
+			Hearth.Fill(b, new Rectangle(x, y + h + i, 8 - i, 1), Ribbon);
+			Hearth.Fill(b, new Rectangle(x + 8 + i, y + h + i, 8 - i, 1), Ribbon);
 		}
 	}
 
 	private static void Arrow(SpriteBatch b, Rectangle r, Rectangle source, Hits hits, Action onClick)
 	{
-		Rectangle dest = AisvTheme.Hover(r) ? AisvTheme.Inflate(r, 2) : r;
+		Rectangle dest = Hearth.Hover(r) ? Hearth.Inflate(r, 2) : r;
 		b.Draw(Game1.mouseCursors, dest, source, Color.White);
 		hits.Add(r, onClick);
 	}

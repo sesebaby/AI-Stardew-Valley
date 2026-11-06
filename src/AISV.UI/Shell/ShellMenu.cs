@@ -12,7 +12,7 @@ using StardewValley.Menus;
 namespace AISV.UI.Shell;
 
 /// <summary>外壳：今日 / 社交 / 世界 / 设置。社交下面分信件、信使、村民、居民群、日记、八卦、小剧场、出游，世界下面分村民之间、市场；推进来的页面上面是"‹ 返回"。</summary>
-public sealed class ShellMenu : IClickableMenu, IShellHost
+public sealed partial class ShellMenu : IClickableMenu, IShellHost
 {
 	public enum Tab
 	{
@@ -20,7 +20,8 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 		Social,
 		World,
 		Apps,
-		Settings
+		Settings,
+		Desk
 	}
 
 	public enum SocialTab
@@ -68,7 +69,7 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 
 	private readonly Hits _hits = new Hits();
 
-	private readonly List<Rectangle> _tabRects = new List<Rectangle>();
+	private readonly List<Rectangle> _signs = new List<Rectangle>();
 
 	private Tab _tab;
 
@@ -76,15 +77,15 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 
 	private WorldTab _world;
 
-	private Rectangle _outer;
+	private Rectangle _frame;
 
-	private Rectangle _page;
+	private Rectangle _paper;
 
-	private Rectangle _header;
+	private Rectangle _strip;
 
-	private Rectangle _back;
+	private Rectangle _returnBox;
 
-	private Rectangle _close;
+	private Rectangle _crossBox;
 
 	private string _notice = "";
 
@@ -92,10 +93,14 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 
 	private int _sizePercent;
 
-	public ShellMenu(ShellContext ctx, Tab? tab = null, SocialTab? social = null, WorldTab? world = null)
+	private float _subScale = 1f;
+
+	public ShellMenu(ShellContext ctx, Tab? tab = null, SocialTab? social = null, WorldTab? world = null, Device device = Device.Window)
 	{
 		_ctx = ctx;
-		_tab = tab ?? _lastTab;
+		_device = device;
+		Hearth.UseSkin(ctx.Config().ShellSkin);
+		_tab = tab ?? (OnDevice ? Tab.Desk : _lastTab);
 		_social = social ?? _lastSocial;
 		_world = world ?? _lastWorld;
 		if (!WorldTabs().Contains(_world))
@@ -107,6 +112,7 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 			_social = SocialTab.Letters;
 		}
 		Layout();
+		StartBoot();
 		Page.Reload();
 	}
 
@@ -131,11 +137,11 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 
 	private bool Pushed => Stack.Count > 1;
 
-	private bool HasSubBar => !Pushed && SubTabs().Count > 1;
+	private bool HasSubBar => !OnDevice && !Pushed && SubTabs().Count > 1;
 
-	private Rectangle Content => HasSubBar || Pushed
-		? new Rectangle(_page.X + 12, _header.Bottom + 6, _page.Width - 24, _page.Bottom - 12 - (_header.Bottom + 6))
-		: new Rectangle(_page.X + 12, _page.Y + 92, _page.Width - 24, _page.Height - 104);
+	private Rectangle Content => OnDevice ? DeviceContent : HasSubBar || Pushed
+		? new Rectangle(_strip.X, _strip.Bottom + 6, _strip.Width, _paper.Bottom - 14 - (_strip.Bottom + 6))
+		: new Rectangle(_strip.X, _strip.Y, _strip.Width, _paper.Bottom - 14 - _strip.Y);
 
 	private ShellPage Root() => _tab switch
 	{
@@ -161,9 +167,16 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 			_ => new WorldPage(_ctx)
 		},
 		Tab.Apps => new AISV.UI.Apps.AppsPage(_ctx),
+		Tab.Desk => new AISV.UI.Apps.DeskPage(_ctx, DeskSections),
 		Tab.Settings => new SettingsPage(_ctx),
 		_ => new TodayPage(_ctx)
 	};
+
+	private const int BoardH = 86;
+
+	private int _dateRoom;
+
+	private bool _signIcons;
 
 	private void Layout()
 	{
@@ -173,20 +186,38 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 		width = vw;
 		height = vh;
 		_sizePercent = _ctx.Config().WindowPercent;
-		int w = Math.Min(vw - 48, 1440 * _sizePercent / 100), h = Math.Min(vh - 48, 940 * _sizePercent / 100);
-		_outer = new Rectangle((vw - w) / 2, (vh - h) / 2, w, h);
-		_page = AisvTheme.Inflate(_outer, -AisvTheme.WindowBorder);
-		_tabRects.Clear();
-		// 两边留出日期和金钱的位置，窄的时候页签跟着收窄。
-		int tw = Math.Clamp((_page.Width - 2 * 250) / Tabs.Length, 88, 132);
-		int startX = _page.Center.X - tw * Tabs.Length / 2;
-		for (int i = 0; i < Tabs.Length; i++)
+		if (OnDevice)
 		{
-			_tabRects.Add(new Rectangle(startX + i * tw + 8, _page.Y + 18, tw - 16, 50));
+			LayoutDevice(vw, vh);
+			return;
 		}
-		_close = new Rectangle(_page.Right - 64, _page.Y + 22, 44, 44);
-		_header = new Rectangle(_page.X + 12, _page.Y + 92, _page.Width - 24, 52);
-		_back = new Rectangle(_header.X + 4, _header.Y + 6, 150, _header.Height - 12);
+		Point size = new Point(Math.Min(vw - 40, 1480 * _sizePercent / 100), Math.Min(vh - 40, 960 * _sizePercent / 100));
+		_frame = new Rectangle(new Point((vw - size.X) / 2, (vh - size.Y) / 2), size);
+		_paper = Hearth.Inflate(_frame, -Hearth.WindowBorder);
+		Rectangle board = new Rectangle(_paper.X, _paper.Y, _paper.Width, BoardH);
+		_crossBox = new Rectangle(board.Right - 62, board.Center.Y - 23, 46, 46);
+		_strip = new Rectangle(board.X + 10, board.Bottom + 8, board.Width - 20, 50);
+		HangSigns(board);
+	}
+
+	/// <summary>页签按字数排开，夹在日期牌和金币牌之间；放不下就不要图标。</summary>
+	private void HangSigns(Rectangle board)
+	{
+		_dateRoom = Math.Clamp(board.Width / 4, 170, 320);
+		int from = board.X + 16 + _dateRoom + 8, to = _crossBox.X - 12 - (int)Hearth.Width("9,999,999") - 62 - 8;
+		int[] words = Tabs.Select(t => (int)Hearth.Width(TabLabel(t))).ToArray();
+		int bare = words.Sum() + Tabs.Length * 30;
+		_signIcons = bare + Tabs.Length * 38 <= to - from;
+		int total = bare + (_signIcons ? Tabs.Length * 38 : 0);
+		int gap = Math.Clamp((to - from - total) / (Tabs.Length + 1), 2, 22);
+		int x = from + Math.Max(0, (to - from - total - gap * (Tabs.Length - 1)) / 2);
+		_signs.Clear();
+		foreach (int word in words)
+		{
+			int wide = word + 30 + (_signIcons ? 38 : 0);
+			_signs.Add(new Rectangle(x, board.Y + 17, wide, 52));
+			x += wide + gap;
+		}
 	}
 
 	/// <summary>有伴侣才显示"伴侣"。</summary>
@@ -238,12 +269,18 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 			}
 		}
 		List<(Rectangle, string, bool, Action)> result = new List<(Rectangle, string, bool, Action)>();
-		int x = _header.X + 8;
-		foreach ((string label, bool selected, Action select) in items)
+		// 放不下时（比如英文）先缩留白，再缩字。整排居中。
+		const int gap = 6;
+		float textW = items.Sum(i => Hearth.Width(i.Label));
+		int room = _strip.Width - 12 - items.Count * gap;
+		int pad = items.Count == 0 ? 40 : Math.Clamp((room - (int)textW) / items.Count, 16, 40);
+		_subScale = Math.Clamp((room - pad * items.Count) / Math.Max(1f, textW), 0.6f, 1f);
+		int[] widths = items.Select(i => (int)(Hearth.Width(i.Label) * _subScale) + pad).ToArray();
+		int x = _strip.X + (_strip.Width - widths.Sum() - gap * Math.Max(0, widths.Length - 1)) / 2;
+		for (int i = 0; i < items.Count; i++)
 		{
-			Rectangle r = new Rectangle(x, _header.Y + 2, (int)AisvTheme.Width(label) + 44, _header.Height - 4);
-			result.Add((r, label, selected, select));
-			x = r.Right + 4;
+			result.Add((new Rectangle(x, _strip.Y, widths[i], _strip.Height - 2), items[i].Label, items[i].Selected, items[i].Select));
+			x += widths[i] + gap;
 		}
 		return result;
 	}
@@ -257,6 +294,16 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 	public override void update(GameTime time)
 	{
 		base.update(time);
+		Hearth.UseSkin(_ctx.Config().ShellSkin);
+		if (_bootLeft > 0)
+		{
+			_bootLeft -= time.ElapsedGameTime.TotalSeconds;
+			if (_bootLeft <= 0)
+			{
+				Game1.playSound("crystal");
+			}
+			return;
+		}
 		if (_ctx.Config().WindowPercent != _sizePercent)
 		{
 			Layout();
@@ -266,8 +313,14 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 
 	public override void draw(SpriteBatch b)
 	{
+		if (OnDevice)
+		{
+			DrawDevice(b);
+			return;
+		}
 		b.Draw(Game1.fadeToBlackRect, new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height), Color.Black * 0.45f);
-		AisvTheme.Window(b, _outer);
+		FrameDecor.DrawDrift(b, Game1.uiViewport.Width, Game1.uiViewport.Height);
+		Hearth.WoodFrame(b, _frame);
 		DrawTopBar(b);
 		if (Pushed)
 		{
@@ -278,67 +331,109 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 			DrawSubBar(b);
 		}
 		Rectangle content = Content;
-		AisvTheme.Fill(b, content, AisvTheme.Page);
+		Hearth.Paper(b, content);
+		FrameDecor.PaperMarks(b, content);
 		_hits.Clear();
 		Page.Draw(b, content, _hits);
-		if (_notice.Length > 0 && Game1.ticks < _noticeUntil)
-		{
-			string text = AisvTheme.Truncate(_notice, content.Width - 80, 0.85f);
-			int tw = (int)AisvTheme.Width(text, 0.85f);
-			Rectangle r = new Rectangle(_page.Center.X - tw / 2 - 24, content.Bottom - 70, tw + 48, 50);
-			AisvTheme.FillRounded(b, r, AisvTheme.Text * 0.88f, 25);
-			AisvTheme.TextCentered(b, text, r, Color.White, 0.85f);
-		}
+		FrameDecor.DrawFrame(b, _frame);
+		DrawNotice(b, content);
 		drawMouse(b);
 	}
 
+	/// <summary>提示挂在纸面上方，像一块临时的小木牌。</summary>
+	private void DrawNotice(SpriteBatch b, Rectangle content)
+	{
+		if (_notice.Length == 0 || Game1.ticks >= _noticeUntil)
+		{
+			return;
+		}
+		string text = Hearth.Truncate(_notice, content.Width - 70, 0.82f);
+		int wide = (int)Hearth.Width(text, 0.82f) + 40;
+		Rectangle sign = new Rectangle(content.Center.X - wide / 2, content.Y + 14, wide, 46);
+		foreach (int x in new[] { sign.X + 12, sign.Right - 16 })
+		{
+			Hearth.Fill(b, new Rectangle(x, content.Y, 4, 16), Hearth.Bark);
+		}
+		Hearth.Plate(b, sign, Hearth.AmberPale);
+		Hearth.InkMiddle(b, text, sign, Hearth.Quill, 0.82f);
+	}
+
+	/// <summary>顶上是一条木板：左边日期牌，中间挂着的页签，右边金币牌和关闭按钮。</summary>
 	private void DrawTopBar(SpriteBatch b)
 	{
-		Rectangle top = new Rectangle(_page.X, _page.Y, _page.Width, 84);
-		AisvTheme.FillRounded(b, new Rectangle(top.X, top.Y, top.Width, top.Height + 12), AisvTheme.PageDeep, 12);
-		AisvTheme.Fill(b, new Rectangle(top.X, top.Bottom, top.Width, 12), AisvTheme.Page);
-		AisvTheme.HLine(b, top.X, top.Bottom, top.Width, AisvTheme.Divider);
-		string left = AisvTheme.Truncate(ShellText.TopLine(), _tabRects[0].X - top.X - 40, 0.9f);
-		AisvTheme.DrawText(b, left, new Vector2(top.X + 28, top.Center.Y - 14), AisvTheme.TextMuted, 0.9f);
+		Rectangle top = new Rectangle(_paper.X, _paper.Y, _paper.Width, BoardH);
+		Hearth.Fill(b, top, Hearth.Timber);
+		for (int y = top.Y, row = 0; y < top.Bottom; y += 21, row++)
+		{
+			Hearth.Fill(b, new Rectangle(top.X, y, top.Width, 2), Hearth.Sapling * 0.6f);
+			Hearth.Fill(b, new Rectangle(top.X, y + 19, top.Width, 2), Hearth.Bark * 0.7f);
+			for (int x = top.X + 40 + row * 137 % 180; x < top.Right; x += 260)
+			{
+				Hearth.Fill(b, new Rectangle(x, y + 2, 2, 17), Hearth.Bark * 0.5f);
+			}
+		}
+		Hearth.Fill(b, new Rectangle(top.X, top.Bottom, top.Width, 4), Hearth.Bark);
+		Hearth.Fill(b, new Rectangle(top.X, top.Bottom + 4, top.Width, 6), Hearth.Bark * 0.22f);
+		FrameDecor.Lantern(b, top.X + 6, top.Bottom - 2);
+		FrameDecor.Lantern(b, top.Right - 26, top.Bottom - 2);
+		string left = Hearth.Truncate(ShellText.TopLine(), _dateRoom - 32, 0.82f);
+		Plaque(b, new Rectangle(top.X + 16, top.Y + 18, (int)Hearth.Width(left, 0.82f) + 32, 48), left, 0.82f);
 		for (int i = 0; i < Tabs.Length; i++)
 		{
-			AisvTheme.Tab(b, _tabRects[i], TabLabel(Tabs[i]), Tabs[i] == _tab, AisvTheme.Hover(_tabRects[i]));
+			Hearth.HangingSign(b, _signs[i], TabLabel(Tabs[i]), Tabs[i] == _tab, Hearth.Hover(_signs[i]), _signIcons ? TabIcon(Tabs[i]) : null);
 		}
-		string money = Utility.getNumberWithCommas(Game1.player?.Money ?? 0) + "G";
-		Vector2 ms = Game1.smallFont.MeasureString(money);
-		AisvTheme.Bold(b, money, new Vector2(_close.X - 24 - ms.X, top.Center.Y - ms.Y / 2f + 2f), AisvTheme.Text);
-		AisvTheme.CloseButton(b, _close, AisvTheme.Hover(_close));
+		string money = Utility.getNumberWithCommas(Game1.player?.Money ?? 0);
+		int moneyW = (int)Hearth.Width(money) + 62;
+		Rectangle purse = new Rectangle(_crossBox.X - 12 - moneyW, top.Y + 18, moneyW, 48);
+		Plaque(b, purse, "", 1f);
+		FrameDecor.Coin(b, purse.X + 14, purse.Center.Y - 15, 3);
+		Hearth.Ink(b, money, new Vector2(purse.X + 46, purse.Center.Y - Hearth.LineHeight() / 2 + 2), new Color(120, 44, 10));
+		Hearth.CrossPlate(b, _crossBox, Hearth.Hover(_crossBox));
+	}
+
+	private static PixelArt TabIcon(Tab t) => t switch
+	{
+		Tab.Social => AISV.UI.Apps.DeskIcons.Villagers,
+		Tab.World => AISV.UI.Apps.DeskIcons.Market,
+		Tab.Apps => AISV.UI.Apps.AppIcons.Junimo,
+		Tab.Settings => AISV.UI.Apps.DeskIcons.Settings,
+		_ => AISV.UI.Apps.DeskIcons.Today
+	};
+
+	private static void Plaque(SpriteBatch b, Rectangle r, string text, float scale)
+	{
+		Hearth.Plate(b, r, new Color(255, 234, 186));
+		Hearth.InkMiddle(b, text, r, Hearth.Quill, scale);
 	}
 
 	private void DrawSubBar(SpriteBatch b)
 	{
 		foreach ((Rectangle r, string label, bool selected, _) in SubTabs())
 		{
-			AisvTheme.SubTab(b, r, label, selected, AisvTheme.Hover(r));
+			Hearth.PaperTab(b, r, label, selected, Hearth.Hover(r), _subScale);
 		}
-		AisvTheme.HLine(b, _header.X, _header.Bottom, _header.Width, AisvTheme.Divider);
+		Hearth.HLine(b, _strip.X, _strip.Bottom, _strip.Width, Hearth.Seam);
 	}
 
+	/// <summary>页头是一条面包屑：回去的木牌，后面跟着这一页的名字。</summary>
 	private void DrawPageHeader(SpriteBatch b)
 	{
-		string backLabel = _tab switch
+		string crumb = OnDevice && !Pushed ? Tr.Get("desk.start", "主屏") : _tab switch
 		{
 			Tab.Social => SubLabel(_social),
 			Tab.World when WorldTabs().Length > 1 => WorldLabel(_world),
+			Tab.Desk => Tr.Get("desk.start", "主屏"),
 			_ => TabLabel(_tab)
 		};
-		int lw = (int)AisvTheme.Width(backLabel, 0.9f);
-		Rectangle pill = new Rectangle(_back.X, _back.Y, Math.Min(_back.Width, lw + 44), _back.Height);
-		if (AisvTheme.Hover(pill))
+		if (OnDevice)
 		{
-			AisvTheme.FillRounded(b, pill, AisvTheme.SelectedRow, pill.Height / 2);
+			Hearth.Fill(b, _strip, Hearth.ParchmentDeep);
 		}
-		AisvTheme.Chevron(b, new Vector2(pill.X + 16, pill.Center.Y), left: true, AisvTheme.AccentDark);
-		AisvTheme.DrawText(b, backLabel, new Vector2(pill.X + 30, pill.Center.Y - 12), AisvTheme.AccentDark, 0.9f);
-		string title = AisvTheme.Truncate(Page.Title, _header.Width - 2 * (pill.Width + 24), 1.05f);
-		float tw = AisvTheme.Width(title, 1.05f);
-		AisvTheme.Bold(b, title, new Vector2(_header.Center.X - tw / 2f, _header.Center.Y - 12), AisvTheme.Text, 1.05f);
-		AisvTheme.HLine(b, _header.X, _header.Bottom, _header.Width, AisvTheme.Divider);
+		_returnBox = new Rectangle(_strip.X + 4, _strip.Y + 3, (int)Hearth.Width(crumb, 0.8f) + 50, _strip.Height - 10);
+		Hearth.PressPlate(b, _returnBox, "‹ " + crumb, hover: Hearth.Hover(_returnBox), scale: 0.8f);
+		int titleX = _returnBox.Right + 18;
+		Hearth.InkBold(b, Hearth.Truncate(TitleNow, _strip.Right - titleX - 12, 1f), new Vector2(titleX, _strip.Center.Y - Hearth.LineHeight(1f) / 2), Hearth.Quill, 1f);
+		Hearth.Dotted(b, _strip.X, _strip.Bottom - 2, _strip.Width);
 	}
 
 	private static string TabLabel(Tab t) => t switch
@@ -375,7 +470,22 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 
 	public override void receiveLeftClick(int x, int y, bool playSound = true)
 	{
-		if (_close.Contains(x, y))
+		if (_bootLeft > 0)
+		{
+			_bootLeft = 0;
+			Game1.playSound("crystal");
+			return;
+		}
+		if (OnDevice && _home.Contains(x, y))
+		{
+			Page.StepBack();
+			if (Page.CanLeave() && !OnDesk)
+			{
+				Open(Tab.Desk);
+			}
+			return;
+		}
+		if (_crossBox.Contains(x, y))
 		{
 			if (!Page.CanLeave())
 			{
@@ -385,9 +495,9 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 			exitThisMenu(playSound: false);
 			return;
 		}
-		for (int i = 0; i < Tabs.Length; i++)
+		for (int i = 0; i < _signs.Count; i++)
 		{
-			if (_tabRects[i].Contains(x, y))
+			if (_signs[i].Contains(x, y))
 			{
 				if (Page.CanLeave())
 				{
@@ -396,8 +506,12 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 				return;
 			}
 		}
-		if (Pushed && _back.Contains(x, y))
+		if (CanGoBack && _returnBox.Contains(x, y))
 		{
+			if (Page.StepBack())
+			{
+				return;
+			}
 			if (Page.CanLeave())
 			{
 				Back();
@@ -422,7 +536,7 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 
 	public override void receiveRightClick(int x, int y, bool playSound = true)
 	{
-		if (Pushed && Page.CanLeave())
+		if (!Page.StepBack() && CanGoBack && Page.CanLeave())
 		{
 			Back();
 		}
@@ -440,13 +554,17 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 		{
 			return;
 		}
+		if (key == Keys.Escape && Page.StepBack())
+		{
+			return;
+		}
 		if (key == Keys.Escape || Game1.options.doesInputListContain(Game1.options.menuButton, key))
 		{
 			if (!Page.CanLeave())
 			{
 				return;
 			}
-			if (Pushed && key == Keys.Escape)
+			if (CanGoBack && key == Keys.Escape)
 			{
 				Back();
 				return;
@@ -461,7 +579,7 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 		{
 			receiveKeyPress(Keys.Escape);
 		}
-		else if ((b == Buttons.LeftShoulder || b == Buttons.RightShoulder) && Page.CanLeave())
+		else if (!OnDevice && (b == Buttons.LeftShoulder || b == Buttons.RightShoulder) && Page.CanLeave())
 		{
 			int i = Array.IndexOf(Tabs, _tab) + (b == Buttons.RightShoulder ? 1 : -1);
 			Switch(Tabs[(i + Tabs.Length) % Tabs.Length], _social, _world);
@@ -494,9 +612,12 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 		_tab = tab;
 		_social = social;
 		_world = world;
-		_lastTab = tab;
-		_lastSocial = social;
-		_lastWorld = world;
+		if (!OnDevice)
+		{
+			_lastTab = tab;
+			_lastSocial = social;
+			_lastWorld = world;
+		}
 		Game1.playSound("smallSelect");
 		_hits.Clear();
 		Page.Reload();
@@ -515,6 +636,10 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 	{
 		if (!Pushed)
 		{
+			if (OnDevice && _tab != Tab.Desk)
+			{
+				Switch(Tab.Desk, _social, _world);
+			}
 			return;
 		}
 		Stack.Pop().Closed();

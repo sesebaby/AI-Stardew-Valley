@@ -20,7 +20,10 @@ public class KinshipAndSketchTests
 
 	[Theory]
 	[InlineData("[LocalizedText Strings\\Characters:Relative_Mom]", ElderRole.Parent)]
-	[InlineData("stepdad", ElderRole.Parent)]
+	[InlineData("stepdad", ElderRole.Stepparent)]
+	[InlineData("adoptive mother", ElderRole.Parent)]
+	[InlineData("grand mother", ElderRole.Grandparent)]
+	[InlineData("god father", ElderRole.Godparent)]
 	[InlineData("妈妈", ElderRole.Parent)]
 	[InlineData("grandmother", ElderRole.Grandparent)]
 	[InlineData("godfather", ElderRole.Godparent)]
@@ -52,6 +55,11 @@ public class KinshipAndSketchTests
 
 	[Theory]
 	[InlineData("best friend")]
+	[InlineData("brother-in-law")]
+	[InlineData("mother-in-law")]
+	[InlineData("ex-wife")]
+	[InlineData("best friend's sister")]
+	[InlineData("[LocalizedText Mods\\Kid.Pack\\Strings:Relative_Friend]")]
 	[InlineData("")]
 	[InlineData(null)]
 	public void UnknownTitlesAreIgnored(string? title)
@@ -63,18 +71,18 @@ public class KinshipAndSketchTests
 	[Fact]
 	public void TownFamiliesBecomeTreesAndLonersAreListed()
 	{
-		KinRegister reg = Kinship.Build(new KinSources { Villagers = Town });
+		KinRegister reg = Kinship.Build(new KinSources { Residents = Town });
 		KinTree pierre = TreeOf(reg, "Pierre");
 		Assert.Equal("Pierre", pierre.Root.People[0]);
 		Assert.Equal(new[] { "Abigail", "Caroline", "Pierre" }, pierre.Everyone.OrderBy(n => n));
-		Assert.Contains("Linus", reg.Alone);
-		Assert.DoesNotContain("Maru", reg.Alone);
+		Assert.Contains("Linus", reg.Solo);
+		Assert.DoesNotContain("Maru", reg.Solo);
 	}
 
 	[Fact]
 	public void ChildrenHangBelowTheirParentsAndParentsSitCentered()
 	{
-		KinTree tree = TreeOf(Kinship.Build(new KinSources { Villagers = Town }), "Robin");
+		KinTree tree = TreeOf(Kinship.Build(new KinSources { Residents = Town }), "Robin");
 		Assert.Same(tree.Root, CellOf(tree, "Demetrius"));
 		KinBelow maru = tree.Root.Below.Single(b => b.Person == "Maru");
 		KinBelow seb = tree.Root.Below.Single(b => b.Person == "Sebastian");
@@ -88,10 +96,10 @@ public class KinshipAndSketchTests
 	[Fact]
 	public void NearestElderHoldsTheChildAndOthersBecomeSides()
 	{
-		KinTree tree = TreeOf(Kinship.Build(new KinSources { Villagers = Town }), "Jas");
+		KinTree tree = TreeOf(Kinship.Build(new KinSources { Residents = Town }), "Jas");
 		Assert.Equal(new[] { 0, 1, 2 }, new[] { "Marnie", "Shane", "Jas" }.Select(n => CellOf(tree, n).Depth));
 		Assert.Equal(new KinSide("Marnie", "Jas", ElderRole.AuntOrUncle), Assert.Single(tree.Sides));
-		Assert.Equal(1, CellOf(TreeOf(Kinship.Build(new KinSources { Villagers = Town }), "Alex"), "Alex").Depth);
+		Assert.Equal(1, CellOf(TreeOf(Kinship.Build(new KinSources { Residents = Town }), "Alex"), "Alex").Depth);
 	}
 
 	[Fact]
@@ -99,7 +107,7 @@ public class KinshipAndSketchTests
 	{
 		string[] people = { "A", "B", "C", "D", "E", "F" };
 		(string, string, string)[] declared = { ("B", "A", "mother"), ("C", "A", "mother"), ("D", "B", "father"), ("E", "B", "father"), ("F", "C", "mother") };
-		KinTree tree = Kinship.Build(new KinSources { Villagers = people, Declared = declared }).Trees.Single();
+		KinTree tree = Kinship.Build(new KinSources { Residents = people, Declared = declared }).Trees.Single();
 		Assert.Equal(3f, tree.Width);
 		float[] row = new[] { "D", "E", "F" }.Select(n => CellOf(tree, n).Left).ToArray();
 		Assert.Equal(new[] { 0f, 1f, 2f }, row);
@@ -109,35 +117,115 @@ public class KinshipAndSketchTests
 	}
 
 	[Fact]
-	public void MarriageBeatsDatingAndDatingDoesNotJoinFamilies()
+	public void MarriageBeatsDating()
 	{
-		KinRegister dating = Kinship.Build(new KinSources { Villagers = new[] { "Pierre", "Abigail", "Caroline", "Mia" }, Declared = new[] { ("Mia", "Abigail", "girlfriend") } });
-		Assert.Contains("Mia", dating.Alone);
-		KinRegister married = Kinship.Build(new KinSources { Villagers = new[] { "A", "B" }, Declared = new[] { ("A", "B", "girlfriend"), ("A", "B", "wife") } });
+		KinRegister married = Kinship.Build(new KinSources { Residents = new[] { "A", "B" }, Declared = new[] { ("A", "B", "girlfriend"), ("A", "B", "wife") } });
 		Assert.Equal(PairKind.Married, married.Trees.Single().Root.Pairs.Single());
+		Assert.Empty(married.Trees.Single().Links);
+	}
+
+	[Fact]
+	public void TownFactsRepeatedInCharacterDataShowOnce()
+	{
+		(string, string, string)[] declared = { ("Abigail", "Pierre", "dad"), ("Abigail", "Caroline", "mom"), ("Pierre", "Caroline", "wife"), ("Caroline", "Pierre", "husband"), ("Jas", "Marnie", "aunt"), ("Emily", "Haley", "sister"), ("Haley", "Emily", "sister") };
+		KinRegister reg = Kinship.Build(new KinSources { Residents = Town.Concat(new[] { "Emily", "Haley" }).ToArray(), Declared = declared });
+		KinTree pierre = TreeOf(reg, "Pierre");
+		Assert.Equal(new[] { "Pierre", "Caroline" }, pierre.Root.Below.Single().Elders);
+		Assert.Single(TreeOf(reg, "Jas").Sides);
+		Assert.Single(TreeOf(reg, "Emily").Root.Pairs);
+	}
+
+	[Fact]
+	public void PartnerWithoutFamilyStandsBesideTheOneWithFamily()
+	{
+		KinRegister reg = Kinship.Build(new KinSources { Residents = new[] { "Pierre", "Abigail", "Caroline", "Mia" }, Declared = new[] { ("Mia", "Abigail", "girlfriend") } });
+		Assert.DoesNotContain("Mia", reg.Solo);
+		Assert.Contains("Mia", CellOf(TreeOf(reg, "Pierre"), "Abigail").People);
+	}
+
+	[Fact]
+	public void CouplesFromTwoFamiliesStayApartButBothKnow()
+	{
+		KinRegister reg = Kinship.Build(new KinSources { Residents = Town, Declared = new[] { ("Abigail", "Sebastian", "boyfriend") } });
+		Assert.NotSame(TreeOf(reg, "Abigail"), TreeOf(reg, "Sebastian"));
+		Assert.Equal(PairKind.Dating, TreeOf(reg, "Abigail").Links.Single().Pair);
+		Assert.Equal(PairKind.Dating, TreeOf(reg, "Sebastian").Links.Single().Pair);
+	}
+
+	[Fact]
+	public void SecondSpouseAndThirdSiblingStillAppear()
+	{
+		KinRegister wives = Kinship.Build(new KinSources { Residents = new[] { "A", "B", "C" }, Declared = new[] { ("A", "B", "wife"), ("A", "C", "wife") } });
+		Assert.Equal(new[] { "A", "B", "C" }, wives.Trees.Single().Root.People);
+		KinRegister kids = Kinship.Build(new KinSources { Residents = new[] { "A", "B", "C" }, Declared = new[] { ("A", "B", "sister"), ("C", "A", "brother") } });
+		Assert.Equal(3, kids.Trees.Single().Root.People.Count);
+		Assert.Empty(kids.Solo);
+	}
+
+	[Fact]
+	public void SiblingOfSomeoneWithParentsStandsWithThem()
+	{
+		KinRegister reg = Kinship.Build(new KinSources { Residents = new[] { "P", "A", "B" }, Declared = new[] { ("A", "P", "mother"), ("A", "B", "sister") } });
+		KinTree tree = reg.Trees.Single();
+		Assert.Same(CellOf(tree, "A"), CellOf(tree, "B"));
+		Assert.Empty(reg.Solo);
+	}
+
+	[Fact]
+	public void EachSpousesParentsAreStillRelatives()
+	{
+		KinRegister reg = Kinship.Build(new KinSources { Residents = new[] { "A", "B", "Pa", "Pb" }, Declared = new[] { ("A", "B", "wife"), ("A", "Pa", "mother"), ("B", "Pb", "father") } });
+		Assert.Empty(reg.Solo);
+		Assert.Contains(reg.Trees.SelectMany(t => t.Sides), s => s.Elder == "Pb" && s.Younger == "B");
+		Assert.All(reg.Trees.Where(t => t.Everyone.Contains("Pb")), t => Assert.NotEmpty(t.Sides));
+	}
+
+	[Fact]
+	public void CoParentsWhoAreNotACoupleBothKeepTheChild()
+	{
+		KinRegister reg = Kinship.Build(new KinSources { Residents = new[] { "X", "Y", "K" }, Declared = new[] { ("K", "X", "mother"), ("K", "Y", "father") } });
+		Assert.Empty(reg.Solo);
+		Assert.Contains(reg.Trees.Single(t => t.Everyone.Contains("Y")).Sides, s => s.Elder == "Y" && s.Younger == "K");
+	}
+
+	[Fact]
+	public void StepparentIsNotCalledParent()
+	{
+		KinRegister reg = Kinship.Build(new KinSources { Residents = Town, Declared = new[] { ("Sebastian", "Demetrius", "stepdad") } });
+		KinTree tree = TreeOf(reg, "Robin");
+		Assert.Equal(new[] { "Robin" }, tree.Root.Below.Single(b => b.Person == "Sebastian").Elders);
+		Assert.Contains(new KinSide("Demetrius", "Sebastian", ElderRole.Stepparent), tree.Sides);
+	}
+
+	[Fact]
+	public void RoommateIsNotASpouseAndChildrenAreYours()
+	{
+		KinTree mine = Kinship.Build(new KinSources { Residents = Town, Farmer = new FarmerHome { Roommate = "Krobus", Children = new[] { Kinship.Outsider("小豆") } } }).Trees[0];
+		Assert.Equal(PairKind.Roommates, mine.Root.Pairs.Single());
+		Assert.Equal(new[] { Kinship.Me }, mine.Root.Below.Single().Elders);
 	}
 
 	[Fact]
 	public void DeclaredLoopsDoNotHang()
 	{
-		KinRegister reg = Kinship.Build(new KinSources { Villagers = new[] { "A", "B" }, Declared = new[] { ("A", "B", "mother"), ("B", "A", "mother") } });
+		KinRegister reg = Kinship.Build(new KinSources { Residents = new[] { "A", "B" }, Declared = new[] { ("A", "B", "mother"), ("B", "A", "mother") } });
 		Assert.Equal(2, reg.Trees.SelectMany(t => t.Everyone).Count());
 	}
 
 	[Fact]
 	public void AbsentRelativesAreLeftOut()
 	{
-		KinRegister reg = Kinship.Build(new KinSources { Villagers = new[] { "Pierre", "Abigail" }, Away = new[] { "Abigail" } });
+		KinRegister reg = Kinship.Build(new KinSources { Residents = new[] { "Pierre", "Abigail" }, Elsewhere = new[] { "Abigail" } });
 		Assert.Single(reg.Trees);
-		Assert.Contains("Abigail", reg.Away);
-		Assert.DoesNotContain("Abigail", reg.Alone);
+		Assert.Contains("Abigail", reg.Elsewhere);
+		Assert.DoesNotContain("Abigail", reg.Solo);
 	}
 
 	[Fact]
 	public void FarmerFamilyComesFirstWithSpouseAndChildren()
 	{
 		string kid = Kinship.Outsider("小豆");
-		KinRegister reg = Kinship.Build(new KinSources { Villagers = Town, Farmer = new FarmerHome { Spouse = "Abigail", Children = new[] { kid } } });
+		KinRegister reg = Kinship.Build(new KinSources { Residents = Town, Farmer = new FarmerHome { Spouse = "Abigail", Children = new[] { kid } } });
 		KinTree mine = reg.Trees[0];
 		Assert.True(mine.IsFarmers);
 		Assert.Equal(new[] { Kinship.Me, "Abigail" }, mine.Root.People);
@@ -150,7 +238,7 @@ public class KinshipAndSketchTests
 	[Fact]
 	public void MoodsStayInsideTheFamily()
 	{
-		KinRegister reg = Kinship.Build(new KinSources { Villagers = Town, Moods = new[] { new KinMood("Pierre", "Abigail", Bond.Tense), new KinMood("Pierre", "Alex", Bond.Rivals) } });
+		KinRegister reg = Kinship.Build(new KinSources { Residents = Town, Moods = new[] { new KinMood("Pierre", "Abigail", Bond.Tense), new KinMood("Pierre", "Alex", Bond.Rivals) } });
 		Assert.Equal(Bond.Tense, TreeOf(reg, "Pierre").Moods.Single().Bond);
 	}
 

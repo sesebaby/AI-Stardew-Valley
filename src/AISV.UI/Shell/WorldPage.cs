@@ -52,7 +52,7 @@ internal sealed class WorldPage : ShellPage
 		Rectangle header = new Rectangle(area.X, area.Y, area.Width, 64);
 		_feed = new Rectangle(area.X, header.Bottom, area.Width, area.Bottom - header.Bottom);
 		Kit.Header(b, header, Tr.Get("shell.world.title", "村民之间"), _moments.Count > 0 ? Tr.Get("shell.world.count", "最近 {{n}} 件事", ("n", _moments.Count)) : "", null, hits, null);
-		AisvTheme.BeginClip(b, _feed);
+		Hearth.BeginClip(b, _feed);
 		const int pad = 28;
 		int x = _feed.X + pad, w = _feed.Width - pad * 2;
 		int y = _feed.Y + 16 - _scroll.Offset;
@@ -69,24 +69,24 @@ internal sealed class WorldPage : ShellPage
 			y = DrawMoments(b, x, y, w) + 16;
 			y = DrawEdges(b, x, y, w) + 20;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, _feed, y);
 	}
 
 	private int DrawMoments(SpriteBatch b, int x, int y, int w)
 	{
 		const float scale = 0.85f;
-		int lh = AisvTheme.LineHeight(scale);
+		int lh = Hearth.LineHeight(scale);
 		int today = GameState.Today.TotalDays;
-		List<(NpcSocialMoment M, List<string> Lines)> items = _moments.Select(m => (m, AisvTheme.WrapLines(ShellText.Clean(m.WhatHappened) + Quote(m), w - 40 - 96, scale))).ToList();
+		List<(NpcSocialMoment M, List<string> Lines)> items = _moments.Select(m => (m, Hearth.WrapLines(ShellText.Clean(m.WhatHappened) + Quote(m), w - 40 - 96, scale))).ToList();
 		int h = 18 + 34 + (items.Count == 0 ? 56 : items.Sum(i => 76 + i.Lines.Count * lh)) + 8;
 		Rectangle card = new Rectangle(x, y, w, h);
-		AisvTheme.DrawCard(b, card);
+		Hearth.CardSlip(b, card);
 		Kit.SectionTitle(b, Tr.Get("shell.world.moments", "最近的事"), x + 20, y + 18);
 		int cy = y + 52;
 		if (items.Count == 0)
 		{
-			AisvTheme.DrawText(b, Tr.Get("shell.world.noMoments", "还没什么动静。每天晚上村民之间会有一两件小事。"), new Vector2(x + 20, cy + 14), AisvTheme.TextFaint, 0.8f);
+			Hearth.Ink(b, Tr.Get("shell.world.noMoments", "还没什么动静。每天晚上村民之间会有一两件小事。"), new Vector2(x + 20, cy + 14), Hearth.QuillPale, 0.8f);
 			return card.Bottom;
 		}
 		for (int i = 0; i < items.Count; i++)
@@ -94,22 +94,22 @@ internal sealed class WorldPage : ShellPage
 			(NpcSocialMoment m, List<string> lines) = items[i];
 			if (i > 0)
 			{
-				AisvTheme.HLine(b, x + 96, cy, w - 116, AisvTheme.Divider);
+				Hearth.HLine(b, x + 96, cy, w - 116, Hearth.Seam);
 			}
 			Kit.Avatar(b, new Rectangle(x + 20, cy + 16, 44, 44), Ctx, m.First);
 			Kit.Avatar(b, new Rectangle(x + 44, cy + 36, 34, 34), Ctx, m.Second);
 			int tx = x + 96;
 			string pair = Tr.Get("shell.today.pair", "{{a}}和{{b}}", ("a", Ctx.Display(m.First)), ("b", Ctx.Display(m.Second)));
-			AisvTheme.Bold(b, pair, new Vector2(tx, cy + 14), AisvTheme.AccentDark, 0.9f);
+			Hearth.InkBold(b, pair, new Vector2(tx, cy + 14), Hearth.LeafDeep, 0.9f);
 			string meta = Places.Name(m.Place) + " · " + ShellText.DaysAgo(today - m.OnDay, m.Day, m.Season);
-			float px = tx + AisvTheme.Width(pair, 0.9f) + 12;
-			AisvTheme.DrawText(b, meta, new Vector2(px, cy + 18), AisvTheme.TextFaint, 0.7f);
+			float px = tx + Hearth.Width(pair, 0.9f) + 12;
+			Hearth.Ink(b, meta, new Vector2(px, cy + 18), Hearth.QuillPale, 0.7f);
 			string tone = ToneWord(m.Vibe);
-			AisvTheme.Chip(b, new Vector2(x + w - 20 - AisvTheme.ChipWidth(tone, 0.62f), cy + 14), tone, AisvTheme.PageDeep, AisvTheme.TextMuted, 0.62f);
+			Hearth.Tag(b, new Vector2(x + w - 20 - Hearth.TagWidth(tone, 0.62f), cy + 14), tone, Hearth.ParchmentDeep, Hearth.QuillSoft, 0.62f);
 			int ty = cy + 50;
 			foreach (string line in lines)
 			{
-				AisvTheme.DrawText(b, line, new Vector2(tx, ty), AisvTheme.Text, scale);
+				Hearth.Ink(b, line, new Vector2(tx, ty), Hearth.Quill, scale);
 				ty += lh;
 			}
 			cy += 76 + lines.Count * lh;
@@ -135,12 +135,12 @@ internal sealed class WorldPage : ShellPage
 	{
 		const int rowH = 62;
 		Rectangle card = new Rectangle(x, y, w, 18 + 34 + Math.Max(1, _edges.Count) * rowH + 12);
-		AisvTheme.DrawCard(b, card);
+		Hearth.CardSlip(b, card);
 		Kit.SectionTitle(b, Tr.Get("shell.world.edges", "谁和谁"), x + 20, y + 18);
 		int ry = y + 52;
 		if (_edges.Count == 0)
 		{
-			AisvTheme.DrawText(b, Tr.Get("shell.world.noEdges", "还看不出谁和谁走得近。"), new Vector2(x + 20, ry + 16), AisvTheme.TextFaint, 0.8f);
+			Hearth.Ink(b, Tr.Get("shell.world.noEdges", "还看不出谁和谁走得近。"), new Vector2(x + 20, ry + 16), Hearth.QuillPale, 0.8f);
 			return card.Bottom;
 		}
 		for (int i = 0; i < _edges.Count; i++)
@@ -148,17 +148,17 @@ internal sealed class WorldPage : ShellPage
 			NpcSocialEdge e = _edges[i];
 			if (i > 0)
 			{
-				AisvTheme.HLine(b, x + 20, ry, w - 40, AisvTheme.Divider);
+				Hearth.HLine(b, x + 20, ry, w - 40, Hearth.Seam);
 			}
 			Kit.Avatar(b, new Rectangle(x + 20, ry + 11, 40, 40), Ctx, e.First);
 			Kit.Avatar(b, new Rectangle(x + 64, ry + 11, 40, 40), Ctx, e.Second);
 			string state = SocialWeb.StateWord(e.Standing);
 			bool bad = e.Standing is "rivalry" or "tense" or "awkward";
-			int cw = AisvTheme.ChipWidth(state, 0.62f);
-			AisvTheme.Chip(b, new Vector2(x + w - 20 - cw, ry + 10), state, bad ? AisvTheme.PinkSoft : AisvTheme.AccentSoft, bad ? AisvTheme.Pink : AisvTheme.AccentDark, 0.62f);
+			int cw = Hearth.TagWidth(state, 0.62f);
+			Hearth.Tag(b, new Vector2(x + w - 20 - cw, ry + 10), state, bad ? Hearth.RosePale : Hearth.LeafPale, bad ? Hearth.Rose : Hearth.LeafDeep, 0.62f);
 			int tx = x + 118, right = x + w - 30 - cw;
-			AisvTheme.DrawText(b, AisvTheme.Truncate(Tr.Get("shell.today.pair", "{{a}}和{{b}}", ("a", Ctx.Display(e.First)), ("b", Ctx.Display(e.Second))), right - tx, 0.82f), new Vector2(tx, ry + 8), AisvTheme.Text, 0.82f);
-			AisvTheme.DrawText(b, Tr.Get("shell.world.times", "来往 {{n}} 次", ("n", e.Encounters)), new Vector2(tx, ry + 34), AisvTheme.TextFaint, 0.68f);
+			Hearth.Ink(b, Hearth.Truncate(Tr.Get("shell.today.pair", "{{a}}和{{b}}", ("a", Ctx.Display(e.First)), ("b", Ctx.Display(e.Second))), right - tx, 0.82f), new Vector2(tx, ry + 8), Hearth.Quill, 0.82f);
+			Hearth.Ink(b, Tr.Get("shell.world.times", "来往 {{n}} 次", ("n", e.Encounters)), new Vector2(tx, ry + 34), Hearth.QuillPale, 0.68f);
 			ry += rowH;
 		}
 		return card.Bottom;

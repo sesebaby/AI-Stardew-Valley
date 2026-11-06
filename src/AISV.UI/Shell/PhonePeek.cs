@@ -122,11 +122,11 @@ public sealed class PhonePeek
 		SpriteBatch b = e.SpriteBatch;
 		Rectangle r = Bounds();
 		bool hover = r.Contains(Game1.getMouseX(), Game1.getMouseY());
-		AisvTheme.DrawShadow(b, r, 18);
-		AisvTheme.FillRounded(b, r, hover ? new Color(76, 66, 86) : Body, 18);
-		AisvTheme.FillRounded(b, new Rectangle(r.Center.X - 22, r.Y + 8, 44, 6), Color.Black * 0.45f, 3);
+		Hearth.CastShadow(b, r, 18);
+		Hearth.FillRounded(b, r, hover ? new Color(76, 66, 86) : Body, 18);
+		Hearth.FillRounded(b, new Rectangle(r.Center.X - 22, r.Y + 8, 44, 6), Color.Black * 0.45f, 3);
 		Rectangle screen = new Rectangle(r.X + 10, r.Y + 20, r.Width - 20, r.Height - 30);
-		AisvTheme.FillRounded(b, screen, AisvTheme.Page, 10);
+		Hearth.FillRounded(b, screen, Hearth.Parchment, 10);
 		if (_peek.Current is PeekNote note)
 		{
 			DrawBanner(b, screen, note);
@@ -134,30 +134,30 @@ public sealed class PhonePeek
 		else
 		{
 			string count = Tr.Get("peek.unread", "{{n}} 个聊天有新消息", ("n", UnreadChats));
-			AisvTheme.DrawText(b, AisvTheme.Truncate(count, screen.Width - 16, 0.68f), new Vector2(screen.X + 10, screen.Y + 4), AisvTheme.AccentDark, 0.68f);
+			Hearth.Ink(b, Hearth.Truncate(count, screen.Width - 16, 0.68f), new Vector2(screen.X + 10, screen.Y + 4), Hearth.LeafDeep, 0.68f);
 		}
 		if (UnreadChats > 0)
 		{
 			Rectangle dot = new Rectangle(r.Right - 18, r.Y - 6, 22, 22);
-			AisvTheme.FillRounded(b, dot, AisvTheme.Badge, 11);
-			AisvTheme.TextCentered(b, Math.Min(UnreadChats, 9).ToString(), dot, Color.White, 0.62f);
+			Hearth.FillRounded(b, dot, Hearth.Ember, 11);
+			Hearth.InkMiddle(b, Math.Min(UnreadChats, 9).ToString(), dot, Color.White, 0.62f);
 		}
 	}
 
 	private void DrawBanner(SpriteBatch b, Rectangle screen, PeekNote note)
 	{
 		string name = _npcs.Names.Display(note.Speaker);
-		AisvTheme.Avatar(b, new Rectangle(screen.X + 8, screen.Y + 8, 44, 44), ShellText.Npc(note.Speaker), name.Length > 0 ? name[..1] : "?");
+		Hearth.Cameo(b, new Rectangle(screen.X + 8, screen.Y + 8, 44, 44), ShellText.Npc(note.Speaker), name.Length > 0 ? name[..1] : "?");
 		int tx = screen.X + 60, w = screen.Right - 8 - tx;
-		AisvTheme.Bold(b, AisvTheme.Truncate(name, w, 0.82f), new Vector2(tx, screen.Y + 6), AisvTheme.Text, 0.82f);
-		AisvTheme.DrawText(b, note.Thread == ResidentsThread ? Tr.Get("peek.residents", "居民群") : Tr.Get("peek.app", "信使"), new Vector2(tx, screen.Y + 32), AisvTheme.TextFaint, 0.62f);
+		Hearth.InkBold(b, Hearth.Truncate(name, w, 0.82f), new Vector2(tx, screen.Y + 6), Hearth.Quill, 0.82f);
+		Hearth.Ink(b, note.Thread == ResidentsThread ? Tr.Get("peek.residents", "居民群") : Tr.Get("peek.app", "信使"), new Vector2(tx, screen.Y + 32), Hearth.QuillPale, 0.62f);
 		int y = screen.Y + 58;
-		List<string> lines = AisvTheme.WrapLines(ShellText.Clean(note.Text), screen.Width - 16, 0.72f);
+		List<string> lines = Hearth.WrapLines(ShellText.Clean(note.Text), screen.Width - 16, 0.72f);
 		for (int i = 0; i < lines.Count && i < 2; i++)
 		{
-			string line = i == 1 && lines.Count > 2 ? AisvTheme.Truncate(lines[i] + "……", screen.Width - 16, 0.72f) : lines[i];
-			AisvTheme.DrawText(b, line, new Vector2(screen.X + 8, y), AisvTheme.Text, 0.72f);
-			y += AisvTheme.LineHeight(0.72f);
+			string line = i == 1 && lines.Count > 2 ? Hearth.Truncate(lines[i] + "……", screen.Width - 16, 0.72f) : lines[i];
+			Hearth.Ink(b, line, new Vector2(screen.X + 8, y), Hearth.Quill, 0.72f);
+			y += Hearth.LineHeight(0.72f);
 		}
 	}
 }

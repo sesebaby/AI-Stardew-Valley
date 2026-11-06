@@ -178,7 +178,7 @@ internal sealed class ErrandFormPage : ShellPage
 		int sideW = narrow ? 0 : Math.Clamp(area.Width * 30 / 100, 300, 380);
 		Rectangle side = narrow ? Rectangle.Empty : new Rectangle(area.Right - pad - sideW, area.Y + 16, sideW, area.Height - 32);
 		_view = narrow ? new Rectangle(area.X, area.Y, area.Width, area.Height - 150) : new Rectangle(area.X, area.Y, side.X - 8 - area.X, area.Height);
-		AisvTheme.BeginClip(b, _view);
+		Hearth.BeginClip(b, _view);
 		int x = _view.X + pad, w = _view.Width - pad * 2 - 12;
 		int y = _view.Y + 16 - _scroll.Offset;
 		y = Section(b, Tr.Get("errandForm.who", "托谁"), x, y);
@@ -194,7 +194,7 @@ internal sealed class ErrandFormPage : ShellPage
 		}
 		y = Section(b, Tr.Get("errandForm.terms", "数量、期限和报酬"), x, y);
 		y = DrawTerms(b, x, y, w, hits) + 24;
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, _view, y);
 		if (narrow)
 		{
@@ -213,24 +213,24 @@ internal sealed class ErrandFormPage : ShellPage
 			b.Draw(Game1.fadeToBlackRect, area, Color.Black * 0.3f);
 			hits.Add(area, () => { });
 			Rectangle card = new Rectangle(area.Center.X - 200, area.Center.Y - 50, 400, 100);
-			AisvTheme.DrawShadow(b, card);
-			AisvTheme.DrawCard(b, card);
+			Hearth.CastShadow(b, card);
+			Hearth.CardSlip(b, card);
 			string dots = new string('.', 1 + Game1.ticks / 20 % 3);
-			AisvTheme.TextCentered(b, Tr.Get("errandForm.waiting", "等{{name}}回话", ("name", Service.Display(_draft.Npc))) + dots, card, AisvTheme.Text, 0.85f);
+			Hearth.InkMiddle(b, Tr.Get("errandForm.waiting", "等{{name}}回话", ("name", Service.Display(_draft.Npc))) + dots, card, Hearth.Quill, 0.85f);
 		}
 	}
 
 	private static int Section(SpriteBatch b, string title, int x, int y)
 	{
 		Kit.SectionTitle(b, title, x, y);
-		return y + AisvTheme.LineHeight(0.85f) + 10;
+		return y + Hearth.LineHeight(0.85f) + 10;
 	}
 
 	private int DrawHelpers(SpriteBatch b, int x, int y, int w, Hits hits)
 	{
 		if (_helpers.Count == 0)
 		{
-			AisvTheme.DrawText(b, Tr.Get("errandForm.noHelpers", "还不认识能托的人。"), new Vector2(x, y), AisvTheme.TextMuted, 0.78f);
+			Hearth.Ink(b, Tr.Get("errandForm.noHelpers", "还不认识能托的人。"), new Vector2(x, y), Hearth.QuillSoft, 0.78f);
 			return y + 30;
 		}
 		const int tile = 92, gap = 10;
@@ -245,24 +245,24 @@ internal sealed class ErrandFormPage : ShellPage
 			}
 			bool sel = h.Npc == _draft.Npc;
 			bool blocked = h.Blocked != null;
-			bool hover = AisvTheme.Hover(r, _view);
-			AisvTheme.Bordered(b, r, sel ? AisvTheme.AccentSoft : hover && !blocked ? AisvTheme.Card : AisvTheme.Page, sel ? AisvTheme.Accent : AisvTheme.CardBorder, 12);
+			bool hover = Hearth.Hover(r, _view);
+			Hearth.Bordered(b, r, sel ? Hearth.LeafPale : hover && !blocked ? Hearth.Slip : Hearth.Parchment, sel ? Hearth.Leaf : Hearth.SlipEdge, 12);
 			Rectangle face = new Rectangle(r.X + (tile - 60) / 2, r.Y + 8, 60, 60);
 			Kit.Avatar(b, face, Ctx, h.Npc);
 			if (blocked)
 			{
-				AisvTheme.FillRounded(b, r, AisvTheme.Page * 0.6f, 12);
+				Hearth.FillRounded(b, r, Hearth.Parchment * 0.6f, 12);
 			}
-			string name = AisvTheme.Truncate(h.Display, tile - 10, 0.7f);
-			AisvTheme.TextCentered(b, name, new Rectangle(r.X, face.Bottom + 4, tile, 24), blocked ? AisvTheme.TextFaint : AisvTheme.Text, 0.7f);
+			string name = Hearth.Truncate(h.Display, tile - 10, 0.7f);
+			Hearth.InkMiddle(b, name, new Rectangle(r.X, face.Bottom + 4, tile, 24), blocked ? Hearth.QuillPale : Hearth.Quill, 0.7f);
 			string skills = string.Join("", h.Skills.OrderBy(s => s).Select(SkillGlyph));
 			if (skills.Length > 0)
 			{
-				AisvTheme.Chip(b, new Vector2(r.Right - 6 - AisvTheme.ChipWidth(skills, 0.55f), r.Y + 4), skills, AisvTheme.GoldSoft, AisvTheme.Gold, 0.55f);
+				Hearth.Tag(b, new Vector2(r.Right - 6 - Hearth.TagWidth(skills, 0.55f), r.Y + 4), skills, Hearth.AmberPale, Hearth.Amber, 0.55f);
 			}
 			if (h.Child)
 			{
-				AisvTheme.Chip(b, new Vector2(r.X + 4, r.Y + 4), Tr.Get("errandForm.child", "小"), BlueSoft, Blue, 0.55f);
+				Hearth.Tag(b, new Vector2(r.X + 4, r.Y + 4), Tr.Get("errandForm.child", "小"), BlueSoft, Blue, 0.55f);
 			}
 			string tip = h.Blocked ?? (h.Skills.Count > 0 ? Tr.Get("errandForm.good", "擅长{{what}}", ("what", string.Join("、", h.Skills.Select(ErrandSkills.Label)))) : "") + (h.Skills.Count > 0 ? " · " : "") + Tr.Get("errandForm.hearts", "{{n}} 心", ("n", h.Hearts));
 			if (hover)
@@ -329,11 +329,11 @@ internal sealed class ErrandFormPage : ShellPage
 			Rectangle r = new Rectangle(x + i * (bw + gap), y, bw, 70);
 			string? blocked = h == null ? null : ErrandService.KindBlocked(h, kind);
 			bool sel = kind == _draft.Kind;
-			bool hover = AisvTheme.Hover(r, _view);
-			AisvTheme.Bordered(b, r, sel ? AisvTheme.AccentSoft : hover && blocked == null ? AisvTheme.Card : AisvTheme.Page, sel ? AisvTheme.Accent : AisvTheme.CardBorder, 12);
-			Color ink = blocked != null ? AisvTheme.TextFaint : sel ? AisvTheme.AccentDark : AisvTheme.Text;
-			AisvTheme.TextCentered(b, KindLabel(kind), new Rectangle(r.X, r.Y + 8, r.Width, 30), ink, 0.9f);
-			AisvTheme.TextCentered(b, AisvTheme.Truncate(blocked ?? KindHint(kind), r.Width - 12, 0.62f), new Rectangle(r.X, r.Y + 40, r.Width, 22), blocked != null ? AisvTheme.Warn : AisvTheme.TextMuted, 0.62f);
+			bool hover = Hearth.Hover(r, _view);
+			Hearth.Bordered(b, r, sel ? Hearth.LeafPale : hover && blocked == null ? Hearth.Slip : Hearth.Parchment, sel ? Hearth.Leaf : Hearth.SlipEdge, 12);
+			Color ink = blocked != null ? Hearth.QuillPale : sel ? Hearth.LeafDeep : Hearth.Quill;
+			Hearth.InkMiddle(b, KindLabel(kind), new Rectangle(r.X, r.Y + 8, r.Width, 30), ink, 0.9f);
+			Hearth.InkMiddle(b, Hearth.Truncate(blocked ?? KindHint(kind), r.Width - 12, 0.62f), new Rectangle(r.X, r.Y + 40, r.Width, 22), blocked != null ? Hearth.Rust : Hearth.QuillSoft, 0.62f);
 			if (blocked == null)
 			{
 				hits.Add(r, () =>
@@ -358,7 +358,7 @@ internal sealed class ErrandFormPage : ShellPage
 				string label = ErrandSkills.Label(ErrandSkills.Needed(ErrandKinds.Fetch, source)!);
 				bool skilled = h != null && h.Skills.Contains(ErrandSkills.Needed(ErrandKinds.Fetch, source)!);
 				string text = skilled ? Tr.Get("errandForm.skilledSource", "{{what}}（擅长）", ("what", label)) : label;
-				int pw = (int)AisvTheme.Width(text, 0.8f) + 36;
+				int pw = (int)Hearth.Width(text, 0.8f) + 36;
 				if (px > x && px + pw > x + w)
 				{
 					px = x;
@@ -366,8 +366,8 @@ internal sealed class ErrandFormPage : ShellPage
 				}
 				Rectangle r = new Rectangle(px, y, pw, 38);
 				bool sel = source == _draft.Source;
-				AisvTheme.Bordered(b, r, sel ? AisvTheme.GoldSoft : AisvTheme.Hover(r, _view) ? AisvTheme.Card : AisvTheme.Page, sel ? AisvTheme.Gold : AisvTheme.CardBorder, 19);
-				AisvTheme.TextCentered(b, text, r, sel ? AisvTheme.Gold : AisvTheme.TextMuted, 0.8f);
+				Hearth.Bordered(b, r, sel ? Hearth.AmberPale : Hearth.Hover(r, _view) ? Hearth.Slip : Hearth.Parchment, sel ? Hearth.Amber : Hearth.SlipEdge, 19);
+				Hearth.InkMiddle(b, text, r, sel ? Hearth.Amber : Hearth.QuillSoft, 0.8f);
 				hits.Add(r, () =>
 				{
 					if (_draft.Source != source)
@@ -393,7 +393,7 @@ internal sealed class ErrandFormPage : ShellPage
 		if (_draft.Item is ErrandItem chosen)
 		{
 			string picked = Tr.Get("errandForm.picked", "已选：{{item}}（{{price}}g）", ("item", chosen.Name), ("price", chosen.Price));
-			AisvTheme.DrawText(b, AisvTheme.Truncate(picked, w - _search.Bounds.Width - 20, 0.75f), new Vector2(_search.Bounds.Right + 16, y + 12), AisvTheme.AccentDark, 0.75f);
+			Hearth.Ink(b, Hearth.Truncate(picked, w - _search.Bounds.Width - 20, 0.75f), new Vector2(_search.Bounds.Right + 16, y + 12), Hearth.LeafDeep, 0.75f);
 		}
 		y += 56;
 		string q = _search.Text.Trim();
@@ -403,7 +403,7 @@ internal sealed class ErrandFormPage : ShellPage
 			string empty = _items.Count == 0
 				? _draft.Kind == ErrandKinds.Relay ? Tr.Get("errandForm.noInventory", "包里没有能送人的东西。") : Tr.Get("errandForm.noItems", "现在没有能托的东西。")
 				: Tr.Get("errandForm.noMatch", "没找到。");
-			AisvTheme.DrawText(b, empty, new Vector2(x, y), AisvTheme.TextMuted, 0.78f);
+			Hearth.Ink(b, empty, new Vector2(x, y), Hearth.QuillSoft, 0.78f);
 			return y + 30;
 		}
 		const int cell = 64, gap = 8;
@@ -417,17 +417,17 @@ internal sealed class ErrandFormPage : ShellPage
 				continue;
 			}
 			bool sel = _draft.Item?.Id == item.Id && _draft.Item.InventoryIndex == item.InventoryIndex;
-			bool hover = AisvTheme.Hover(r, _view);
-			AisvTheme.Bordered(b, r, sel ? AisvTheme.AccentSoft : hover ? AisvTheme.Card : AisvTheme.PageDeep, sel ? AisvTheme.Accent : hover ? AisvTheme.Gold : AisvTheme.CardBorder, 10);
+			bool hover = Hearth.Hover(r, _view);
+			Hearth.Bordered(b, r, sel ? Hearth.LeafPale : hover ? Hearth.Slip : Hearth.ParchmentDeep, sel ? Hearth.Leaf : hover ? Hearth.Amber : Hearth.SlipEdge, 10);
 			ParsedItemData? data = ItemRegistry.GetData(item.Id);
 			if (data != null && !data.IsErrorItem)
 			{
-				b.Draw(data.GetTexture(), AisvTheme.Inflate(r, -10), data.GetSourceRect(), Color.White);
+				b.Draw(data.GetTexture(), Hearth.Inflate(r, -10), data.GetSourceRect(), Color.White);
 			}
 			if (item.Stock > 1)
 			{
 				string n = item.Stock.ToString();
-				AisvTheme.Bold(b, n, new Vector2(r.Right - 6 - AisvTheme.Width(n, 0.6f), r.Bottom - 6 - AisvTheme.LineHeight(0.6f)), AisvTheme.Text, 0.6f);
+				Hearth.InkBold(b, n, new Vector2(r.Right - 6 - Hearth.Width(n, 0.6f), r.Bottom - 6 - Hearth.LineHeight(0.6f)), Hearth.Quill, 0.6f);
 			}
 			if (hover)
 			{
@@ -459,9 +459,9 @@ internal sealed class ErrandFormPage : ShellPage
 				continue;
 			}
 			bool sel = h.Npc == _draft.Recipient;
-			bool hover = AisvTheme.Hover(r, _view);
-			AisvTheme.Bordered(b, r, sel ? AisvTheme.PinkSoft : AisvTheme.Page, sel ? AisvTheme.Pink : AisvTheme.CardBorder, 12);
-			Kit.Avatar(b, AisvTheme.Inflate(r, -6), Ctx, h.Npc);
+			bool hover = Hearth.Hover(r, _view);
+			Hearth.Bordered(b, r, sel ? Hearth.RosePale : Hearth.Parchment, sel ? Hearth.Rose : Hearth.SlipEdge, 12);
+			Kit.Avatar(b, Hearth.Inflate(r, -6), Ctx, h.Npc);
 			if (hover)
 			{
 				_tip = (r, h.Display);
@@ -484,30 +484,30 @@ internal sealed class ErrandFormPage : ShellPage
 		if (_draft.Kind != ErrandKinds.Relay)
 		{
 			int max = ErrandRules.MaxCount(_draft.Kind, _draft.Source, _draft.Item?.Material == true);
-			AisvTheme.DrawText(b, Tr.Get("errandForm.count", "数量"), new Vector2(x, cy - 12), AisvTheme.TextMuted, 0.8f);
+			Hearth.Ink(b, Tr.Get("errandForm.count", "数量"), new Vector2(x, cy - 12), Hearth.QuillSoft, 0.8f);
 			int end = Stepper(b, x + labelW, cy, Tr.Get("errandForm.countValue", "{{n}} 个", ("n", _draft.Count)), 120, hits, () => StepCount(-StepSize(1), max), () => StepCount(StepSize(1), max));
-			cy += SideNote(b, Tr.Get("errandForm.max", "最多 {{n}}", ("n", max)), end, cy, x + labelW, x + w, AisvTheme.TextFaint);
+			cy += SideNote(b, Tr.Get("errandForm.max", "最多 {{n}}", ("n", max)), end, cy, x + labelW, x + w, Hearth.QuillPale);
 			cy += 62;
 		}
-		AisvTheme.DrawText(b, Tr.Get("errandForm.days", "期限"), new Vector2(x, cy - 12), AisvTheme.TextMuted, 0.8f);
+		Hearth.Ink(b, Tr.Get("errandForm.days", "期限"), new Vector2(x, cy - 12), Hearth.QuillSoft, 0.8f);
 		int dEnd = Stepper(b, x + labelW, cy, Tr.Get("errandForm.daysValue", "{{n}} 天内", ("n", _draft.Days)), 120, hits, () => StepDays(-1), () => StepDays(1));
 		if (q.DaysNeeded > _draft.Days)
 		{
-			cy += SideNote(b, Tr.Get("errandForm.tooShort", "大概要 {{n}} 天，可能来不及", ("n", q.DaysNeeded)), dEnd, cy, x + labelW, x + w, AisvTheme.Warn);
+			cy += SideNote(b, Tr.Get("errandForm.tooShort", "大概要 {{n}} 天，可能来不及", ("n", q.DaysNeeded)), dEnd, cy, x + labelW, x + w, Hearth.Rust);
 		}
 		cy += 62;
-		AisvTheme.DrawText(b, Tr.Get("errandForm.reward", "报酬"), new Vector2(x, cy - 12), AisvTheme.TextMuted, 0.8f);
+		Hearth.Ink(b, Tr.Get("errandForm.reward", "报酬"), new Vector2(x, cy - 12), Hearth.QuillSoft, 0.8f);
 		int rEnd = Stepper(b, x + labelW, cy, $"{_draft.Reward}g", 120, hits, () => StepReward(-1), () => StepReward(1));
 		string fair = Tr.Get("errandForm.fair", "公道价 {{n}}g", ("n", q.DefaultReward));
-		int fw = (int)AisvTheme.Width(fair, 0.66f) + 28;
+		int fw = (int)Hearth.Width(fair, 0.66f) + 28;
 		Rectangle reset = rEnd + 12 + fw <= x + w ? new Rectangle(rEnd + 12, cy - 18, fw, 36) : new Rectangle(x + labelW, cy + 28, fw, 36);
 		if (reset.Y > cy)
 		{
 			cy += 46;
 		}
 		bool off = _draft.Reward != q.DefaultReward;
-		AisvTheme.Bordered(b, reset, off && AisvTheme.Hover(reset, _view) ? AisvTheme.GoldSoft : AisvTheme.Page, off ? AisvTheme.Gold : AisvTheme.CardBorder, 18);
-		AisvTheme.TextCentered(b, fair, reset, off ? AisvTheme.Gold : AisvTheme.TextFaint, 0.66f);
+		Hearth.Bordered(b, reset, off && Hearth.Hover(reset, _view) ? Hearth.AmberPale : Hearth.Parchment, off ? Hearth.Amber : Hearth.SlipEdge, 18);
+		Hearth.InkMiddle(b, fair, reset, off ? Hearth.Amber : Hearth.QuillPale, 0.66f);
 		if (off)
 		{
 			hits.Add(reset, () =>
@@ -517,9 +517,9 @@ internal sealed class ErrandFormPage : ShellPage
 			}, _view);
 		}
 		cy += 44;
-		AisvTheme.DrawText(b, Tr.Get("errandForm.stepTip", "按住 Shift 点，一次多调一些。"), new Vector2(x + labelW, cy - 12), AisvTheme.TextFaint, 0.62f);
+		Hearth.Ink(b, Tr.Get("errandForm.stepTip", "按住 Shift 点，一次多调一些。"), new Vector2(x + labelW, cy - 12), Hearth.QuillPale, 0.62f);
 		cy += 26;
-		AisvTheme.DrawText(b, Tr.Get("errandForm.note", "留言"), new Vector2(x, cy + 10), AisvTheme.TextMuted, 0.8f);
+		Hearth.Ink(b, Tr.Get("errandForm.note", "留言"), new Vector2(x, cy + 10), Hearth.QuillSoft, 0.8f);
 		_note.Bounds = new Rectangle(x + labelW, cy, Math.Min(w - labelW, 560), 44);
 		_note.Draw(b);
 		hits.Add(_note.Bounds, () => _fields.Focus(_note), _view);
@@ -559,12 +559,12 @@ internal sealed class ErrandFormPage : ShellPage
 	/// <summary>步进器右边的小字；放不下就挪到下一行，返回多占的高度。</summary>
 	private static int SideNote(SpriteBatch b, string text, int end, int cy, int wrapX, int right, Color color)
 	{
-		if (end + 12 + AisvTheme.Width(text, 0.66f) <= right)
+		if (end + 12 + Hearth.Width(text, 0.66f) <= right)
 		{
-			AisvTheme.DrawText(b, text, new Vector2(end + 12, cy - 10), color, 0.66f);
+			Hearth.Ink(b, text, new Vector2(end + 12, cy - 10), color, 0.66f);
 			return 0;
 		}
-		AisvTheme.DrawText(b, AisvTheme.Truncate(text, right - wrapX, 0.66f), new Vector2(wrapX, cy + 26), color, 0.66f);
+		Hearth.Ink(b, Hearth.Truncate(text, right - wrapX, 0.66f), new Vector2(wrapX, cy + 26), color, 0.66f);
 		return 26;
 	}
 
@@ -573,12 +573,12 @@ internal sealed class ErrandFormPage : ShellPage
 		Rectangle left = new Rectangle(x, cy - 20, 40, 40);
 		Rectangle mid = new Rectangle(left.Right + 4, cy - 22, w, 44);
 		Rectangle right = new Rectangle(mid.Right + 4, cy - 20, 40, 40);
-		AisvTheme.FillRounded(b, left, AisvTheme.Hover(left, _view) ? AisvTheme.AccentSoft : AisvTheme.PageDeep, 20);
-		AisvTheme.FillRounded(b, right, AisvTheme.Hover(right, _view) ? AisvTheme.AccentSoft : AisvTheme.PageDeep, 20);
-		AisvTheme.Chevron(b, new Vector2(left.Center.X + 2, cy), left: true, AisvTheme.AccentDark);
-		AisvTheme.Chevron(b, new Vector2(right.Center.X - 2, cy), left: false, AisvTheme.AccentDark);
-		AisvTheme.Bordered(b, mid, AisvTheme.Card, AisvTheme.CardBorder, 10);
-		AisvTheme.TextCentered(b, label, mid, AisvTheme.Text, 0.85f);
+		Hearth.FillRounded(b, left, Hearth.Hover(left, _view) ? Hearth.LeafPale : Hearth.ParchmentDeep, 20);
+		Hearth.FillRounded(b, right, Hearth.Hover(right, _view) ? Hearth.LeafPale : Hearth.ParchmentDeep, 20);
+		Hearth.Chevron(b, new Vector2(left.Center.X + 2, cy), left: true, Hearth.LeafDeep);
+		Hearth.Chevron(b, new Vector2(right.Center.X - 2, cy), left: false, Hearth.LeafDeep);
+		Hearth.Bordered(b, mid, Hearth.Slip, Hearth.SlipEdge, 10);
+		Hearth.InkMiddle(b, label, mid, Hearth.Quill, 0.85f);
 		hits.Add(left, prev, _view);
 		hits.Add(right, next, _view);
 		return right.Right;
@@ -595,10 +595,10 @@ internal sealed class ErrandFormPage : ShellPage
 			_problem = service.Problem(_draft);
 		}
 		string? problem = _problem;
-		AisvTheme.DrawCard(b, r);
+		Hearth.CardSlip(b, r);
 		int x = r.X + 20, w = r.Width - 40;
 		Rectangle submit = new Rectangle(r.Right - 20 - (compact ? 180 : w), r.Bottom - 20 - 52, compact ? 180 : w, 52);
-		AisvTheme.Button(b, submit, _inline != null ? Tr.Get("errandForm.ask", "问问看") : Tr.Get("errandForm.submit", "发出委托"), primary: true, hover: AisvTheme.Hover(submit), disabled: problem != null);
+		Hearth.PressPlate(b, submit, _inline != null ? Tr.Get("errandForm.ask", "问问看") : Tr.Get("errandForm.submit", "发出委托"), primary: true, hover: Hearth.Hover(submit), disabled: problem != null);
 		if (problem == null)
 		{
 			hits.Add(submit, Submit);
@@ -606,12 +606,12 @@ internal sealed class ErrandFormPage : ShellPage
 		if (compact)
 		{
 			string line = problem ?? Tr.Get("errandForm.compact", "{{chance}} · 大概 {{days}} 天 · 要交 {{total}}g", ("chance", ErrandRules.ChanceLabel(q.Chance)), ("days", q.DaysNeeded), ("total", q.Total(_draft.Reward)));
-			int lh = AisvTheme.LineHeight(0.75f);
-			List<string> lines = AisvTheme.WrapLines(line, submit.X - x - 12, 0.75f).Take(3).ToList();
+			int lh = Hearth.LineHeight(0.75f);
+			List<string> lines = Hearth.WrapLines(line, submit.X - x - 12, 0.75f).Take(3).ToList();
 			int ly = r.Center.Y - lines.Count * lh / 2;
 			foreach (string l in lines)
 			{
-				AisvTheme.DrawText(b, l, new Vector2(x, ly), problem != null ? AisvTheme.Warn : AisvTheme.Text, 0.75f);
+				Hearth.Ink(b, l, new Vector2(x, ly), problem != null ? Hearth.Rust : Hearth.Quill, 0.75f);
 				ly += lh;
 			}
 			return;
@@ -620,67 +620,67 @@ internal sealed class ErrandFormPage : ShellPage
 		Rectangle face = new Rectangle(x, y, 64, 64);
 		Kit.Avatar(b, face, Ctx, _draft.Npc.Length > 0 ? _draft.Npc : null);
 		string who = _draft.Npc.Length > 0 ? service.Display(_draft.Npc) : Tr.Get("errandForm.nobody", "还没选人");
-		AisvTheme.Bold(b, AisvTheme.Truncate(who, w - 80, 0.95f), new Vector2(face.Right + 14, y + 6), AisvTheme.Text, 0.95f);
-		AisvTheme.DrawText(b, KindLabel(_draft.Kind), new Vector2(face.Right + 14, y + 38), AisvTheme.TextMuted, 0.72f);
+		Hearth.InkBold(b, Hearth.Truncate(who, w - 80, 0.95f), new Vector2(face.Right + 14, y + 6), Hearth.Quill, 0.95f);
+		Hearth.Ink(b, KindLabel(_draft.Kind), new Vector2(face.Right + 14, y + 38), Hearth.QuillSoft, 0.72f);
 		y = face.Bottom + 18;
 		if (_draft.Item is ErrandItem item)
 		{
 			string what = _draft.Kind == ErrandKinds.Relay
 				? Tr.Get("errandForm.sumRelay", "把{{item}}捎给{{who}}", ("item", item.Stock > 1 ? $"{item.Name} ×{item.Stock}" : item.Name), ("who", _draft.Recipient.Length > 0 ? service.Display(_draft.Recipient) : "……"))
 				: $"{item.Name} ×{_draft.Count}";
-			foreach (string line in AisvTheme.WrapLines(what, w, 0.85f).Take(2))
+			foreach (string line in Hearth.WrapLines(what, w, 0.85f).Take(2))
 			{
-				AisvTheme.Bold(b, line, new Vector2(x, y), AisvTheme.Text, 0.85f);
-				y += AisvTheme.LineHeight(0.85f);
+				Hearth.InkBold(b, line, new Vector2(x, y), Hearth.Quill, 0.85f);
+				y += Hearth.LineHeight(0.85f);
 			}
 			y += 10;
 		}
-		AisvTheme.HLine(b, x, y, w, AisvTheme.Divider);
+		Hearth.HLine(b, x, y, w, Hearth.Seam);
 		y += 14;
-		AisvTheme.DrawText(b, Tr.Get("errandForm.chance", "把握"), new Vector2(x, y), AisvTheme.TextMuted, 0.75f);
-		Color chanceColor = q.Chance >= 65 ? AisvTheme.Accent : q.Chance >= 40 ? AisvTheme.Gold : AisvTheme.Danger;
+		Hearth.Ink(b, Tr.Get("errandForm.chance", "把握"), new Vector2(x, y), Hearth.QuillSoft, 0.75f);
+		Color chanceColor = q.Chance >= 65 ? Hearth.Leaf : q.Chance >= 40 ? Hearth.Amber : Hearth.Berry;
 		string label = ErrandRules.ChanceLabel(q.Chance);
-		AisvTheme.Bold(b, label, new Vector2(x + w - AisvTheme.Width(label, 0.8f), y), chanceColor, 0.8f);
-		y += AisvTheme.LineHeight(0.8f) + 6;
-		AisvTheme.Progress(b, new Rectangle(x, y, w, 10), q.Chance / 100f, chanceColor);
+		Hearth.InkBold(b, label, new Vector2(x + w - Hearth.Width(label, 0.8f), y), chanceColor, 0.8f);
+		y += Hearth.LineHeight(0.8f) + 6;
+		Hearth.Gauge(b, new Rectangle(x, y, w, 10), q.Chance / 100f, chanceColor);
 		y += 24;
-		y = Row(b, x, y, w, Tr.Get("errandForm.daysNeeded", "大概要"), Tr.Get("errandForm.daysN", "{{n}} 天", ("n", q.DaysNeeded)), q.DaysNeeded > _draft.Days ? AisvTheme.Warn : AisvTheme.Text);
-		y = Row(b, x, y, w, Tr.Get("errandForm.rewardRow", "报酬"), $"{_draft.Reward}g", AisvTheme.Text);
+		y = Row(b, x, y, w, Tr.Get("errandForm.daysNeeded", "大概要"), Tr.Get("errandForm.daysN", "{{n}} 天", ("n", q.DaysNeeded)), q.DaysNeeded > _draft.Days ? Hearth.Rust : Hearth.Quill);
+		y = Row(b, x, y, w, Tr.Get("errandForm.rewardRow", "报酬"), $"{_draft.Reward}g", Hearth.Quill);
 		if (q.Goods > 0)
 		{
-			y = Row(b, x, y, w, Tr.Get("errandForm.goods", "货款"), $"{q.Goods}g", AisvTheme.Text);
+			y = Row(b, x, y, w, Tr.Get("errandForm.goods", "货款"), $"{q.Goods}g", Hearth.Quill);
 		}
-		AisvTheme.HLine(b, x, y + 2, w, AisvTheme.Divider);
+		Hearth.HLine(b, x, y + 2, w, Hearth.Seam);
 		y += 12;
 		int total = q.Total(_draft.Reward);
-		y = Row(b, x, y, w, Tr.Get("errandForm.total", "现在要交"), $"{total}g", Game1.player.Money >= total ? AisvTheme.Gold : AisvTheme.Danger, bold: true);
-		y = Row(b, x, y, w, Tr.Get("errandForm.wallet", "你有"), $"{Game1.player.Money}g", AisvTheme.TextMuted);
+		y = Row(b, x, y, w, Tr.Get("errandForm.total", "现在要交"), $"{total}g", Game1.player.Money >= total ? Hearth.Amber : Hearth.Berry, bold: true);
+		y = Row(b, x, y, w, Tr.Get("errandForm.wallet", "你有"), $"{Game1.player.Money}g", Hearth.QuillSoft);
 		y += 8;
 		string hint = problem ?? (_inline != null ? Tr.Get("errandForm.inlineHint", "他会当面回答你。") : Tr.Get("errandForm.hint", "钱先交出去；拒绝或没办成会全额退回。"));
-		foreach (string line in AisvTheme.WrapLines(hint, w, 0.68f))
+		foreach (string line in Hearth.WrapLines(hint, w, 0.68f))
 		{
-			if (y + AisvTheme.LineHeight(0.68f) > submit.Y - 8)
+			if (y + Hearth.LineHeight(0.68f) > submit.Y - 8)
 			{
 				break;
 			}
-			AisvTheme.DrawText(b, line, new Vector2(x, y), problem != null ? AisvTheme.Warn : AisvTheme.TextMuted, 0.68f);
-			y += AisvTheme.LineHeight(0.68f);
+			Hearth.Ink(b, line, new Vector2(x, y), problem != null ? Hearth.Rust : Hearth.QuillSoft, 0.68f);
+			y += Hearth.LineHeight(0.68f);
 		}
 	}
 
 	private static int Row(SpriteBatch b, int x, int y, int w, string label, string value, Color color, bool bold = false)
 	{
-		AisvTheme.DrawText(b, label, new Vector2(x, y), AisvTheme.TextMuted, 0.75f);
-		float vw = AisvTheme.Width(value, 0.8f);
+		Hearth.Ink(b, label, new Vector2(x, y), Hearth.QuillSoft, 0.75f);
+		float vw = Hearth.Width(value, 0.8f);
 		if (bold)
 		{
-			AisvTheme.Bold(b, value, new Vector2(x + w - vw, y), color, 0.8f);
+			Hearth.InkBold(b, value, new Vector2(x + w - vw, y), color, 0.8f);
 		}
 		else
 		{
-			AisvTheme.DrawText(b, value, new Vector2(x + w - vw, y), color, 0.8f);
+			Hearth.Ink(b, value, new Vector2(x + w - vw, y), color, 0.8f);
 		}
-		return y + AisvTheme.LineHeight(0.8f) + 8;
+		return y + Hearth.LineHeight(0.8f) + 8;
 	}
 
 	private static void Tooltip(SpriteBatch b, Rectangle anchor, string text)
@@ -689,15 +689,15 @@ internal sealed class ErrandFormPage : ShellPage
 		{
 			return;
 		}
-		int w = (int)AisvTheme.Width(text, 0.7f) + 24;
+		int w = (int)Hearth.Width(text, 0.7f) + 24;
 		Rectangle r = new Rectangle(Math.Min(anchor.X, Game1.uiViewport.Width - w - 8), anchor.Bottom + 6, w, 34);
 		if (r.Bottom > Game1.uiViewport.Height - 8)
 		{
 			r.Y = anchor.Y - 40;
 		}
-		AisvTheme.DrawShadow(b, r, 8, 3);
-		AisvTheme.Bordered(b, r, AisvTheme.Text, AisvTheme.Text, 8);
-		AisvTheme.TextCentered(b, text, r, Color.White, 0.7f);
+		Hearth.CastShadow(b, r, 8, 3);
+		Hearth.Bordered(b, r, Hearth.Quill, Hearth.Quill, 8);
+		Hearth.InkMiddle(b, text, r, Color.White, 0.7f);
 	}
 
 	private void Submit()

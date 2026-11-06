@@ -19,7 +19,7 @@ internal sealed class CardsPage : ShellPage
 
 	private readonly Scroller _scroll = new Scroller();
 
-	private readonly TextBox _search = new TextBox(null, null, Game1.smallFont, AisvTheme.Text) { textLimit = 20, limitWidth = false };
+	private readonly TextBox _search = new TextBox(null, null, Game1.smallFont, Hearth.Quill) { textLimit = 20, limitWidth = false };
 
 	private List<Entry> _all = new List<Entry>();
 
@@ -85,17 +85,17 @@ internal sealed class CardsPage : ShellPage
 	{
 		const int pad = 28;
 		int x = area.X + pad, w = area.Width - pad * 2;
-		AisvTheme.DrawText(b, Tr.Get("cards.intro", "改写或补充村民的人设，所有存档通用；没改过的用默认人设。"), new Vector2(x, area.Y + 22), AisvTheme.TextMuted, 0.78f);
+		Hearth.Ink(b, Tr.Get("cards.intro", "改写或补充村民的人设，所有存档通用；没改过的用默认人设。"), new Vector2(x, area.Y + 22), Hearth.QuillSoft, 0.78f);
 		_searchBox = new Rectangle(x + w - 320, area.Y + 12, 320, 44);
-		AisvTheme.Field(b, _searchBox, _search.Selected);
-		AisvTheme.Magnifier(b, new Vector2(_searchBox.X + 20, _searchBox.Center.Y));
+		Hearth.Field(b, _searchBox, _search.Selected);
+		Hearth.Magnifier(b, new Vector2(_searchBox.X + 20, _searchBox.Center.Y));
 		string q = (_search.Text ?? "").Trim();
-		Vector2 tp = new Vector2(_searchBox.X + 40, _searchBox.Center.Y - AisvTheme.LineHeight(0.8f) / 2);
-		AisvTheme.DrawText(b, q.Length == 0 && !_search.Selected ? Tr.Get("cards.search", "搜索村民") : q, tp, q.Length == 0 ? AisvTheme.TextFaint : AisvTheme.Text, 0.8f);
+		Vector2 tp = new Vector2(_searchBox.X + 40, _searchBox.Center.Y - Hearth.LineHeight(0.8f) / 2);
+		Hearth.Ink(b, q.Length == 0 && !_search.Selected ? Tr.Get("cards.search", "搜索村民") : q, tp, q.Length == 0 ? Hearth.QuillPale : Hearth.Quill, 0.8f);
 		hits.Add(_searchBox, () => _search.Selected = true);
 		_view = new Rectangle(area.X, area.Y + 70, area.Width, area.Height - 70);
 		List<Entry> shown = _all.Where(e => q.Length == 0 || e.Name.Contains(q, StringComparison.OrdinalIgnoreCase) || e.Npc.Contains(q, StringComparison.OrdinalIgnoreCase)).ToList();
-		AisvTheme.BeginClip(b, _view);
+		Hearth.BeginClip(b, _view);
 		const int gap = 16, h = 96;
 		int cols = Math.Max(1, (w + gap) / (300 + gap));
 		int cw = (w - gap * (cols - 1)) / cols;
@@ -115,20 +115,20 @@ internal sealed class CardsPage : ShellPage
 				Host.Push(new CardEditorPage(Ctx, e.Npc));
 			}, _view);
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, _view, y0 + (shown.Count + cols - 1) / cols * (h + gap), 12);
 	}
 
 	private void Tile(SpriteBatch b, Rectangle r, Entry e)
 	{
-		bool hover = AisvTheme.Hover(r, _view);
-		AisvTheme.Bordered(b, r, AisvTheme.Card, hover ? AisvTheme.Accent : e.Card != null ? AisvTheme.Gold * 0.7f : AisvTheme.CardBorder, 12);
+		bool hover = Hearth.Hover(r, _view);
+		Hearth.Bordered(b, r, Hearth.Slip, hover ? Hearth.Leaf : e.Card != null ? Hearth.Amber * 0.7f : Hearth.SlipEdge, 12);
 		Rectangle av = new Rectangle(r.X + 14, r.Y + 14, 68, 68);
 		Kit.Avatar(b, av, Ctx, e.Npc);
 		int tx = av.Right + 14;
-		AisvTheme.Bold(b, AisvTheme.Truncate(e.Name, r.Right - tx - 16, 0.88f), new Vector2(tx, r.Y + 16), AisvTheme.Text, 0.88f);
-		(string label, Color fill, Color ink) = e.Card == null ? (SourceName(e.Source), AisvTheme.PageDeep, AisvTheme.TextMuted) : Badge(e.Card);
-		AisvTheme.Chip(b, new Vector2(tx, r.Y + 52), label, fill, ink, 0.66f);
+		Hearth.InkBold(b, Hearth.Truncate(e.Name, r.Right - tx - 16, 0.88f), new Vector2(tx, r.Y + 16), Hearth.Quill, 0.88f);
+		(string label, Color fill, Color ink) = e.Card == null ? (SourceName(e.Source), Hearth.ParchmentDeep, Hearth.QuillSoft) : Badge(e.Card);
+		Hearth.Tag(b, new Vector2(tx, r.Y + 52), label, fill, ink, 0.66f);
 	}
 
 	/// <summary>改过的卡的标签：写了性格是"已改写"，只改了名字是"已改名"，其余是"已补充"。</summary>
@@ -136,10 +136,10 @@ internal sealed class CardsPage : ShellPage
 	{
 		if (card.Replaces)
 		{
-			return (Tr.Get("cards.replaced", "已改写"), AisvTheme.GoldSoft, AisvTheme.Gold);
+			return (Tr.Get("cards.replaced", "已改写"), Hearth.AmberPale, Hearth.Amber);
 		}
 		bool onlyName = new[] { card.Appearance, card.Lore, card.SocialTags, card.Speech }.All(string.IsNullOrWhiteSpace);
-		return onlyName ? (Tr.Get("cards.renamed", "已改名"), AisvTheme.PinkSoft, AisvTheme.Pink) : (Tr.Get("cards.supplemented", "已补充"), AisvTheme.AccentSoft, AisvTheme.AccentDark);
+		return onlyName ? (Tr.Get("cards.renamed", "已改名"), Hearth.RosePale, Hearth.Rose) : (Tr.Get("cards.supplemented", "已补充"), Hearth.LeafPale, Hearth.LeafDeep);
 	}
 
 	public static string SourceName(PersonaSource s) => s switch

@@ -30,7 +30,7 @@ internal sealed class DiaryPrinter
 		_ctx = ctx;
 	}
 
-	public static string ExportFolder(ShellContext ctx) => Path.Combine(ctx.ModFolder, "exports");
+	public static string PrintedFolder() => Path.Combine(StardewModdingAPI.Constants.DataPath, "AIStardewValley-Diary");
 
 	/// <summary>印一本，返回文件路径。要在游戏主线程、不在绘制过程中调用。</summary>
 	public static string Export(ShellContext ctx)
@@ -39,11 +39,22 @@ internal sealed class DiaryPrinter
 		printer.Compose();
 		PdfBook book = printer.Render();
 		string safeName = string.Concat((Game1.player?.Name ?? "").Where(c => !Path.GetInvalidFileNameChars().Contains(c)));
-		string folder = ExportFolder(ctx);
+		string folder = PrintedFolder();
 		Directory.CreateDirectory(folder);
 		string path = Path.Combine(folder, $"{Tr.Get("shell.print.file", "日记")}-{safeName}-{DateTime.Now:yyyyMMdd-HHmmss}.pdf");
-		using FileStream output = File.Create(path);
-		book.Save(output, Tr.Get("shell.print.title", "{{name}}的日记", ("name", Game1.player?.Name ?? "")));
+		string draft = path + ".part";
+		try
+		{
+			using (FileStream output = File.Create(draft))
+			{
+				book.Save(output, Tr.Get("shell.print.title", "{{name}}的日记", ("name", Game1.player?.Name ?? "")));
+			}
+			File.Move(draft, path, overwrite: true);
+		}
+		finally
+		{
+			File.Delete(draft);
+		}
 		return path;
 	}
 
@@ -71,13 +82,16 @@ internal sealed class DiaryPrinter
 			}
 			string weather = ShellText.DiaryWeather(entry.Sky);
 			lines.Add((ShellText.Date(entry.Day, entry.Season, entry.Year) + (weather.Length > 0 ? "（" + weather + "）" : ""), true));
-			foreach (string line in AisvTheme.WrapLines(ShellText.Clean(entry.Text), PageW - 2 * Inset, 1f, paragraphGap: true))
+			foreach (string line in Hearth.WrapLines(ShellText.Clean(entry.Text), PageW - 2 * Inset, 1f, paragraphGap: true))
 			{
 				if (lines.Count >= rows)
 				{
 					Flush();
 				}
-				lines.Add((line, false));
+				if (line.Length > 0 || lines.Count > 0)
+				{
+					lines.Add((line, false));
+				}
 			}
 			if (lines.Count < rows)
 			{
@@ -97,7 +111,7 @@ internal sealed class DiaryPrinter
 		}
 	}
 
-	private static int RowHeight => AisvTheme.LineHeight() + 8;
+	private static int RowHeight => Hearth.LineHeight() + 8;
 
 	private PdfBook Render()
 	{
@@ -137,8 +151,8 @@ internal sealed class DiaryPrinter
 
 	private void CoverPage(SpriteBatch b)
 	{
-		AisvTheme.Fill(b, new Rectangle(0, 0, PageW, PageH), DiaryBook.Cover);
-		AisvTheme.Fill(b, new Rectangle(36, 36, PageW - 72, PageH - 72), DiaryBook.Paper);
+		Hearth.Fill(b, new Rectangle(0, 0, PageW, PageH), DiaryBook.Cover);
+		Hearth.Fill(b, new Rectangle(36, 36, PageW - 72, PageH - 72), DiaryBook.Paper);
 		Texture2D? art = DiaryPictures.Sketch(_ctx, DiarySketches.CoverFile);
 		const int side = 680;
 		Rectangle frame = new Rectangle((PageW - side) / 2, 110, side, side);
@@ -148,9 +162,9 @@ internal sealed class DiaryPrinter
 		}
 		string title = Tr.Get("shell.print.title", "{{name}}的日记", ("name", ShellText.Clean(Game1.player?.Name ?? "")));
 		float scale = 1.6f;
-		AisvTheme.Bold(b, title, new Vector2((PageW - AisvTheme.Width(title, scale)) / 2f, frame.Bottom + 70), DiaryBook.DateInk, scale);
+		Hearth.InkBold(b, title, new Vector2((PageW - Hearth.Width(title, scale)) / 2f, frame.Bottom + 70), DiaryBook.DateInk, scale);
 		string farm = Tr.Get("shell.print.farm", "{{name}}农场", ("name", ShellText.Clean(Game1.player?.farmName.Value ?? "")));
-		AisvTheme.DrawText(b, farm, new Vector2((PageW - AisvTheme.Width(farm)) / 2f, frame.Bottom + 150), DiaryBook.Faded);
+		Hearth.Ink(b, farm, new Vector2((PageW - Hearth.Width(farm)) / 2f, frame.Bottom + 150), DiaryBook.Faded);
 	}
 
 	private static void TextPage(SpriteBatch b, List<(string Line, bool IsDate)> lines)
@@ -158,12 +172,12 @@ internal sealed class DiaryPrinter
 		int y = Inset;
 		for (int rule = y + RowHeight - 6; rule < PageH - Inset; rule += RowHeight)
 		{
-			AisvTheme.Fill(b, new Rectangle(40, rule, PageW - 80, 2), DiaryBook.Rule);
+			Hearth.Fill(b, new Rectangle(40, rule, PageW - 80, 2), DiaryBook.Rule);
 		}
-		AisvTheme.Fill(b, new Rectangle(Inset - 18, 0, 2, PageH), DiaryBook.Margin);
+		Hearth.Fill(b, new Rectangle(Inset - 18, 0, 2, PageH), DiaryBook.Margin);
 		foreach ((string line, bool isDate) in lines)
 		{
-			AisvTheme.DrawText(b, line, new Vector2(Inset, y), isDate ? DiaryBook.DateInk : DiaryBook.Ink);
+			Hearth.Ink(b, line, new Vector2(Inset, y), isDate ? DiaryBook.DateInk : DiaryBook.Ink);
 			y += RowHeight;
 		}
 	}
@@ -179,19 +193,19 @@ internal sealed class DiaryPrinter
 			h = (int)(image.Height * fit);
 		}
 		Rectangle photo = new Rectangle((PageW - w) / 2, Inset, w, h);
-		Rectangle frame = AisvTheme.Inflate(photo, 12);
-		AisvTheme.Fill(b, new Rectangle(frame.X + 5, frame.Y + 6, frame.Width, frame.Height), Color.Black * 0.14f);
-		AisvTheme.Fill(b, frame, Color.White);
+		Rectangle frame = Hearth.Inflate(photo, 12);
+		Hearth.Fill(b, new Rectangle(frame.X + 5, frame.Y + 6, frame.Width, frame.Height), Color.Black * 0.14f);
+		Hearth.Fill(b, frame, Color.White);
 		if (image != null)
 		{
 			b.Draw(image, photo, Color.White);
 		}
 		else
 		{
-			AisvTheme.Fill(b, photo, DiaryBook.PaperEdge);
+			Hearth.Fill(b, photo, DiaryBook.PaperEdge);
 		}
-		string shown = AisvTheme.Truncate(caption, maxW, 1f);
-		AisvTheme.DrawText(b, shown, new Vector2((PageW - AisvTheme.Width(shown)) / 2f, frame.Bottom + 24), DiaryBook.Ink);
+		string shown = Hearth.Truncate(caption, maxW, 1f);
+		Hearth.Ink(b, shown, new Vector2((PageW - Hearth.Width(shown)) / 2f, frame.Bottom + 24), DiaryBook.Ink);
 	}
 }
 

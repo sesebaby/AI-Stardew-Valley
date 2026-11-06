@@ -74,23 +74,23 @@ internal sealed class CardTrialPage : ShellPage
 		int w = System.Math.Min(900, area.Width - 48);
 		int x = area.Center.X - w / 2;
 		Rectangle note = new Rectangle(x, area.Y + 16, w, 52);
-		AisvTheme.FillRounded(b, note, AisvTheme.GoldSoft, 12);
-		AisvTheme.DrawText(b, AisvTheme.Truncate(Tr.Get("card.trialNote", "用还没保存的设定试几句。这里说的话不会被记住，也不影响好感。"), w - 40, 0.72f), new Vector2(note.X + 20, note.Y + 14), AisvTheme.TextMuted, 0.72f);
+		Hearth.FillRounded(b, note, Hearth.AmberPale, 12);
+		Hearth.Ink(b, Hearth.Truncate(Tr.Get("card.trialNote", "用还没保存的设定试几句。这里说的话不会被记住，也不影响好感。"), w - 40, 0.72f), new Vector2(note.X + 20, note.Y + 14), Hearth.QuillSoft, 0.72f);
 		Rectangle bar = new Rectangle(x, area.Bottom - 76, w, 60);
 		Rectangle chat = new Rectangle(x, note.Bottom + 14, w, bar.Y - note.Bottom - 28);
-		AisvTheme.DrawCard(b, chat);
-		AisvTheme.BeginClip(b, chat);
-		List<(bool Mine, List<string> Lines)> bubbles = _lines.Select(l => (l.Mine, AisvTheme.WrapLines(ShellText.Clean(l.Text), w * 3 / 5, 0.82f))).ToList();
+		Hearth.CardSlip(b, chat);
+		Hearth.BeginClip(b, chat);
+		List<(bool Mine, List<string> Lines)> bubbles = _lines.Select(l => (l.Mine, Hearth.WrapLines(ShellText.Clean(l.Text), w * 3 / 5, 0.82f))).ToList();
 		if (_waiting)
 		{
 			bubbles.Add((false, new List<string> { Tr.Get("card.trialWaiting", "……") }));
 		}
-		int lh = AisvTheme.LineHeight(0.82f);
+		int lh = Hearth.LineHeight(0.82f);
 		int y = chat.Bottom - 16;
 		for (int i = bubbles.Count - 1; i >= 0 && y > chat.Y; i--)
 		{
 			(bool mine, List<string> lines) = bubbles[i];
-			int bw = (int)lines.Max(l => AisvTheme.Width(l, 0.82f)) + 32;
+			int bw = (int)lines.Max(l => Hearth.Width(l, 0.82f)) + 32;
 			int bh = lines.Count * lh + 22;
 			y -= bh;
 			Rectangle bubble = mine ? new Rectangle(chat.Right - 20 - bw, y, bw, bh) : new Rectangle(chat.X + 76, y, bw, bh);
@@ -98,22 +98,22 @@ internal sealed class CardTrialPage : ShellPage
 			{
 				Kit.Avatar(b, new Rectangle(chat.X + 16, y, 48, 48), Ctx, _npc);
 			}
-			AisvTheme.FillRounded(b, bubble, mine ? AisvTheme.AccentSoft : AisvTheme.PageDeep, 14);
+			Hearth.FillRounded(b, bubble, mine ? Hearth.LeafPale : Hearth.ParchmentDeep, 14);
 			int ty = bubble.Y + 11;
 			foreach (string line in lines)
 			{
-				AisvTheme.DrawText(b, line, new Vector2(bubble.X + 16, ty), AisvTheme.Text, 0.82f);
+				Hearth.Ink(b, line, new Vector2(bubble.X + 16, ty), Hearth.Quill, 0.82f);
 				ty += lh;
 			}
 			y -= 14;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		Rectangle field = new Rectangle(bar.X, bar.Y + 4, bar.Width - 140, 52);
 		_input.Bounds = field;
 		_input.Draw(b);
 		hits.Add(field, () => _fields.Focus(_input));
 		Rectangle send = new Rectangle(bar.Right - 124, bar.Y + 4, 124, 52);
-		AisvTheme.Button(b, send, Tr.Get("card.trialSend", "说"), primary: true, hover: AisvTheme.Hover(send), disabled: _waiting);
+		Hearth.PressPlate(b, send, Tr.Get("card.trialSend", "说"), primary: true, hover: Hearth.Hover(send), disabled: _waiting);
 		hits.Add(send, Send);
 	}
 }

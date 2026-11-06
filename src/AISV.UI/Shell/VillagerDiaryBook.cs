@@ -107,7 +107,7 @@ internal sealed class VillagerDiaryBook : ShellPage
 		_pages = new List<List<(string, DiaryInk)>> { new List<(string, DiaryInk)>() };
 		foreach (DiaryLine line in _lines)
 		{
-			List<string> wrapped = AisvTheme.WrapLines(ShellText.Clean(line.Text), text.Width);
+			List<string> wrapped = Hearth.WrapLines(ShellText.Clean(line.Text), text.Width);
 			if (line.Ink == DiaryInk.Heading && _pages[^1].Count + 2 > rows)
 			{
 				_pages.Add(new List<(string, DiaryInk)>());
@@ -126,7 +126,7 @@ internal sealed class VillagerDiaryBook : ShellPage
 
 	public override void Draw(SpriteBatch b, Rectangle area, Hits hits)
 	{
-		_lineH = AisvTheme.LineHeight() + 6;
+		_lineH = Hearth.LineHeight() + 6;
 		(Rectangle cover, Rectangle left, Rectangle right) = DiaryBook.Layout(area);
 		Rectangle text = new Rectangle(right.X + 58, right.Y + 40 + _lineH, right.Width - 58 - 26, Math.Max(_lineH, (right.Height - 96 - _lineH) / _lineH * _lineH));
 		if (_builtFor != cover)
@@ -145,30 +145,30 @@ internal sealed class VillagerDiaryBook : ShellPage
 	{
 		NPC? npc = ShellText.Npc(_npc);
 		Rectangle face = new Rectangle(page.X + 40, page.Y + 28, 96, 96);
-		AisvTheme.Avatar(b, face, npc);
+		Hearth.Cameo(b, face, npc);
 		int tx = face.Right + 20, width = page.Right - 24 - tx;
-		AisvTheme.Bold(b, AisvTheme.Truncate(Ctx.Display(_npc), width, 1.1f), new Vector2(tx, face.Y + 2), DiaryBook.Ink, 1.1f);
+		Hearth.InkBold(b, Hearth.Truncate(Ctx.Display(_npc), width, 1.1f), new Vector2(tx, face.Y + 2), DiaryBook.Ink, 1.1f);
 		int hearts = Ctx.Relationships.EffectiveHearts(_npc);
-		AisvTheme.DrawText(b, AisvTheme.Truncate(Relation(hearts), width, 0.78f), new Vector2(tx, face.Y + 40), DiaryBook.DateInk, 0.78f);
+		Hearth.Ink(b, Hearth.Truncate(Relation(hearts), width, 0.78f), new Vector2(tx, face.Y + 40), DiaryBook.DateInk, 0.78f);
 		string mood = Ctx.Social.Moods.Get(_npc) is { } m ? Tr.Get("vdiary.mood", "今天心情：{{word}}", ("word", MoodBook.MoodWord(m.Temper))) : "";
 		if (npc?.isBirthday() == true)
 		{
 			mood = Tr.Get("vdiary.birthday", "今天过生日！");
 		}
-		AisvTheme.DrawText(b, AisvTheme.Truncate(mood, width, 0.78f), new Vector2(tx, face.Y + 66), DiaryBook.Faded, 0.78f);
+		Hearth.Ink(b, Hearth.Truncate(mood, width, 0.78f), new Vector2(tx, face.Y + 66), DiaryBook.Faded, 0.78f);
 		int y = face.Bottom + 18;
-		AisvTheme.Fill(b, new Rectangle(page.X + 40, y, page.Width - 80, 2), DiaryBook.PaperEdge);
+		Hearth.Fill(b, new Rectangle(page.X + 40, y, page.Width - 80, 2), DiaryBook.PaperEdge);
 		y += 12;
 		int rowH = Math.Min(48, (page.Bottom - 20 - y) / Chapters.Length);
 		foreach (VillagerChapter chapter in Chapters)
 		{
 			Rectangle row = new Rectangle(page.X + 28, y, page.Width - 56, rowH - 2);
 			bool on = chapter == _chapter;
-			if (on || AisvTheme.Hover(row))
+			if (on || Hearth.Hover(row))
 			{
-				AisvTheme.FillRounded(b, row, (on ? DiaryBook.DateInk : DiaryBook.Faded) * 0.14f, 8);
+				Hearth.FillRounded(b, row, (on ? DiaryBook.DateInk : DiaryBook.Faded) * 0.14f, 8);
 			}
-			AisvTheme.DrawText(b, VillagerDiary.ChapterTitle(chapter), new Vector2(row.X + 14, row.Center.Y - AisvTheme.LineHeight(0.92f) / 2), on ? DiaryBook.DateInk : DiaryBook.Ink, 0.92f);
+			Hearth.Ink(b, VillagerDiary.ChapterTitle(chapter), new Vector2(row.X + 14, row.Center.Y - Hearth.LineHeight(0.92f) / 2), on ? DiaryBook.DateInk : DiaryBook.Ink, 0.92f);
 			hits.Add(row, () => Choose(chapter));
 			y += rowH;
 		}
@@ -192,17 +192,17 @@ internal sealed class VillagerDiaryBook : ShellPage
 		DiaryBook.Sheet(b, page, isLeft: false);
 		for (int y = text.Y + _lineH - 4; y <= text.Bottom; y += _lineH)
 		{
-			AisvTheme.Fill(b, new Rectangle(page.X + 10, y, page.Width - 20, 2), DiaryBook.Rule);
+			Hearth.Fill(b, new Rectangle(page.X + 10, y, page.Width - 20, 2), DiaryBook.Rule);
 		}
-		AisvTheme.Fill(b, new Rectangle(text.X - 16, page.Y + 6, 2, page.Height - 12), DiaryBook.Margin);
+		Hearth.Fill(b, new Rectangle(text.X - 16, page.Y + 6, 2, page.Height - 12), DiaryBook.Margin);
 		string title = VillagerDiary.ChapterTitle(_chapter);
-		AisvTheme.Bold(b, title, new Vector2(text.X, page.Y + 28), DiaryBook.DateInk, 1.05f);
+		Hearth.InkBold(b, title, new Vector2(text.X, page.Y + 28), DiaryBook.DateInk, 1.05f);
 		int row = 0;
 		if (_page < _pages.Count)
 		{
 			foreach ((string line, DiaryInk ink) in _pages[_page])
 			{
-				AisvTheme.DrawText(b, line, new Vector2(text.X, text.Y + row * _lineH + 2), ink switch
+				Hearth.Ink(b, line, new Vector2(text.X, text.Y + row * _lineH + 2), ink switch
 				{
 					DiaryInk.Heading => DiaryBook.DateInk,
 					DiaryInk.Faint => DiaryBook.Faded,
@@ -216,7 +216,7 @@ internal sealed class VillagerDiaryBook : ShellPage
 		if (_pages.Count > 1)
 		{
 			string number = $"{_page + 1} / {_pages.Count}";
-			AisvTheme.DrawText(b, number, new Vector2(page.Center.X - AisvTheme.Width(number) / 2f, page.Bottom - 44), DiaryBook.Faded);
+			Hearth.Ink(b, number, new Vector2(page.Center.X - Hearth.Width(number) / 2f, page.Bottom - 44), DiaryBook.Faded);
 		}
 		if (_page > 0)
 		{
@@ -230,7 +230,7 @@ internal sealed class VillagerDiaryBook : ShellPage
 
 	private static void Arrow(SpriteBatch b, Rectangle r, Rectangle source, Hits hits, Action onClick)
 	{
-		b.Draw(Game1.mouseCursors, AisvTheme.Hover(r) ? AisvTheme.Inflate(r, 2) : r, source, Color.White);
+		b.Draw(Game1.mouseCursors, Hearth.Hover(r) ? Hearth.Inflate(r, 2) : r, source, Color.White);
 		hits.Add(r, onClick);
 	}
 }

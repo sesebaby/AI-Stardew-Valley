@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AISV.Core.Config;
@@ -67,6 +68,10 @@ public sealed class AiService : IAiSender
 
 	private readonly List<AiFailureNote> _recentFailures = new List<AiFailureNote>();
 
+	private readonly KeyRing _keys = new KeyRing();
+
+	private readonly Dictionary<string, (int Calls, int Failures, double Seconds)> _tallies = new Dictionary<string, (int, int, double)>();
+
 	public AiService(Func<ModConfig> config, ChatClient client, ServerConnection connection, ServerAccount account, ILog log)
 	{
 		_config = config;
@@ -119,6 +124,30 @@ public sealed class AiService : IAiSender
 			}
 		}
 	}
+
+	/// <summary>各类请求的次数、失败和平均耗时，次数多的在前。</summary>
+	public IReadOnlyList<RequestTally> Tallies
+	{
+		get
+		{
+			lock (_lock)
+			{
+				return _tallies.OrderByDescending(t => t.Value.Calls).Select(t => new RequestTally(t.Key, t.Value.Calls, t.Value.Failures, t.Value.Seconds / Math.Max(1, t.Value.Calls))).ToList();
+			}
+		}
+	}
+
+	private void Tally(string name, bool ok, double seconds)
+	{
+		lock (_lock)
+		{
+			(int calls, int failures, double total) = _tallies.GetValueOrDefault(name);
+			_tallies[name] = (calls + 1, failures + (ok ? 0 : 1), total + seconds);
+		}
+	}
+
+	/// <summary>上次连接测试里，有几把密钥不能用才换到能用的。</summary>
+	public int BadKeysInLastTest { get; private set; }
 
 	public FailureKind LastFailure { get; private set; }
 
@@ -190,6 +219,8 @@ public sealed class AiService : IAiSender
 		string? effort = SlotRouter.ReasoningEffort(config, slot);
 		Stopwatch elapsed = Stopwatch.StartNew();
 		AiResult? last = null;
+		int spareKeys = server ? 0 : KeyRing.Split(config.CustomLlmApiKey).Count - 1;
+		int badKeys = 0;
 		for (int i = 0; i < models.Count; i++)
 		{
 			int remaining = totalBudget - (int)elapsed.Elapsed.TotalSeconds;
@@ -212,7 +243,24 @@ public sealed class AiService : IAiSender
 					SucceededToday++;
 				}
 				NoteGateway(FailureKind.None);
+				Tally(request.Name, true, elapsed.Elapsed.TotalSeconds);
+				if (connectionTest)
+				{
+					BadKeysInLastTest = badKeys;
+				}
 				return last;
+			}
+			if (spareKeys > 0 && !cancellationToken.IsCancellationRequested && KeyRing.WorthSwitching(last.Failure))
+			{
+				spareKeys--;
+				_keys.MoveOff(config.CustomLlmApiKey, endpoint.ApiKey);
+				if (connectionTest)
+				{
+					badKeys++;
+				}
+				_log.Warn($"{request.Name}：这把密钥用不了（{last.Failure}），换下一把。");
+				i--;
+				continue;
 			}
 			if (cancellationToken.IsCancellationRequested || connectionTest || !SlotRouter.ShouldTryFallback(last.Failure))
 			{
@@ -225,6 +273,10 @@ public sealed class AiService : IAiSender
 		}
 		if (last != null)
 		{
+			if (last.Failure != FailureKind.Cancelled)
+			{
+				Tally(request.Name, false, elapsed.Elapsed.TotalSeconds);
+			}
 			NoteGateway(last.Failure);
 			// 服务器说没登录或被封号：清掉本机令牌，别再带着它发请求。
 			if (server && last.Failure is FailureKind.AccountBanned or FailureKind.AccountRequired)
@@ -377,7 +429,7 @@ public sealed class AiService : IAiSender
 	{
 		if (!server)
 		{
-			return new ChatEndpoint(config.CustomLlmBaseUrl ?? "", config.CustomLlmApiKey ?? "", model, effort, config.CustomLlmSupportsSystemPrompt, IsServer: false);
+			return new ChatEndpoint(config.CustomLlmBaseUrl ?? "", _keys.Current(config.CustomLlmApiKey), model, effort, config.CustomLlmSupportsSystemPrompt, IsServer: false);
 		}
 		// 告诉服务器：玩家自己挑的对话模型和思考档位（服务器会再核对）；必需的后台请求不算进每天的后台次数。
 		Dictionary<string, string> headers = new Dictionary<string, string>();

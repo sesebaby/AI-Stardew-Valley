@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using AISV.Core.Ai;
 using AISV.Core.Config;
 using AISV.Core.Text;
@@ -65,7 +66,7 @@ internal sealed class AiStatusPage : ShellPage
 			return;
 		}
 		ModConfig c = Ctx.Config();
-		AisvTheme.BeginClip(b, area);
+		Hearth.BeginClip(b, area);
 		int w = Math.Min(area.Width - 64, 820), x = area.X + (area.Width - w) / 2;
 		int y = area.Y + 20 - _scroll.Offset;
 		y = DrawHealth(b, AiHealthRules.Evaluate(new AiHealthFacts(c.AiOn, IsSetUp(c, ai), ai.IsGatewayOffline, ai.SucceededToday, ai.FailedToday, _testOk)), x, y, w, hits) + 16;
@@ -80,9 +81,14 @@ internal sealed class AiStatusPage : ShellPage
 			(Tr.Get("aistatus.tokensToday", "今天用的 token"), ai.TokensToday.ToString("N0")),
 			(Tr.Get("aistatus.tokensSession", "这次开游戏以来"), ai.TokensSession.ToString("N0"))
 		}, x, y, w) + 16;
+		IReadOnlyList<RequestTally> tallies = ai.Tallies;
+		if (tallies.Count > 0)
+		{
+			y = DrawFacts(b, Tr.Get("aistatus.byRequest", "调试统计：各类请求（这次开游戏以来）"), tallies.Take(12).Select(t => (t.Name, Tr.Get("aistatus.tally", "{{calls}} 次，失败 {{failed}} 次，平均 {{sec}} 秒", ("calls", t.Calls), ("failed", t.Failures), ("sec", t.AverageSeconds.ToString("0.0"))))).ToList(), x, y, w) + 16;
+		}
 		y = DrawBusy(b, x, y, w) + 16;
 		y = DrawFailures(b, ai, x, y, w);
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, area, y + 12);
 	}
 
@@ -100,7 +106,12 @@ internal sealed class AiStatusPage : ShellPage
 		else
 		{
 			rows.Add((Tr.Get("aistatus.url", "网关地址"), string.IsNullOrWhiteSpace(c.CustomLlmBaseUrl) ? Tr.Get("aistatus.notFilled", "没填") : c.CustomLlmBaseUrl.Trim()));
-			rows.Add((Tr.Get("aistatus.key", "密钥"), string.IsNullOrWhiteSpace(c.CustomLlmApiKey) ? Tr.Get("aistatus.notFilled", "没填") : Tr.Get("aistatus.filled", "已填")));
+			rows.Add((Tr.Get("aistatus.key", "密钥"), KeyRing.Split(c.CustomLlmApiKey).Count switch
+			{
+				0 => Tr.Get("aistatus.notFilled", "没填"),
+				1 => Tr.Get("aistatus.filled", "已填"),
+				int n => Tr.Get("aistatus.filledMany", "已填 {{n}} 把，自动轮换", ("n", n))
+			}));
 		}
 		IReadOnlyList<string> models = SlotRouter.Models(c, AiSlot.Dialogue, ai.UsesServer);
 		rows.Add((Tr.Get("aistatus.model", "对话模型"), models.Count > 0 ? models[0] : Tr.Get("aistatus.notFilled", "没填")));
@@ -112,31 +123,31 @@ internal sealed class AiStatusPage : ShellPage
 	{
 		Color fill = health.Level switch
 		{
-			AiHealthLevel.Good => AisvTheme.AccentSoft,
-			AiHealthLevel.Warning => AisvTheme.GoldSoft,
+			AiHealthLevel.Good => Hearth.LeafPale,
+			AiHealthLevel.Warning => Hearth.AmberPale,
 			AiHealthLevel.Bad => new Color(250, 226, 218),
-			_ => AisvTheme.PageDeep
+			_ => Hearth.ParchmentDeep
 		};
 		Color ink = health.Level switch
 		{
-			AiHealthLevel.Good => AisvTheme.AccentDark,
-			AiHealthLevel.Warning => AisvTheme.Gold,
-			AiHealthLevel.Bad => AisvTheme.Badge,
-			_ => AisvTheme.TextMuted
+			AiHealthLevel.Good => Hearth.LeafDeep,
+			AiHealthLevel.Warning => Hearth.Amber,
+			AiHealthLevel.Bad => Hearth.Ember,
+			_ => Hearth.QuillSoft
 		};
-		List<string> result = _testText.Length > 0 ? AisvTheme.WrapLines(ShellText.Clean(_testText), w - 48, 0.74f) : new List<string>();
-		int lh = AisvTheme.LineHeight(0.74f);
+		List<string> result = _testText.Length > 0 ? Hearth.WrapLines(ShellText.Clean(_testText), w - 48, 0.74f) : new List<string>();
+		int lh = Hearth.LineHeight(0.74f);
 		Rectangle card = new Rectangle(x, y, w, 100 + result.Count * lh + (result.Count > 0 ? 8 : 0));
-		AisvTheme.Bordered(b, card, fill, ink * 0.5f);
-		AisvTheme.Bold(b, health.Title, new Vector2(card.X + 24, card.Y + 18), ink, 1.05f);
-		AisvTheme.DrawText(b, AisvTheme.Truncate(health.Hint, w - 250, 0.74f), new Vector2(card.X + 24, card.Y + 58), AisvTheme.TextMuted, 0.74f);
+		Hearth.Bordered(b, card, fill, ink * 0.5f);
+		Hearth.InkBold(b, health.Title, new Vector2(card.X + 24, card.Y + 18), ink, 1.05f);
+		Hearth.Ink(b, Hearth.Truncate(health.Hint, w - 250, 0.74f), new Vector2(card.X + 24, card.Y + 58), Hearth.QuillSoft, 0.74f);
 		Rectangle test = new Rectangle(card.Right - 20 - 180, card.Y + 26, 180, 48);
-		AisvTheme.Button(b, test, _testing ? Tr.Get("gateway.testing", "正在测试……") : Tr.Get("gateway.test", "测试连接"), primary: true, hover: AisvTheme.Hover(test, _view), disabled: _testing);
+		Hearth.PressPlate(b, test, _testing ? Tr.Get("gateway.testing", "正在测试……") : Tr.Get("gateway.test", "测试连接"), primary: true, hover: Hearth.Hover(test, _view), disabled: _testing);
 		hits.Add(test, Test, _view);
 		int ry = card.Y + 94;
 		foreach (string line in result)
 		{
-			AisvTheme.DrawText(b, line, new Vector2(card.X + 24, ry), _testOk == true ? AisvTheme.AccentDark : AisvTheme.Badge, 0.74f);
+			Hearth.Ink(b, line, new Vector2(card.X + 24, ry), _testOk == true ? Hearth.LeafDeep : Hearth.Ember, 0.74f);
 			ry += lh;
 		}
 		return card.Bottom;
@@ -146,13 +157,13 @@ internal sealed class AiStatusPage : ShellPage
 	{
 		const int rowH = 44;
 		Rectangle card = new Rectangle(x, y, w, 56 + rows.Count * rowH + 8);
-		AisvTheme.DrawCard(b, card);
+		Hearth.CardSlip(b, card);
 		Kit.SectionTitle(b, title, x + 20, y + 18);
 		int ry = y + 56;
 		foreach ((string label, string value) in rows)
 		{
-			AisvTheme.DrawText(b, label, new Vector2(x + 24, ry + 8), AisvTheme.TextMuted, 0.8f);
-			AisvTheme.DrawText(b, AisvTheme.Truncate(ShellText.Clean(value), w - 240, 0.82f), new Vector2(x + 210, ry + 8), AisvTheme.Text, 0.82f);
+			Hearth.Ink(b, label, new Vector2(x + 24, ry + 8), Hearth.QuillSoft, 0.8f);
+			Hearth.Ink(b, Hearth.Truncate(ShellText.Clean(value), w - 240, 0.82f), new Vector2(x + 210, ry + 8), Hearth.Quill, 0.82f);
 			ry += rowH;
 		}
 		return card.Bottom;
@@ -173,7 +184,7 @@ internal sealed class AiStatusPage : ShellPage
 		{
 			jobs.Add(Tr.Get("aistatus.jobTexts", "信使有 {{n}} 条在等回复", ("n", pending)));
 		}
-		return DrawList(b, Tr.Get("aistatus.busy", "正在进行"), jobs, Tr.Get("aistatus.idle", "现在没有在等 AI。"), AisvTheme.Text, x, y, w);
+		return DrawList(b, Tr.Get("aistatus.busy", "正在进行"), jobs, Tr.Get("aistatus.idle", "现在没有在等 AI。"), Hearth.Quill, x, y, w);
 	}
 
 	private int DrawFailures(SpriteBatch b, AiService ai, int x, int y, int w)
@@ -183,32 +194,32 @@ internal sealed class AiStatusPage : ShellPage
 		{
 			lines.Add(note.When + "  " + ShellText.Clean(FailureText.Describe(note.Kind, note.Message)));
 		}
-		return DrawList(b, Tr.Get("aistatus.failures", "最近的失败"), lines, Tr.Get("aistatus.noFailures", "这次开游戏以来没有失败。"), AisvTheme.Warn, x, y, w);
+		return DrawList(b, Tr.Get("aistatus.failures", "最近的失败"), lines, Tr.Get("aistatus.noFailures", "这次开游戏以来没有失败。"), Hearth.Rust, x, y, w);
 	}
 
 	private static int DrawList(SpriteBatch b, string title, List<string> items, string empty, Color color, int x, int y, int w)
 	{
 		const float scale = 0.8f;
-		int lh = AisvTheme.LineHeight(scale);
+		int lh = Hearth.LineHeight(scale);
 		List<(string Text, Color Color)> rows = new List<(string, Color)>();
 		foreach (string item in items)
 		{
-			foreach (string line in AisvTheme.WrapLines(item, w - 48, scale))
+			foreach (string line in Hearth.WrapLines(item, w - 48, scale))
 			{
 				rows.Add((line, color));
 			}
 		}
 		if (rows.Count == 0)
 		{
-			rows.Add((empty, AisvTheme.TextFaint));
+			rows.Add((empty, Hearth.QuillPale));
 		}
 		Rectangle card = new Rectangle(x, y, w, 56 + rows.Count * lh + 16);
-		AisvTheme.DrawCard(b, card);
+		Hearth.CardSlip(b, card);
 		Kit.SectionTitle(b, title, x + 20, y + 18);
 		int ry = y + 56;
 		foreach ((string text, Color ink) in rows)
 		{
-			AisvTheme.DrawText(b, text, new Vector2(x + 24, ry), ink, scale);
+			Hearth.Ink(b, text, new Vector2(x + 24, ry), ink, scale);
 			ry += lh;
 		}
 		return card.Bottom;

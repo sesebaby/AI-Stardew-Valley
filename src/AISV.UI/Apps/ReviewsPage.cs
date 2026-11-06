@@ -61,25 +61,25 @@ internal sealed class ReviewsPage : ShellPage
 
 	private void Summary(SpriteBatch b, Rectangle r, Hits hits)
 	{
-		AisvTheme.DrawCard(b, r);
+		Hearth.CardSlip(b, r);
 		int x = r.X + 26, w = r.Width - 52;
 		int y = r.Y + 24;
 		string farmer = ShellText.Clean(Game1.player?.Name ?? "");
-		foreach (string line in AisvTheme.WrapLines(Tr.Get("review.sub", "山谷怎么看{{farmer}}", ("farmer", farmer)), w, 0.82f))
+		foreach (string line in Hearth.WrapLines(Tr.Get("review.sub", "山谷怎么看{{farmer}}", ("farmer", farmer)), w, 0.82f))
 		{
-			AisvTheme.Bold(b, line, new Vector2(x, y), AisvTheme.Text, 0.82f);
-			y += AisvTheme.LineHeight(0.82f);
+			Hearth.InkBold(b, line, new Vector2(x, y), Hearth.Quill, 0.82f);
+			y += Hearth.LineHeight(0.82f);
 		}
 		y += 14;
 		float avg = FarmerReviews.Average(_all.Select(e => e.Review.Stars));
 		string big = avg.ToString("0.0");
-		b.DrawString(Game1.dialogueFont, big, new Vector2(x, y), AisvTheme.Text, 0f, Vector2.Zero, 1.6f, SpriteEffects.None, 1f);
+		b.DrawString(Game1.dialogueFont, big, new Vector2(x, y), Hearth.Quill, 0f, Vector2.Zero, 1.6f, SpriteEffects.None, 1f);
 		int bw = (int)(Game1.dialogueFont.MeasureString(big).X * 1.6f);
-		AisvTheme.DrawText(b, "/ 5", new Vector2(x + bw + 10, y + 42), AisvTheme.TextFaint, 0.8f);
+		Hearth.Ink(b, "/ 5", new Vector2(x + bw + 10, y + 42), Hearth.QuillPale, 0.8f);
 		y += 92;
 		Stars(b, x, y, FarmerReviews.StarFill(avg), 2);
 		y += 44;
-		AisvTheme.DrawText(b, Tr.Get("review.count", "收到 {{count}} 句评语", ("count", _all.Count)), new Vector2(x, y), AisvTheme.TextMuted, 0.74f);
+		Hearth.Ink(b, Tr.Get("review.count", "收到 {{count}} 句评语", ("count", _all.Count)), new Vector2(x, y), Hearth.QuillSoft, 0.74f);
 		y += 46;
 		int[] dist = FarmerReviews.Distribution(_all.Select(e => e.Review.Stars));
 		int max = Math.Max(1, dist.Max());
@@ -89,21 +89,21 @@ internal sealed class ReviewsPage : ShellPage
 			bool on = _filter == s;
 			if (on)
 			{
-				AisvTheme.FillRounded(b, row, AisvTheme.GoldSoft, 10);
+				Hearth.FillRounded(b, row, Hearth.AmberPale, 10);
 			}
-			else if (AisvTheme.Hover(row))
+			else if (Hearth.Hover(row))
 			{
-				AisvTheme.FillRounded(b, row, AisvTheme.PageDeep, 10);
+				Hearth.FillRounded(b, row, Hearth.ParchmentDeep, 10);
 			}
-			AisvTheme.DrawText(b, Tr.Get("review.starN", "{{n}} 星", ("n", s)), new Vector2(x, y), AisvTheme.Text, 0.72f);
+			Hearth.Ink(b, Tr.Get("review.starN", "{{n}} 星", ("n", s)), new Vector2(x, y), Hearth.Quill, 0.72f);
 			Rectangle track = new Rectangle(x + 60, y + 9, w - 60 - 40, 12);
-			AisvTheme.FillRounded(b, track, AisvTheme.Divider, 6);
+			Hearth.FillRounded(b, track, Hearth.Seam, 6);
 			if (dist[s - 1] > 0)
 			{
-				AisvTheme.FillRounded(b, new Rectangle(track.X, track.Y, Math.Max(12, track.Width * dist[s - 1] / max), track.Height), AisvTheme.Gold, 6);
+				Hearth.FillRounded(b, new Rectangle(track.X, track.Y, Math.Max(12, track.Width * dist[s - 1] / max), track.Height), Hearth.Amber, 6);
 			}
 			string n = dist[s - 1].ToString();
-			AisvTheme.DrawText(b, n, new Vector2(x + w - AisvTheme.Width(n, 0.7f), y), AisvTheme.TextMuted, 0.7f);
+			Hearth.Ink(b, n, new Vector2(x + w - Hearth.Width(n, 0.7f), y), Hearth.QuillSoft, 0.7f);
 			int k = s;
 			hits.Add(row, () =>
 			{
@@ -117,8 +117,8 @@ internal sealed class ReviewsPage : ShellPage
 		{
 			y += 6;
 			string all = Tr.Get("review.showAll", "看全部");
-			Rectangle btn = new Rectangle(x, y, (int)AisvTheme.Width(all, 0.8f) + 40, 42);
-			AisvTheme.Button(b, btn, all, hover: AisvTheme.Hover(btn), scale: 0.8f);
+			Rectangle btn = new Rectangle(x, y, (int)Hearth.Width(all, 0.8f) + 40, 42);
+			Hearth.PressPlate(b, btn, all, hover: Hearth.Hover(btn), scale: 0.8f);
 			hits.Add(btn, () =>
 			{
 				_filter = 0;
@@ -142,14 +142,14 @@ internal sealed class ReviewsPage : ShellPage
 
 	private void Cards(SpriteBatch b, Hits hits)
 	{
-		AisvTheme.BeginClip(b, _view);
+		Hearth.BeginClip(b, _view);
 		int x = _view.X + 8, w = _view.Width - 32;
 		int y = _view.Y + 8 - _scroll.Offset;
 		foreach (ReviewEntry e in _all.Where(e => _filter == 0 || e.Review.Stars == _filter))
 		{
 			y = Card(b, e, x, y, w, hits) + 14;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, _view, y, 8);
 	}
 
@@ -158,55 +158,55 @@ internal sealed class ReviewsPage : ShellPage
 		Review rv = e.Review;
 		bool open = _open.Contains(e.Npc);
 		int tx = x + 24 + 64 + 18, tw = x + w - 24 - tx;
-		List<string> body = rv.Body.Select(Line).SelectMany(t => AisvTheme.WrapLines(t, tw, 0.76f)).ToList();
+		List<string> body = rv.Body.Select(Line).SelectMany(t => Hearth.WrapLines(t, tw, 0.76f)).ToList();
 		string? memory = rv.Memory == null ? null : Line(rv.Memory);
-		List<string> memLines = memory == null ? new List<string>() : AisvTheme.WrapLines(memory, tw - 36, 0.7f);
-		int h = 24 + 34 + 36 + body.Count * AisvTheme.LineHeight(0.76f) + (memLines.Count > 0 ? 16 + memLines.Count * AisvTheme.LineHeight(0.7f) + 20 : 0) + 18 + 30 + (open ? 150 : 0) + 16;
+		List<string> memLines = memory == null ? new List<string>() : Hearth.WrapLines(memory, tw - 36, 0.7f);
+		int h = 24 + 34 + 36 + body.Count * Hearth.LineHeight(0.76f) + (memLines.Count > 0 ? 16 + memLines.Count * Hearth.LineHeight(0.7f) + 20 : 0) + 18 + 30 + (open ? 150 : 0) + 16;
 		Rectangle r = new Rectangle(x, y, w, h);
 		if (r.Bottom < _view.Y || r.Y > _view.Bottom)
 		{
 			return r.Bottom;
 		}
-		bool hover = AisvTheme.Hover(r, _view);
-		AisvTheme.Bordered(b, r, AisvTheme.Card, hover ? AisvTheme.Gold : AisvTheme.CardBorder, 14);
+		bool hover = Hearth.Hover(r, _view);
+		Hearth.Bordered(b, r, Hearth.Slip, hover ? Hearth.Amber : Hearth.SlipEdge, 14);
 		Kit.Avatar(b, new Rectangle(x + 24, y + 24, 64, 64), Ctx, e.Npc);
-		AisvTheme.Bold(b, e.Name, new Vector2(tx, y + 22), AisvTheme.Text, 0.88f);
+		Hearth.InkBold(b, e.Name, new Vector2(tx, y + 22), Hearth.Quill, 0.88f);
 		int[] fill = new int[5];
 		for (int i = 0; i < 5; i++)
 		{
 			fill[i] = i < rv.Stars ? 2 : 0;
 		}
-		Stars(b, (int)(tx + AisvTheme.Width(e.Name, 0.88f) + 16), y + 26, fill, 1);
+		Stars(b, (int)(tx + Hearth.Width(e.Name, 0.88f) + 16), y + 26, fill, 1);
 		int ly = y + 58;
-		AisvTheme.Bold(b, AisvTheme.Truncate(Line(rv.Title), tw, 0.84f), new Vector2(tx, ly), AisvTheme.Text, 0.84f);
+		Hearth.InkBold(b, Hearth.Truncate(Line(rv.Title), tw, 0.84f), new Vector2(tx, ly), Hearth.Quill, 0.84f);
 		ly += 36;
 		foreach (string line in body)
 		{
-			AisvTheme.DrawText(b, line, new Vector2(tx, ly), AisvTheme.TextMuted, 0.76f);
-			ly += AisvTheme.LineHeight(0.76f);
+			Hearth.Ink(b, line, new Vector2(tx, ly), Hearth.QuillSoft, 0.76f);
+			ly += Hearth.LineHeight(0.76f);
 		}
 		if (memLines.Count > 0)
 		{
 			ly += 16;
-			Rectangle q = new Rectangle(tx, ly - 8, tw, memLines.Count * AisvTheme.LineHeight(0.7f) + 16);
-			AisvTheme.FillRounded(b, q, AisvTheme.PageDeep, 10);
-			AisvTheme.FillRounded(b, new Rectangle(q.X, q.Y, 4, q.Height), AisvTheme.Gold, 2);
+			Rectangle q = new Rectangle(tx, ly - 8, tw, memLines.Count * Hearth.LineHeight(0.7f) + 16);
+			Hearth.FillRounded(b, q, Hearth.ParchmentDeep, 10);
+			Hearth.FillRounded(b, new Rectangle(q.X, q.Y, 4, q.Height), Hearth.Amber, 2);
 			foreach (string line in memLines)
 			{
-				AisvTheme.DrawText(b, line, new Vector2(q.X + 20, ly), AisvTheme.Text, 0.7f);
-				ly += AisvTheme.LineHeight(0.7f);
+				Hearth.Ink(b, line, new Vector2(q.X + 20, ly), Hearth.Quill, 0.7f);
+				ly += Hearth.LineHeight(0.7f);
 			}
 			ly += 20;
 		}
 		ly += 18;
-		AisvTheme.HLine(b, tx, ly - 8, tw, AisvTheme.Divider);
+		Hearth.HLine(b, tx, ly - 8, tw, Hearth.Seam);
 		string verified = e.Input.IsStranger ? Tr.Get("review.unverified", "还没打过交道") : Tr.Get("review.verified", "认证邻居 · 聊了 {{talks}} 次 · 送了 {{gifts}} 份礼", ("talks", e.Input.Talks), ("gifts", e.Input.Gifts));
-		AisvTheme.DrawText(b, verified, new Vector2(tx, ly), e.Input.IsStranger ? AisvTheme.TextFaint : AisvTheme.AccentDark, 0.64f);
+		Hearth.Ink(b, verified, new Vector2(tx, ly), e.Input.IsStranger ? Hearth.QuillPale : Hearth.LeafDeep, 0.64f);
 		string helpful = rv.Helpful == 0 ? Tr.Get("review.helpful.none", "还没人觉得有用") : Tr.Get("review.helpful", "{{count}} 位村民点头", ("count", rv.Helpful));
 		string more = open ? Tr.Get("review.less", "收起") : Tr.Get("review.more", "看声望");
-		float mw = AisvTheme.Width(more, 0.64f);
-		AisvTheme.DrawText(b, more, new Vector2(tx + tw - mw, ly), AisvTheme.Accent, 0.64f);
-		AisvTheme.DrawText(b, helpful, new Vector2(tx + tw - mw - 24 - AisvTheme.Width(helpful, 0.64f), ly), AisvTheme.TextFaint, 0.64f);
+		float mw = Hearth.Width(more, 0.64f);
+		Hearth.Ink(b, more, new Vector2(tx + tw - mw, ly), Hearth.Leaf, 0.64f);
+		Hearth.Ink(b, helpful, new Vector2(tx + tw - mw - 24 - Hearth.Width(helpful, 0.64f), ly), Hearth.QuillPale, 0.64f);
 		if (open)
 		{
 			Axes(b, rv.Axes, e.Name, tx, ly + 36, tw);
@@ -225,7 +225,7 @@ internal sealed class ReviewsPage : ShellPage
 
 	private static void Axes(SpriteBatch b, ReviewAxes a, string name, int x, int y, int w)
 	{
-		AisvTheme.Bold(b, Tr.Get("review.axes", "在{{name}}眼里", ("name", name)), new Vector2(x, y), AisvTheme.Text, 0.72f);
+		Hearth.InkBold(b, Tr.Get("review.axes", "在{{name}}眼里", ("name", name)), new Vector2(x, y), Hearth.Quill, 0.72f);
 		y += 32;
 		(string Label, float? Value, Color Tint)[] bars =
 		{
@@ -238,17 +238,17 @@ internal sealed class ReviewsPage : ShellPage
 		for (int i = 0; i < bars.Length; i++)
 		{
 			int bx = x + i % 2 * (colW + 20), by = y + i / 2 * 50;
-			AisvTheme.DrawText(b, bars[i].Label, new Vector2(bx, by), AisvTheme.TextMuted, 0.66f);
+			Hearth.Ink(b, bars[i].Label, new Vector2(bx, by), Hearth.QuillSoft, 0.66f);
 			Rectangle track = new Rectangle(bx, by + 26, colW, 10);
-			AisvTheme.FillRounded(b, track, AisvTheme.Divider, 5);
+			Hearth.FillRounded(b, track, Hearth.Seam, 5);
 			if (bars[i].Value is float v)
 			{
-				AisvTheme.FillRounded(b, new Rectangle(track.X, track.Y, Math.Max(10, (int)(track.Width * v / 100f)), track.Height), bars[i].Tint, 5);
+				Hearth.FillRounded(b, new Rectangle(track.X, track.Y, Math.Max(10, (int)(track.Width * v / 100f)), track.Height), bars[i].Tint, 5);
 			}
 			else
 			{
 				string none = Tr.Get("review.axis.none", "没数据");
-				AisvTheme.DrawText(b, none, new Vector2(bx + colW - AisvTheme.Width(none, 0.6f), by), AisvTheme.TextFaint, 0.6f);
+				Hearth.Ink(b, none, new Vector2(bx + colW - Hearth.Width(none, 0.6f), by), Hearth.QuillPale, 0.6f);
 			}
 		}
 	}

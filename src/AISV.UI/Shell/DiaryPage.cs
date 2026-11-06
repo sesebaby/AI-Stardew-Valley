@@ -38,6 +38,9 @@ internal sealed class DiaryPage : ShellPage
 
 	private bool _exported;
 
+	/// <summary>再过几帧开始印：先让按钮显示“正在印”，大本日记要印几秒。</summary>
+	private int _printIn;
+
 	public DiaryPage(ShellContext ctx) : base(ctx)
 	{
 	}
@@ -55,8 +58,8 @@ internal sealed class DiaryPage : ShellPage
 		_cards = new List<Card>();
 		foreach (DiaryEntry e in _entries)
 		{
-			Card c = new Card { Entry = e, Weather = ShellText.DiaryWeather(e.Sky), Lines = AisvTheme.WrapLines(ShellText.Clean(e.Text), textW, TextScale, paragraphGap: true) };
-			c.Height = 24 + Math.Max(96, c.Lines.Count * AisvTheme.LineHeight(TextScale)) + 24;
+			Card c = new Card { Entry = e, Weather = ShellText.DiaryWeather(e.Sky), Lines = Hearth.WrapLines(ShellText.Clean(e.Text), textW, TextScale, paragraphGap: true) };
+			c.Height = 24 + Math.Max(96, c.Lines.Count * Hearth.LineHeight(TextScale)) + 24;
 			_cards.Add(c);
 		}
 	}
@@ -64,6 +67,15 @@ internal sealed class DiaryPage : ShellPage
 	private void Export()
 	{
 		Game1.playSound("smallSelect");
+		_printIn = 2;
+	}
+
+	public override void Update()
+	{
+		if (_printIn == 0 || --_printIn > 0)
+		{
+			return;
+		}
 		try
 		{
 			string path = DiaryPrinter.Export(Ctx);
@@ -80,7 +92,11 @@ internal sealed class DiaryPage : ShellPage
 	private void OpenFolder()
 	{
 		Game1.playSound("smallSelect");
-		AISV.Game.Promo.ExternalLink.Open(DiaryPrinter.ExportFolder(Ctx), Ctx.Log);
+		string folder = DiaryPrinter.PrintedFolder();
+		if (AISV.Game.Promo.ExternalLink.Open(folder, Ctx.Log) != AISV.Game.Promo.LinkResult.Opened)
+		{
+			Host.Notice(Tr.Get("shell.diary.folderAt", "打不开文件夹，它在：{{path}}", ("path", folder)));
+		}
 	}
 
 	public override void Scroll(int direction) => _scroll.Wheel(direction);
@@ -97,15 +113,23 @@ internal sealed class DiaryPage : ShellPage
 			Build(colW);
 		}
 		Rectangle open = Kit.Header(b, header, Tr.Get("shell.diary.title", "日记"), _entries.Count > 0 ? Tr.Get("shell.diary.count", "共 {{n}} 篇", ("n", _entries.Count)) : "", Tr.Get("shell.diary.openBook", "翻开日记本"), hits, () => Host.Push(new DiaryBook(Ctx)));
-		if (_entries.Count > 0)
+		if (_entries.Count > 0 || Ctx.Messenger?.Photos.All().Count > 0)
 		{
-			string label = _exported ? Tr.Get("shell.diary.openFolder", "打开文件夹") : Tr.Get("shell.diary.export", "导出 PDF");
-			int bw = (int)AisvTheme.Width(label, 0.85f) + 40;
+			string label = _printIn > 0 ? Tr.Get("shell.diary.printing", "正在印…") : Tr.Get("shell.diary.export", "导出 PDF");
+			int bw = (int)Hearth.Width(label, 0.85f) + 40;
 			Rectangle export = new Rectangle(open.X - 12 - bw, open.Y, bw, open.Height);
-			AisvTheme.Button(b, export, label, hover: AisvTheme.Hover(export), scale: 0.85f);
-			hits.Add(export, _exported ? OpenFolder : Export);
+			Hearth.PressPlate(b, export, label, hover: Hearth.Hover(export), scale: 0.85f);
+			hits.Add(export, Export);
+			if (_exported)
+			{
+				string folderLabel = Tr.Get("shell.diary.openFolder", "打开文件夹");
+				int fw = (int)Hearth.Width(folderLabel, 0.85f) + 40;
+				Rectangle folder = new Rectangle(export.X - 12 - fw, open.Y, fw, open.Height);
+				Hearth.PressPlate(b, folder, folderLabel, hover: Hearth.Hover(folder), scale: 0.85f);
+				hits.Add(folder, OpenFolder);
+			}
 		}
-		AisvTheme.BeginClip(b, _feed);
+		Hearth.BeginClip(b, _feed);
 		int x = _feed.X + (_feed.Width - colW) / 2, w = colW;
 		int y = _feed.Y + 14 - _scroll.Offset;
 		y = Kit.RetryCard(b, Ctx, gossip: false, x, y, w, _feed, hits, Host);
@@ -121,7 +145,7 @@ internal sealed class DiaryPage : ShellPage
 			if (g != group)
 			{
 				group = g;
-				AisvTheme.DrawText(b, ShellText.SeasonGroup(c.Entry.Year, c.Entry.Season), new Vector2(x + 6, y + 4), AisvTheme.TextFaint, 0.75f);
+				Hearth.Ink(b, ShellText.SeasonGroup(c.Entry.Year, c.Entry.Season), new Vector2(x + 6, y + 4), Hearth.QuillPale, 0.75f);
 				y += 36;
 			}
 			Rectangle r = new Rectangle(x, y, w, c.Height);
@@ -131,27 +155,27 @@ internal sealed class DiaryPage : ShellPage
 			}
 			y = r.Bottom + 14;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, _feed, y + 10);
 	}
 
 	private static void DrawCard(SpriteBatch b, Card c, Rectangle r)
 	{
-		AisvTheme.DrawCard(b, r);
+		Hearth.CardSlip(b, r);
 		Rectangle tag = new Rectangle(r.X + 24, r.Y + 24, 96, 96);
 		bool today = ShellText.IsToday(c.Entry.Day, c.Entry.Season, c.Entry.Year);
-		AisvTheme.FillRounded(b, tag, today ? AisvTheme.AccentSoft : AisvTheme.PageDeep, 12);
-		AisvTheme.TextCentered(b, c.Entry.Day.ToString(), new Rectangle(tag.X, tag.Y + 8, tag.Width, 46), today ? AisvTheme.AccentDark : AisvTheme.Text, 1.5f);
-		AisvTheme.TextCentered(b, ShellText.Season(c.Entry.Season), new Rectangle(tag.X, tag.Y + 54, tag.Width, 20), AisvTheme.TextMuted, 0.68f);
+		Hearth.FillRounded(b, tag, today ? Hearth.LeafPale : Hearth.ParchmentDeep, 12);
+		Hearth.InkMiddle(b, c.Entry.Day.ToString(), new Rectangle(tag.X, tag.Y + 8, tag.Width, 46), today ? Hearth.LeafDeep : Hearth.Quill, 1.5f);
+		Hearth.InkMiddle(b, ShellText.Season(c.Entry.Season), new Rectangle(tag.X, tag.Y + 54, tag.Width, 20), Hearth.QuillSoft, 0.68f);
 		if (c.Weather.Length > 0)
 		{
-			AisvTheme.TextCentered(b, c.Weather, new Rectangle(tag.X, tag.Y + 74, tag.Width, 18), AisvTheme.TextFaint, 0.6f);
+			Hearth.InkMiddle(b, c.Weather, new Rectangle(tag.X, tag.Y + 74, tag.Width, 18), Hearth.QuillPale, 0.6f);
 		}
 		int tx = tag.Right + 24, ty = r.Y + 22;
 		foreach (string line in c.Lines)
 		{
-			AisvTheme.DrawText(b, line, new Vector2(tx, ty), AisvTheme.Text, TextScale);
-			ty += AisvTheme.LineHeight(TextScale);
+			Hearth.Ink(b, line, new Vector2(tx, ty), Hearth.Quill, TextScale);
+			ty += Hearth.LineHeight(TextScale);
 		}
 	}
 }

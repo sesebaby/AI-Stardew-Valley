@@ -293,6 +293,8 @@ public sealed class ModConfig
 	/// <summary>打开 AI星露谷 外壳（今日 / 社交 / 世界 / 设置）。</summary>
 	public string KeyShell { get; set; } = "F9";
 
+	public string KeyPhone { get; set; } = "J";
+
 	// ---- 八卦 ----
 
 	public int ModRumorsDaily { get; set; } = 12;
@@ -475,6 +477,12 @@ public sealed class ModConfig
 
 	/// <summary>窗口上限的百分比（70～150）。只影响窗口，不影响字。</summary>
 	public int WindowPercent { get; set; } = 100;
+
+	/// <summary>界面外观：cottage、forest、starry。</summary>
+	public string ShellSkin { get; set; } = "cottage";
+
+	/// <summary>手机和电脑桌面的壁纸：meadow、forest、night。</summary>
+	public string DeskWallpaper { get; set; } = "meadow";
 
 	public Compat.NpcModActivationMode ModVillagerScope { get; set; } = Compat.NpcModActivationMode.AllNpcMods;
 

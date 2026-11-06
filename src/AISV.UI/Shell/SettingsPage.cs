@@ -101,7 +101,7 @@ internal sealed class SettingsPage : ShellPage
 
 	private readonly List<Category> _categories;
 
-	private readonly TextBox _search = new TextBox(null, null, Game1.smallFont, AisvTheme.Text) { textLimit = 20, limitWidth = false };
+	private readonly TextBox _search = new TextBox(null, null, Game1.smallFont, Hearth.Quill) { textLimit = 20, limitWidth = false };
 
 	private int _current;
 
@@ -295,6 +295,7 @@ internal sealed class SettingsPage : ShellPage
 				(Tr.Get("shell.settings.keysGroup", "按键"), new List<Row>
 				{
 					new InfoRow(Tr.Get("shell.settings.shellKey", "打开这个界面"), "", c => c.KeyShell),
+					new InfoRow(Tr.Get("shell.settings.phoneKey", "打开手机"), "", c => c.KeyPhone),
 					new InfoRow(Tr.Get("shell.settings.profileKey", "我的设定"), "", c => c.KeyAboutMe),
 					new InfoRow(Tr.Get("shell.settings.gossipKey", "直接看八卦"), "", c => c.KeyRumors),
 					new InfoRow(Tr.Get("shell.settings.groupKey", "群聊插话"), "", c => c.KeyGroupTalk)
@@ -342,44 +343,86 @@ internal sealed class SettingsPage : ShellPage
 
 	public override void Closed() => _search.Selected = false;
 
+	private bool _reading;
+
+	private int _narrowTick = -10;
+
+	public override bool StepBack()
+	{
+		bool was = _reading && Game1.ticks - _narrowTick <= 2;
+		_reading &= !was;
+		return was;
+	}
+
 	public override void Draw(SpriteBatch b, Rectangle area, Hits hits)
 	{
+		if (area.Width < 760)
+		{
+			DrawNarrow(b, area, hits);
+			return;
+		}
 		Rectangle nav = new Rectangle(area.X, area.Y, Math.Clamp(area.Width / 4, 240, 300), area.Height);
 		_detail = new Rectangle(nav.Right, area.Y, area.Right - nav.Right, area.Height);
 		DrawNav(b, nav, hits);
 		DrawDetail(b, hits);
 	}
 
+	/// <summary>窄屏时分类占满一屏，点进去才看设置；打字搜索时搜索框下面直接列结果。</summary>
+	private void DrawNarrow(SpriteBatch b, Rectangle area, Hits hits)
+	{
+		_narrowTick = Game1.ticks;
+		if (Query.Length > 0)
+		{
+			Rectangle top = new Rectangle(area.X, area.Y, area.Width, 66);
+			_detail = new Rectangle(area.X, top.Bottom, area.Width, area.Bottom - top.Bottom);
+			DrawNav(b, top, hits);
+			DrawDetail(b, hits);
+		}
+		else if (_reading)
+		{
+			Rectangle back = new Rectangle(area.X + 10, area.Y + 8, 170, 40);
+			Hearth.PressPlate(b, back, "‹ " + Tr.Get("shell.settings.allGroups", "所有分类"), hover: Hearth.Hover(back), scale: 0.78f);
+			hits.Add(back, () => _reading = false);
+			_detail = new Rectangle(area.X, back.Bottom + 4, area.Width, area.Bottom - back.Bottom - 4);
+			DrawDetail(b, hits);
+		}
+		else
+		{
+			DrawNav(b, area, hits);
+		}
+	}
+
 	private void DrawNav(SpriteBatch b, Rectangle nav, Hits hits)
 	{
-		AisvTheme.Fill(b, nav, AisvTheme.Card);
-		AisvTheme.VLine(b, nav.Right - 2, nav.Y, nav.Height, AisvTheme.Divider);
+		Hearth.Fill(b, nav, Hearth.ParchmentDeep);
+		Hearth.Fill(b, new Rectangle(nav.Right - 4, nav.Y, 4, nav.Height), Hearth.Bark * 0.5f);
 		string q = Query;
 		Rectangle box = new Rectangle(nav.X + 8, nav.Y + 14, nav.Width - 20, 44);
-		AisvTheme.Field(b, box, _search.Selected);
-		AisvTheme.Magnifier(b, new Vector2(box.X + 20, box.Center.Y));
-		Vector2 tp = new Vector2(box.X + 40, box.Center.Y - AisvTheme.LineHeight(0.8f) / 2);
-		AisvTheme.DrawText(b, q.Length == 0 && !_search.Selected ? Tr.Get("shell.settings.search", "搜索设置") : AisvTheme.Truncate(q, box.Width - 52, 0.8f), tp, q.Length == 0 ? AisvTheme.TextFaint : AisvTheme.Text, 0.8f);
+		Hearth.Field(b, box, _search.Selected);
+		Hearth.Magnifier(b, new Vector2(box.X + 20, box.Center.Y));
+		Vector2 tp = new Vector2(box.X + 40, box.Center.Y - Hearth.LineHeight(0.8f) / 2);
+		Hearth.Ink(b, q.Length == 0 && !_search.Selected ? Tr.Get("shell.settings.search", "搜索设置") : Hearth.Truncate(q, box.Width - 52, 0.8f), tp, q.Length == 0 ? Hearth.QuillPale : Hearth.Quill, 0.8f);
 		hits.Add(box, () => _search.Selected = true);
 		int y = box.Bottom + 12;
-		for (int i = 0; i < _categories.Count; i++)
+		for (int i = 0; i < _categories.Count && y < nav.Bottom; i++)
 		{
 			Rectangle r = new Rectangle(nav.X + 8, y, nav.Width - 20, 56);
 			bool sel = q.Length == 0 && i == _current;
-			if (sel || AisvTheme.Hover(r))
+			if (sel || Hearth.Hover(r))
 			{
-				AisvTheme.FillRounded(b, r, sel ? AisvTheme.SelectedRow : AisvTheme.PageDeep, 10);
+				Hearth.FillRounded(b, r, sel ? Hearth.Honey : Hearth.ParchmentDeep, 10);
 			}
 			if (sel)
 			{
-				AisvTheme.FillRounded(b, new Rectangle(r.X, r.Y + 10, 4, r.Height - 20), AisvTheme.Accent, 2);
+				Hearth.FillRounded(b, new Rectangle(r.X, r.Y + 10, 4, r.Height - 20), Hearth.Leaf, 2);
 			}
-			AisvTheme.DrawText(b, _categories[i].Title, new Vector2(r.X + 18, r.Y + 13), sel ? AisvTheme.AccentDark : AisvTheme.Text, 0.88f);
-			AisvTheme.Chevron(b, new Vector2(r.Right - 20, r.Center.Y), left: false, AisvTheme.TextFaint);
+			Hearth.Ink(b, _categories[i].Title, new Vector2(r.X + 18, r.Y + 13), sel ? Hearth.LeafDeep : Hearth.Quill, 0.88f);
+			Hearth.Chevron(b, new Vector2(r.Right - 20, r.Center.Y), left: false, Hearth.QuillPale);
 			int index = i;
 			hits.Add(r, () =>
 			{
 				bool searching = Query.Length > 0;
+				_reading = true;
 				_search.Text = "";
 				_search.Selected = false;
 				_resetArmedUntil = 0;
@@ -424,17 +467,17 @@ internal sealed class SettingsPage : ShellPage
 			_scroll.Reset();
 		}
 		Category cat = q.Length > 0 ? Results(q, config) : _categories[_current];
-		AisvTheme.BeginClip(b, _detail);
+		Hearth.BeginClip(b, _detail);
 		int w = Math.Min(_detail.Width - 64, 820);
 		int x = _detail.X + (_detail.Width - w) / 2;
 		int y = _detail.Y + 22 - _scroll.Offset;
-		AisvTheme.Bold(b, cat.Title, new Vector2(x, y), AisvTheme.Text, 1.15f);
+		Hearth.InkBold(b, cat.Title, new Vector2(x, y), Hearth.Quill, 1.15f);
 		if (q.Length == 0 && cat.Groups.Any(g => g.Rows.Any(r => r is ToggleRow or ChoiceRow)))
 		{
 			DrawResetButton(b, cat, x + w, y - 4, hits);
 		}
-		y += AisvTheme.LineHeight(1.15f) + 4;
-		AisvTheme.DrawText(b, cat.Description, new Vector2(x, y), AisvTheme.TextMuted, 0.78f);
+		y += Hearth.LineHeight(1.15f) + 4;
+		Hearth.Ink(b, cat.Description, new Vector2(x, y), Hearth.QuillSoft, 0.78f);
 		y += 44;
 		foreach ((string group, List<Row> all) in cat.Groups)
 		{
@@ -443,39 +486,39 @@ internal sealed class SettingsPage : ShellPage
 			{
 				continue;
 			}
-			AisvTheme.DrawText(b, group, new Vector2(x + 6, y), AisvTheme.TextFaint, 0.75f);
-			y += 32;
+			Hearth.Ribbon(b, group, x + 12, y - 2);
+			y += 44;
 			Rectangle card = new Rectangle(x, y, w, rows.Count * 76 + 8);
-			AisvTheme.DrawCard(b, card);
+			Hearth.CardSlip(b, card);
 			for (int i = 0; i < rows.Count; i++)
 			{
 				Rectangle r = new Rectangle(x + 4, y + 4 + i * 76, w - 8, 76);
 				if (i > 0)
 				{
-					AisvTheme.HLine(b, r.X + 16, r.Y, r.Width - 32, AisvTheme.Divider);
+					Hearth.Dotted(b, r.X + 16, r.Y, r.Width - 32, leaf: true);
 				}
 				DrawRow(b, rows[i], r, config, hits);
 			}
 			y = card.Bottom + 22;
 		}
-		AisvTheme.DrawText(b, Tr.Get("shell.settings.more", "更细的数值（每天几封信、八卦条数等）可以在 Generic Mod Config Menu 里调。"), new Vector2(x + 6, y), AisvTheme.TextFaint, 0.72f);
+		Hearth.Ink(b, Tr.Get("shell.settings.more", "更细的数值（每天几封信、八卦条数等）可以在 Generic Mod Config Menu 里调。"), new Vector2(x + 6, y), Hearth.QuillPale, 0.72f);
 		y += 40;
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, _detail, y);
 	}
 
 	private void DrawRow(SpriteBatch b, Row row, Rectangle r, ModConfig config, Hits hits)
 	{
-		if (row is ToggleRow or LinkRow && AisvTheme.Hover(r, _detail))
+		if (row is ToggleRow or LinkRow && Hearth.Hover(r, _detail))
 		{
-			AisvTheme.FillRounded(b, AisvTheme.Inflate(r, -2), AisvTheme.SelectedRow, 10);
+			Hearth.FillRounded(b, Hearth.Inflate(r, -2), Hearth.Honey, 10);
 		}
 		string note = row.Status?.Invoke(config) is { Length: > 0 } status ? status : row.Note;
 		int ty = note.Length > 0 ? r.Y + 12 : r.Y + 24;
-		AisvTheme.DrawText(b, row.Label, new Vector2(r.X + 20, ty), AisvTheme.Text, 0.88f);
+		Hearth.Ink(b, row.Label, new Vector2(r.X + 20, ty), Hearth.Quill, 0.88f);
 		if (note.Length > 0)
 		{
-			AisvTheme.DrawText(b, AisvTheme.Truncate(note, r.Width - 300, 0.7f), new Vector2(r.X + 20, r.Y + 42), AisvTheme.TextFaint, 0.7f);
+			Hearth.Ink(b, Hearth.Truncate(note, r.Width - 300, 0.7f), new Vector2(r.X + 20, r.Y + 42), Hearth.QuillPale, 0.7f);
 		}
 		switch (row)
 		{
@@ -483,7 +526,7 @@ internal sealed class SettingsPage : ShellPage
 		{
 			bool on = t.Get(config);
 			Rectangle sw = new Rectangle(r.Right - 20 - 64, r.Center.Y - 18, 64, 36);
-			AisvTheme.Toggle(b, sw, on);
+			Hearth.Latch(b, sw, on);
 			hits.Add(r, () => Change(c => t.Set(c, !on)), _detail);
 			break;
 		}
@@ -491,16 +534,16 @@ internal sealed class SettingsPage : ShellPage
 		{
 			int index = Math.Clamp(ch.Get(config), 0, ch.Options.Length - 1);
 			string label = ch.Options[index];
-			int bw = (int)AisvTheme.Width(label, 0.8f) + 56;
+			int bw = (int)Hearth.Width(label, 0.8f) + 56;
 			Rectangle btn = new Rectangle(r.Right - 20 - bw, r.Center.Y - 22, bw, 44);
-			AisvTheme.Button(b, btn, label, hover: AisvTheme.Hover(btn, _detail), scale: 0.8f);
-			AisvTheme.Chevron(b, new Vector2(btn.Right - 18, btn.Center.Y), left: false, AisvTheme.TextFaint);
+			Hearth.PressPlate(b, btn, label, hover: Hearth.Hover(btn, _detail), scale: 0.8f);
+			Hearth.Chevron(b, new Vector2(btn.Right - 18, btn.Center.Y), left: false, Hearth.QuillPale);
 			hits.Add(btn, () => Change(c => ch.Set(c, (index + 1) % ch.Options.Length)), _detail);
 			break;
 		}
 		case LinkRow link:
 		{
-			AisvTheme.Chevron(b, new Vector2(r.Right - 30, r.Center.Y), left: false, AisvTheme.AccentDark);
+			Hearth.Chevron(b, new Vector2(r.Right - 30, r.Center.Y), left: false, Hearth.LeafDeep);
 			hits.Add(r, () =>
 			{
 				_search.Selected = false;
@@ -511,8 +554,8 @@ internal sealed class SettingsPage : ShellPage
 		case InfoRow info:
 		{
 			string value = info.Value(config);
-			int cw = AisvTheme.ChipWidth(value, 0.8f);
-			AisvTheme.Chip(b, new Vector2(r.Right - 20 - cw, r.Center.Y - 16), value, AisvTheme.PageDeep, AisvTheme.Text, 0.8f);
+			int cw = Hearth.TagWidth(value, 0.8f);
+			Hearth.Tag(b, new Vector2(r.Right - 20 - cw, r.Center.Y - 16), value, Hearth.ParchmentDeep, Hearth.Quill, 0.8f);
 			break;
 		}
 		}
@@ -523,9 +566,9 @@ internal sealed class SettingsPage : ShellPage
 	{
 		bool armed = Game1.ticks < _resetArmedUntil;
 		string label = armed ? Tr.Get("shell.settings.resetConfirm", "再点一次确认") : Tr.Get("shell.settings.reset", "恢复本页默认");
-		int bw = (int)AisvTheme.Width(label, 0.76f) + 36;
+		int bw = (int)Hearth.Width(label, 0.76f) + 36;
 		Rectangle btn = new Rectangle(right - bw, y, bw, 42);
-		AisvTheme.Button(b, btn, label, primary: armed, hover: AisvTheme.Hover(btn, _detail), scale: 0.76f);
+		Hearth.PressPlate(b, btn, label, primary: armed, hover: Hearth.Hover(btn, _detail), scale: 0.76f);
 		hits.Add(btn, () =>
 		{
 			if (!armed)

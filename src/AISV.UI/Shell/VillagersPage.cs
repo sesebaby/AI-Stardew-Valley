@@ -85,7 +85,7 @@ internal sealed class VillagersPage : ShellPage
 
 	public VillagersPage(ShellContext ctx) : base(ctx)
 	{
-		_search = new TextBox(null, null, Game1.smallFont, AisvTheme.Text) { textLimit = 20, limitWidth = false };
+		_search = new TextBox(null, null, Game1.smallFont, Hearth.Quill) { textLimit = 20, limitWidth = false };
 	}
 
 	public override bool CapturesKeys => _search.Selected;
@@ -200,6 +200,20 @@ internal sealed class VillagersPage : ShellPage
 
 	public override void Closed() => _search.Selected = false;
 
+	private const int NarrowWidth = 760;
+
+	/// <summary>窄屏时先看列表，点进去才看详情。</summary>
+	private bool _reading;
+
+	private int _narrowTick = -10;
+
+	public override bool StepBack()
+	{
+		bool was = _reading && Game1.ticks - _narrowTick <= 2;
+		_reading &= !was;
+		return was;
+	}
+
 	public override void Draw(SpriteBatch b, Rectangle area, Hits hits)
 	{
 		if ((_search.Text ?? "").Trim() != _query)
@@ -207,7 +221,21 @@ internal sealed class VillagersPage : ShellPage
 			ApplySearch();
 			_listScroll.Reset();
 		}
-		int listW = Math.Clamp(area.Width * 30 / 100, 300, 400);
+		bool narrow = area.Width < NarrowWidth;
+		if (narrow)
+		{
+			_narrowTick = Game1.ticks;
+		}
+		if (narrow && _reading)
+		{
+			Rectangle back = new Rectangle(area.X + 10, area.Y + 8, 170, 40);
+			Hearth.PressPlate(b, back, "‹ " + Tr.Get("shell.villagers.backToList", "村民列表"), hover: Hearth.Hover(back), scale: 0.78f);
+			hits.Add(back, () => _reading = false);
+			_detail = new Rectangle(area.X, back.Bottom + 4, area.Width, area.Bottom - back.Bottom - 4);
+			DrawDetail(b, hits);
+			return;
+		}
+		int listW = narrow ? area.Width : Math.Clamp(area.Width * 30 / 100, 300, 400);
 		Rectangle panel = new Rectangle(area.X, area.Y, listW, area.Height);
 		_detail = new Rectangle(panel.Right, area.Y, area.Right - panel.Right, area.Height);
 		_searchBox = new Rectangle(panel.X + 12, panel.Y + 12, panel.Width - 24, 44);
@@ -215,36 +243,39 @@ internal sealed class VillagersPage : ShellPage
 		hits.Add(new Rectangle(area.X, area.Y, area.Width, area.Height), () => _search.Selected = false);
 		hits.Add(_searchBox, () => _search.Selected = true);
 		DrawList(b, panel, hits);
-		DrawDetail(b, hits);
+		if (!narrow)
+		{
+			DrawDetail(b, hits);
+		}
 	}
 
 	private void DrawList(SpriteBatch b, Rectangle panel, Hits hits)
 	{
-		AisvTheme.Fill(b, panel, AisvTheme.Card);
-		AisvTheme.VLine(b, panel.Right - 2, panel.Y, panel.Height, AisvTheme.Divider);
-		AisvTheme.Field(b, _searchBox, _search.Selected);
-		AisvTheme.Magnifier(b, new Vector2(_searchBox.X + 20, _searchBox.Center.Y));
+		Hearth.Fill(b, panel, Hearth.Slip);
+		Hearth.VLine(b, panel.Right - 2, panel.Y, panel.Height, Hearth.Seam);
+		Hearth.Field(b, _searchBox, _search.Selected);
+		Hearth.Magnifier(b, new Vector2(_searchBox.X + 20, _searchBox.Center.Y));
 		string text = _search.Text ?? "";
 		Vector2 tp = new Vector2(_searchBox.X + 40, _searchBox.Center.Y - 14);
 		if (text.Length == 0 && !_search.Selected)
 		{
-			AisvTheme.DrawText(b, Tr.Get("shell.villagers.search", "搜索村民"), tp, AisvTheme.TextFaint, 0.85f);
+			Hearth.Ink(b, Tr.Get("shell.villagers.search", "搜索村民"), tp, Hearth.QuillPale, 0.85f);
 		}
 		else
 		{
-			string shown = AisvTheme.Truncate(text, _searchBox.Width - 56, 0.85f);
-			AisvTheme.DrawText(b, shown, tp, AisvTheme.Text, 0.85f);
+			string shown = Hearth.Truncate(text, _searchBox.Width - 56, 0.85f);
+			Hearth.Ink(b, shown, tp, Hearth.Quill, 0.85f);
 			if (_search.Selected && Game1.currentGameTime.TotalGameTime.TotalMilliseconds % 1000 < 550)
 			{
-				AisvTheme.Fill(b, new Rectangle((int)tp.X + (int)AisvTheme.Width(shown, 0.85f) + 2, _searchBox.Center.Y - 12, 2, 24), AisvTheme.Accent);
+				Hearth.Fill(b, new Rectangle((int)tp.X + (int)Hearth.Width(shown, 0.85f) + 2, _searchBox.Center.Y - 12, 2, 24), Hearth.Leaf);
 			}
 		}
 		if (_shown.Count == 0)
 		{
-			AisvTheme.TextCentered(b, _all.Count == 0 ? Tr.Get("shell.villagers.none", "你还没认识任何村民。") : Tr.Get("shell.villagers.noMatch", "没有找到这个人。"), new Rectangle(_listArea.X, _listArea.Y + 20, _listArea.Width, 60), AisvTheme.TextMuted, 0.85f);
+			Hearth.InkMiddle(b, _all.Count == 0 ? Tr.Get("shell.villagers.none", "你还没认识任何村民。") : Tr.Get("shell.villagers.noMatch", "没有找到这个人。"), new Rectangle(_listArea.X, _listArea.Y + 20, _listArea.Width, 60), Hearth.QuillSoft, 0.85f);
 			return;
 		}
-		AisvTheme.BeginClip(b, _listArea);
+		Hearth.BeginClip(b, _listArea);
 		int y = _listArea.Y - _listScroll.Offset;
 		int group = -1;
 		const int rowH = 68;
@@ -254,7 +285,7 @@ internal sealed class VillagersPage : ShellPage
 			{
 				group = v.Group;
 				int count = _shown.Count(x => x.Group == v.Group);
-				AisvTheme.DrawText(b, GroupTitle(group) + "  " + count, new Vector2(_listArea.X + 12, y + 8), AisvTheme.TextFaint, 0.72f);
+				Hearth.Ink(b, GroupTitle(group) + "  " + count, new Vector2(_listArea.X + 12, y + 8), Hearth.QuillPale, 0.72f);
 				y += 34;
 			}
 			Rectangle row = new Rectangle(_listArea.X, y, _listArea.Width, rowH);
@@ -264,6 +295,7 @@ internal sealed class VillagersPage : ShellPage
 				string name = v.Name;
 				hits.Add(row, () =>
 				{
+					_reading = true;
 					if (_selected != name)
 					{
 						Game1.playSound("smallSelect");
@@ -275,7 +307,7 @@ internal sealed class VillagersPage : ShellPage
 			}
 			y += rowH + 2;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_listScroll.Finish(b, _listArea, y, 6);
 	}
 
@@ -283,27 +315,27 @@ internal sealed class VillagersPage : ShellPage
 	{
 		if (v.Name == _selected)
 		{
-			AisvTheme.FillRounded(b, row, AisvTheme.SelectedRow, 10);
-			AisvTheme.Fill(b, new Rectangle(row.X, row.Y + 8, 4, row.Height - 16), AisvTheme.Accent);
+			Hearth.FillRounded(b, row, Hearth.Honey, 10);
+			Hearth.Fill(b, new Rectangle(row.X, row.Y + 8, 4, row.Height - 16), Hearth.Leaf);
 		}
-		else if (AisvTheme.Hover(row, _listArea))
+		else if (Hearth.Hover(row, _listArea))
 		{
-			AisvTheme.FillRounded(b, row, AisvTheme.PageDeep, 10);
+			Hearth.FillRounded(b, row, Hearth.ParchmentDeep, 10);
 		}
-		AisvTheme.Avatar(b, new Rectangle(row.X + 12, row.Center.Y - 24, 48, 48), v.Npc);
+		Hearth.Cameo(b, new Rectangle(row.X + 12, row.Center.Y - 24, 48, 48), v.Npc);
 		int tx = row.X + 72, right = row.Right - 12;
 		string hearts = v.Hearts.ToString();
-		float hw = AisvTheme.Width(hearts, 0.7f);
-		AisvTheme.DrawText(b, hearts, new Vector2(right - hw, row.Y + 14), AisvTheme.TextMuted, 0.7f);
-		AisvTheme.Heart(b, new Rectangle(right - (int)hw - 22, row.Y + 18, 16, 14));
-		string name = AisvTheme.Truncate(v.Display, right - hw - 30 - tx, 0.95f);
-		AisvTheme.DrawText(b, name, new Vector2(tx, row.Y + 10), AisvTheme.Text, 0.95f);
+		float hw = Hearth.Width(hearts, 0.7f);
+		Hearth.Ink(b, hearts, new Vector2(right - hw, row.Y + 14), Hearth.QuillSoft, 0.7f);
+		Hearth.Heart(b, new Rectangle(right - (int)hw - 22, row.Y + 18, 16, 14));
+		string name = Hearth.Truncate(v.Display, right - hw - 30 - tx, 0.95f);
+		Hearth.Ink(b, name, new Vector2(tx, row.Y + 10), Hearth.Quill, 0.95f);
 		if (v.Birthday)
 		{
-			AisvTheme.Chip(b, new Vector2(tx + AisvTheme.Width(name, 0.95f) + 8, row.Y + 10), Tr.Get("shell.villagers.birthdayChip", "生日"), AisvTheme.Pink, Color.White, 0.6f);
+			Hearth.Tag(b, new Vector2(tx + Hearth.Width(name, 0.95f) + 8, row.Y + 10), Tr.Get("shell.villagers.birthdayChip", "生日"), Hearth.Rose, Color.White, 0.6f);
 		}
 		string where = v.Where.Length > 0 ? v.Where : Tr.Get("shell.villagers.nowhere", "不知道在哪");
-		AisvTheme.DrawText(b, AisvTheme.Truncate(v.Mood.Length > 0 ? where + " · " + v.Mood : where, right - tx, 0.72f), new Vector2(tx, row.Y + 40), AisvTheme.TextFaint, 0.72f);
+		Hearth.Ink(b, Hearth.Truncate(v.Mood.Length > 0 ? where + " · " + v.Mood : where, right - tx, 0.72f), new Vector2(tx, row.Y + 40), Hearth.QuillPale, 0.72f);
 	}
 
 	private void DrawDetail(SpriteBatch b, Hits hits)
@@ -311,10 +343,10 @@ internal sealed class VillagersPage : ShellPage
 		Villager? v = Selected;
 		if (v == null)
 		{
-			AisvTheme.TextCentered(b, Tr.Get("shell.villagers.pick", "选一位村民看看。"), _detail, AisvTheme.TextMuted);
+			Hearth.InkMiddle(b, Tr.Get("shell.villagers.pick", "选一位村民看看。"), _detail, Hearth.QuillSoft);
 			return;
 		}
-		AisvTheme.BeginClip(b, _detail);
+		Hearth.BeginClip(b, _detail);
 		int cardW = Math.Min(_detail.Width - 56, 760);
 		int x0 = _detail.X + (_detail.Width - cardW) / 2;
 		int y = _detail.Y + 24 - _detailScroll.Offset;
@@ -323,7 +355,7 @@ internal sealed class VillagersPage : ShellPage
 		if (v.AiEnabled)
 		{
 			Rectangle diary = new Rectangle(x0, y, cardW, 52);
-			AisvTheme.Button(b, diary, Tr.Get("shell.villagers.diary", "翻开{{name}}的日记", ("name", v.Display)), hover: AisvTheme.Hover(diary, _detail), scale: 0.85f);
+			Hearth.PressPlate(b, diary, Tr.Get("shell.villagers.diary", "翻开{{name}}的日记", ("name", v.Display)), hover: Hearth.Hover(diary, _detail), scale: 0.85f);
 			string npc = v.Name;
 			hits.Add(diary, () =>
 			{
@@ -339,39 +371,39 @@ internal sealed class VillagersPage : ShellPage
 		}
 		else
 		{
-			AisvTheme.DrawText(b, Tr.Get("shell.villagers.notAi", "这位村民没有交给 AI，没有记忆和心情。"), new Vector2(x0 + 4, y), AisvTheme.TextFaint, 0.78f);
+			Hearth.Ink(b, Tr.Get("shell.villagers.notAi", "这位村民没有交给 AI，没有记忆和心情。"), new Vector2(x0 + 4, y), Hearth.QuillPale, 0.78f);
 			y += 40;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_detailScroll.Finish(b, _detail, y + 8);
 	}
 
 	private int DrawHead(SpriteBatch b, Villager v, int x, int y, int w, Hits hits)
 	{
 		Rectangle head = new Rectangle(x, y, w, 168);
-		AisvTheme.DrawCard(b, head);
+		Hearth.CardSlip(b, head);
 		Rectangle portrait = new Rectangle(head.X + 20, head.Y + 20, 128, 128);
-		AisvTheme.Avatar(b, portrait, v.Npc);
+		Hearth.Cameo(b, portrait, v.Npc);
 		int tx = portrait.Right + 24;
 		// 名字太长时截短，给关系标签和右上角的铅笔留地方。
-		string shownName = AisvTheme.Truncate(v.Display, Math.Max(80, head.Right - 76 - tx - AisvTheme.ChipWidth(v.Relation, 0.7f) - 14), 1.3f);
-		AisvTheme.Bold(b, shownName, new Vector2(tx, head.Y + 26), AisvTheme.Text, 1.3f);
-		float nameW = AisvTheme.Width(shownName, 1.3f);
-		Color rel = v.Group == 0 ? AisvTheme.Pink : v.Group == 1 ? AisvTheme.Accent : AisvTheme.PageDeep;
-		AisvTheme.Chip(b, new Vector2(tx + nameW + 14, head.Y + 30), v.Relation, rel, v.Group <= 1 ? Color.White : AisvTheme.TextMuted, 0.7f);
-		int hy = head.Y + 26 + AisvTheme.LineHeight(1.3f) + 12;
+		string shownName = Hearth.Truncate(v.Display, Math.Max(80, head.Right - 76 - tx - Hearth.TagWidth(v.Relation, 0.7f) - 14), 1.3f);
+		Hearth.InkBold(b, shownName, new Vector2(tx, head.Y + 26), Hearth.Quill, 1.3f);
+		float nameW = Hearth.Width(shownName, 1.3f);
+		Color rel = v.Group == 0 ? Hearth.Rose : v.Group == 1 ? Hearth.Leaf : Hearth.ParchmentDeep;
+		Hearth.Tag(b, new Vector2(tx + nameW + 14, head.Y + 30), v.Relation, rel, v.Group <= 1 ? Color.White : Hearth.QuillSoft, 0.7f);
+		int hy = head.Y + 26 + Hearth.LineHeight(1.3f) + 12;
 		int size = Math.Min(26, (head.Right - 20 - tx) / (v.MaxHearts > 10 ? 14 : 10) - 4);
-		AisvTheme.Hearts(b, new Vector2(tx, hy), v.Hearts, v.MaxHearts, size);
+		Hearth.Hearts(b, new Vector2(tx, hy), v.Hearts, v.MaxHearts, size);
 		string line = Tr.Get("shell.villagers.hearts", "{{n}} 心", ("n", v.Hearts)) + "  ·  " + (v.TalkedToday ? Tr.Get("shell.villagers.talked", "今天聊过了") : Tr.Get("shell.villagers.notTalked", "今天还没聊"));
-		AisvTheme.DrawText(b, line, new Vector2(tx, hy + size + 10), AisvTheme.TextMuted, 0.78f);
+		Hearth.Ink(b, line, new Vector2(tx, hy + size + 10), Hearth.QuillSoft, 0.78f);
 		Rectangle edit = new Rectangle(head.Right - 60, head.Y + 16, 44, 44);
-		bool hover = AisvTheme.Hover(edit, _detail);
-		AisvTheme.Bordered(b, edit, hover ? AisvTheme.GoldSoft : AisvTheme.Card, hover ? AisvTheme.Gold : AisvTheme.CardBorder, 12);
+		bool hover = Hearth.Hover(edit, _detail);
+		Hearth.Bordered(b, edit, hover ? Hearth.AmberPale : Hearth.Slip, hover ? Hearth.Amber : Hearth.SlipEdge, 12);
 		CardEditorPage.Pencil.DrawIn(b, new Rectangle(edit.X + 8, edit.Y + 8, 28, 28));
 		if (hover)
 		{
 			string tip = Tr.Get("shell.villagers.editCard", "改角色卡");
-			AisvTheme.DrawText(b, tip, new Vector2(edit.X - 8 - AisvTheme.Width(tip, 0.68f), edit.Center.Y - AisvTheme.LineHeight(0.68f) / 2), AisvTheme.TextMuted, 0.68f);
+			Hearth.Ink(b, tip, new Vector2(edit.X - 8 - Hearth.Width(tip, 0.68f), edit.Center.Y - Hearth.LineHeight(0.68f) / 2), Hearth.QuillSoft, 0.68f);
 		}
 		string npc = v.Name;
 		hits.Add(edit, () =>
@@ -383,9 +415,9 @@ internal sealed class VillagersPage : ShellPage
 		{
 			AISV.Core.World.Errands.Errand? open = errands.OpenFor(npc);
 			string label = open == null ? Tr.Get("shell.villagers.errand", "托办件事") : Tr.Get("shell.villagers.errandOpen", "托的事：{{what}}", ("what", errands.What(open)));
-			int bw = Math.Min((int)AisvTheme.Width(label, 0.72f) + 32, Math.Max(140, head.Right - 20 - (tx + (int)AisvTheme.Width(line, 0.78f) + 16)));
+			int bw = Math.Min((int)Hearth.Width(label, 0.72f) + 32, Math.Max(140, head.Right - 20 - (tx + (int)Hearth.Width(line, 0.78f) + 16)));
 			Rectangle ask = new Rectangle(head.Right - 20 - bw, head.Bottom - 20 - 40, bw, 40);
-			AisvTheme.Button(b, ask, AisvTheme.Truncate(label, bw - 24, 0.72f), hover: AisvTheme.Hover(ask, _detail), scale: 0.72f);
+			Hearth.PressPlate(b, ask, Hearth.Truncate(label, bw - 24, 0.72f), hover: Hearth.Hover(ask, _detail), scale: 0.72f);
 			hits.Add(ask, () =>
 			{
 				_search.Selected = false;
@@ -408,32 +440,32 @@ internal sealed class VillagersPage : ShellPage
 		AISV.Core.World.Ledger.NpcWallet? wallet = Ctx.Ledger is { Enabled: true } ledger && StardewModdingAPI.Context.IsMainPlayer ? ledger.Wallet(v.Name) : null;
 		List<(string Label, string Value, Color Color)> rows = new List<(string, string, Color)>
 		{
-			(Tr.Get("shell.villagers.where", "现在在"), v.Where.Length > 0 ? v.Where : Tr.Get("shell.villagers.nowhere", "不知道在哪"), AisvTheme.Text),
-			(Tr.Get("shell.villagers.mood", "今天心情"), v.Mood.Length > 0 ? v.Mood + (v.MoodReason.Length > 0 ? "：" + v.MoodReason : "") : Tr.Get("shell.villagers.moodUnknown", "看不出来"), AisvTheme.Text),
-			(Tr.Get("shell.villagers.birthday", "生日"), v.Birthday ? v.BirthdayText + Tr.Get("shell.villagers.birthdayToday", "（就是今天）") : v.BirthdayText, v.Birthday ? AisvTheme.Pink : AisvTheme.Text),
-			(Tr.Get("shell.villagers.gifts", "本周送礼"), $"{v.GiftsWeek} / 2", AisvTheme.Text)
+			(Tr.Get("shell.villagers.where", "现在在"), v.Where.Length > 0 ? v.Where : Tr.Get("shell.villagers.nowhere", "不知道在哪"), Hearth.Quill),
+			(Tr.Get("shell.villagers.mood", "今天心情"), v.Mood.Length > 0 ? v.Mood + (v.MoodReason.Length > 0 ? "：" + v.MoodReason : "") : Tr.Get("shell.villagers.moodUnknown", "看不出来"), Hearth.Quill),
+			(Tr.Get("shell.villagers.birthday", "生日"), v.Birthday ? v.BirthdayText + Tr.Get("shell.villagers.birthdayToday", "（就是今天）") : v.BirthdayText, v.Birthday ? Hearth.Rose : Hearth.Quill),
+			(Tr.Get("shell.villagers.gifts", "本周送礼"), $"{v.GiftsWeek} / 2", Hearth.Quill)
 		};
 		if (wallet != null)
 		{
-			rows.Add((Tr.Get("shell.villagers.wallet", "钱包"), Tr.Get("shell.villagers.walletValue", "身上 {{gold}}g · 存款 {{savings}}g", ("gold", wallet.Gold.ToString("N0")), ("savings", wallet.Savings.ToString("N0"))), AisvTheme.Gold));
+			rows.Add((Tr.Get("shell.villagers.wallet", "钱包"), Tr.Get("shell.villagers.walletValue", "身上 {{gold}}g · 存款 {{savings}}g", ("gold", wallet.Gold.ToString("N0")), ("savings", wallet.Savings.ToString("N0"))), Hearth.Amber));
 		}
 		const int rowH = 52;
 		Rectangle info = new Rectangle(x, y, w, rows.Count * rowH + 12);
-		AisvTheme.DrawCard(b, info);
+		Hearth.CardSlip(b, info);
 		for (int i = 0; i < rows.Count; i++)
 		{
 			int ry = info.Y + 6 + i * rowH;
 			if (i > 0)
 			{
-				AisvTheme.HLine(b, info.X + 20, ry, info.Width - 40, AisvTheme.Divider);
+				Hearth.HLine(b, info.X + 20, ry, info.Width - 40, Hearth.Seam);
 			}
-			AisvTheme.DrawText(b, rows[i].Label, new Vector2(info.X + 24, ry + 14), AisvTheme.TextMuted, 0.82f);
+			Hearth.Ink(b, rows[i].Label, new Vector2(info.X + 24, ry + 14), Hearth.QuillSoft, 0.82f);
 			bool walletRow = wallet != null && i == rows.Count - 1;
-			AisvTheme.DrawText(b, AisvTheme.Truncate(rows[i].Value, info.Width - 190 - (walletRow ? 110 : 0), 0.85f), new Vector2(info.X + 170, ry + 14), rows[i].Color, 0.85f);
+			Hearth.Ink(b, Hearth.Truncate(rows[i].Value, info.Width - 190 - (walletRow ? 110 : 0), 0.85f), new Vector2(info.X + 170, ry + 14), rows[i].Color, 0.85f);
 			if (walletRow)
 			{
 				Rectangle open = new Rectangle(info.Right - 20 - 96, ry + 8, 96, 38);
-				AisvTheme.Button(b, open, Tr.Get("shell.villagers.belongings", "家当"), hover: AisvTheme.Hover(open, _detail), scale: 0.72f);
+				Hearth.PressPlate(b, open, Tr.Get("shell.villagers.belongings", "家当"), hover: Hearth.Hover(open, _detail), scale: 0.72f);
 				string npc = v.Name;
 				hits.Add(open, () =>
 				{
@@ -453,7 +485,7 @@ internal sealed class VillagersPage : ShellPage
 		EmotionalProfile? p = Ctx.Social.Feelings.Find(npc);
 		if (p == null)
 		{
-			feel.Lines.Add((Tr.Get("shell.villagers.noFeelings", "还说不上来。多聊几次，每个星期天会重新想一想。"), AisvTheme.TextFaint));
+			feel.Lines.Add((Tr.Get("shell.villagers.noFeelings", "还说不上来。多聊几次，每个星期天会重新想一想。"), Hearth.QuillPale));
 		}
 		else
 		{
@@ -461,10 +493,10 @@ internal sealed class VillagersPage : ShellPage
 			feel.Bars.Add((Tr.Get("shell.villagers.warmth", "感情"), (p.Affection + 1f) / 2f, $"{p.Affection:+0.00;-0.00;0.00}"));
 			if (!string.IsNullOrWhiteSpace(p.Impression))
 			{
-				feel.Lines.Add((Tr.Get("shell.villagers.impression", "在{{npc}}眼里，你是：{{text}}", ("npc", Ctx.Display(npc)), ("text", p.Impression)), AisvTheme.Text));
+				feel.Lines.Add((Tr.Get("shell.villagers.impression", "在{{npc}}眼里，你是：{{text}}", ("npc", Ctx.Display(npc)), ("text", p.Impression)), Hearth.Quill));
 			}
-			feel.Lines.AddRange(p.Recollections.Select(m => ("· " + m, AisvTheme.Text)));
-			feel.Lines.AddRange(p.Sores.Where(m => m.HealsOn >= today.TotalDays).Select(m => ("· " + Tr.Get("shell.villagers.hurt", "心里还有个疙瘩：{{text}}", ("text", m.Text)), AisvTheme.Warn)));
+			feel.Lines.AddRange(p.Recollections.Select(m => ("· " + m, Hearth.Quill)));
+			feel.Lines.AddRange(p.Sores.Where(m => m.HealsOn >= today.TotalDays).Select(m => ("· " + Tr.Get("shell.villagers.hurt", "心里还有个疙瘩：{{text}}", ("text", m.Text)), Hearth.Rust)));
 		}
 		list.Add(feel);
 		IReadOnlyList<RelationshipMilestone> milestones = Ctx.Social.Milestones.For(npc);
@@ -473,7 +505,7 @@ internal sealed class VillagersPage : ShellPage
 			list.Add(new Section
 			{
 				Title = Tr.Get("shell.villagers.milestones", "一路走来"),
-				Lines = milestones.Reverse().Take(8).Select(m => (ShellText.Date(m.Day, m.Season, m.Year) + "　" + MilestoneBook.Describe(m), AisvTheme.Text)).ToList()
+				Lines = milestones.Reverse().Take(8).Select(m => (ShellText.Date(m.Day, m.Season, m.Year) + "　" + MilestoneBook.Describe(m), Hearth.Quill)).ToList()
 			});
 		}
 		IReadOnlyList<GiftRecord> gifts = Ctx.Social.Gifts.For(npc);
@@ -482,7 +514,7 @@ internal sealed class VillagersPage : ShellPage
 			list.Add(new Section
 			{
 				Title = Tr.Get("shell.villagers.giftsGiven", "送过的礼物"),
-				Lines = gifts.Reverse().Take(6).Select(g => (ShellText.Date(g.Day, g.Season, g.Year) + "　" + g.What + "（" + GiftBook.TasteWord(g.Liking) + (g.OnBirthday ? Tr.Get("shell.villagers.onBirthday", "，生日那天") : "") + "）", AisvTheme.Text)).ToList()
+				Lines = gifts.Reverse().Take(6).Select(g => (ShellText.Date(g.Day, g.Season, g.Year) + "　" + g.What + "（" + GiftBook.TasteWord(g.Liking) + (g.OnBirthday ? Tr.Get("shell.villagers.onBirthday", "，生日那天") : "") + "）", Hearth.Quill)).ToList()
 			});
 		}
 		List<NpcSocialEdge> edges = Ctx.Social.Web.Edges.Where(e => (string.Equals(e.First, npc, StringComparison.OrdinalIgnoreCase) || string.Equals(e.Second, npc, StringComparison.OrdinalIgnoreCase)) && e.Encounters > 0).OrderByDescending(e => e.Closeness).Take(8).ToList();
@@ -495,7 +527,7 @@ internal sealed class VillagersPage : ShellPage
 				{
 					string other = string.Equals(e.First, npc, StringComparison.OrdinalIgnoreCase) ? e.Second : e.First;
 					NpcSocialMemory? latest = e.Shared.OrderByDescending(m => m.OnDay).FirstOrDefault();
-					return (Ctx.Display(other) + "：" + SocialWeb.StateWord(e.Standing) + (latest == null ? "" : "——" + latest.Text), AisvTheme.Text);
+					return (Ctx.Display(other) + "：" + SocialWeb.StateWord(e.Standing) + (latest == null ? "" : "——" + latest.Text), Hearth.Quill);
 				}).ToList()
 			});
 		}
@@ -505,12 +537,12 @@ internal sealed class VillagersPage : ShellPage
 			Section talk = new Section { Title = Tr.Get("shell.villagers.recent", "最近的对话") };
 			foreach (ConversationEntry e in recent.Reverse())
 			{
-				talk.Lines.Add((ShellText.Date(e.Day, e.Season, e.Year), AisvTheme.TextFaint));
-				talk.Lines.Add((Ctx.Display(npc) + "：" + GameDialogueText.ForDisplay(e.Opener, Game1.player?.Name ?? ""), AisvTheme.Text));
+				talk.Lines.Add((ShellText.Date(e.Day, e.Season, e.Year), Hearth.QuillPale));
+				talk.Lines.Add((Ctx.Display(npc) + "：" + GameDialogueText.ForDisplay(e.Opener, Game1.player?.Name ?? ""), Hearth.Quill));
 				if (!string.IsNullOrWhiteSpace(e.FarmerReply))
 				{
 					string said = SkippedReply.Is(e.FarmerReply) ? Tr.Get("shell.villagers.skipped", "（没接话）") : e.FarmerReply;
-					talk.Lines.Add((Tr.Get("shell.villagers.you", "你：{{text}}", ("text", said)), AisvTheme.AccentDark));
+					talk.Lines.Add((Tr.Get("shell.villagers.you", "你：{{text}}", ("text", said)), Hearth.LeafDeep));
 				}
 			}
 			list.Add(talk);
@@ -521,24 +553,24 @@ internal sealed class VillagersPage : ShellPage
 	private int DrawSection(SpriteBatch b, Section s, int x, int y, int w)
 	{
 		const float scale = 0.85f;
-		int lh = AisvTheme.LineHeight(scale);
-		List<(string Text, Color Color)> lines = s.Lines.SelectMany(l => AisvTheme.WrapLines(ShellText.Clean(l.Text), w - 48, scale).Select(t => (t, l.Color))).ToList();
+		int lh = Hearth.LineHeight(scale);
+		List<(string Text, Color Color)> lines = s.Lines.SelectMany(l => Hearth.WrapLines(ShellText.Clean(l.Text), w - 48, scale).Select(t => (t, l.Color))).ToList();
 		int h = 18 + 34 + s.Bars.Count * 36 + lines.Count * lh + 18;
 		Rectangle card = new Rectangle(x, y, w, h);
-		AisvTheme.DrawCard(b, card);
+		Hearth.CardSlip(b, card);
 		Kit.SectionTitle(b, s.Title, x + 20, y + 18);
 		int cy = y + 56;
 		foreach ((string label, float fraction, string note) in s.Bars)
 		{
-			AisvTheme.DrawText(b, label, new Vector2(x + 24, cy), AisvTheme.TextMuted, 0.82f);
+			Hearth.Ink(b, label, new Vector2(x + 24, cy), Hearth.QuillSoft, 0.82f);
 			Rectangle bar = new Rectangle(x + 110, cy + 9, Math.Min(320, w / 2), 12);
-			AisvTheme.Progress(b, bar, fraction);
-			AisvTheme.DrawText(b, note, new Vector2(bar.Right + 16, cy), AisvTheme.Text, 0.82f);
+			Hearth.Gauge(b, bar, fraction);
+			Hearth.Ink(b, note, new Vector2(bar.Right + 16, cy), Hearth.Quill, 0.82f);
 			cy += 36;
 		}
 		foreach ((string text, Color color) in lines)
 		{
-			AisvTheme.DrawText(b, text, new Vector2(x + 24, cy), color, scale);
+			Hearth.Ink(b, text, new Vector2(x + 24, cy), color, scale);
 			cy += lh;
 		}
 		return card.Bottom;

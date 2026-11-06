@@ -148,6 +148,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private PhonePeek _phonePeek = null!;
 
+	private AISV.Game.Phone.FarmComputer _computer = null!;
+
 	private ImeCandidateWindow _ime = null!;
 
 	private FarmHelpService _farmHelp = null!;
@@ -163,6 +165,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		using (timer.Step("配置和文字"))
 		{
 			_config = ReadConfig(helper);
+			AISV.UI.Theme.Hearth.UseSkin(_config.ShellSkin);
 			Tr.Use(key => helper.Translation.Get(key) is { } t && t.HasValue() ? t.ToString() : null);
 		}
 		if (!_config.ModOn)
@@ -561,6 +564,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_news.ShowBeyond = () => _promo.Enabled;
 			_shell.Promo = _promo;
 			_shell.Log = _log;
+			_computer = new AISV.Game.Phone.FarmComputer(helper.DirectoryPath);
+			helper.ConsoleCommands.Add("aisv_computer", "在脚边摆一台农场电脑。", (_, _) => _log.Info(Context.IsWorldReady ? AISV.Game.Phone.FarmComputer.PlaceHere() : "先进存档。"));
 			_phone = new AISV.Game.Phone.PhoneItem(helper.DirectoryPath, helper.Input, _log, () => _phonePeek.OpenCurrent());
 			helper.ConsoleCommands.Add("aisv_phone", "手机物品调试。\n用法：aisv_phone dump | give | hold | lose", (_, args) => _log.Info(Context.IsWorldReady ? _phone.Command(args) : "先进存档。"));
 			_ime = new ImeCandidateWindow(() => _config, SaveConfig, _log);
@@ -589,6 +594,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			helper.Events.GameLoop.UpdateTicked += (_, _) => _profilePrompt.OnUpdateTicked();
 			helper.Events.GameLoop.UpdateTicked += (_, _) => _accountPrompt.OnUpdateTicked();
 			helper.Events.GameLoop.UpdateTicked += (_, _) => Notices.Flush();
+			helper.Events.GameLoop.OneSecondUpdateTicked += (_, _) => AnnounceFocus();
 			helper.Events.GameLoop.UpdateTicked += (_, e) =>
 			{
 				_festivals.OnUpdateTicked();
@@ -864,11 +870,20 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	/// <summary>F9 打开外壳，F6 直接到八卦页（只在能自由行动、没开别的菜单时）。</summary>
 	private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
 	{
-		if (!Context.IsPlayerFree)
+		if (!Context.IsPlayerFree || StardewValley.Game1.IsChatting)
 		{
 			return;
 		}
-		if (Matches(_config.KeyShell, e.Button))
+		if (e.Button.IsActionButton() && (AISV.Game.Phone.FarmComputer.IsAt(e.Cursor.Tile) || AISV.Game.Phone.FarmComputer.IsAt(e.Cursor.GrabTile)))
+		{
+			Helper.Input.Suppress(e.Button);
+			OpenDevice(ShellMenu.Device.Computer);
+		}
+		else if (Matches(_config.KeyPhone, e.Button))
+		{
+			OpenDevice(ShellMenu.Device.Phone);
+		}
+		else if (Matches(_config.KeyShell, e.Button))
 		{
 			OpenShell("");
 		}
@@ -889,20 +904,43 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	{
 		if (string.IsNullOrWhiteSpace(npc))
 		{
-			OpenShell("");
+			OpenDevice(ShellMenu.Device.Phone);
 			return;
 		}
 		if (npc == PhonePeek.ResidentsThread)
 		{
-			OpenShell("residents");
+			OpenDevice(ShellMenu.Device.Phone, ShellMenu.SocialTab.Residents);
 			return;
 		}
 		ShellMenu.PreselectChat(npc);
-		OpenShell("messenger");
+		OpenDevice(ShellMenu.Device.Phone, ShellMenu.SocialTab.Messenger);
+	}
+
+	private static void AnnounceFocus()
+	{
+		if (AISV.Core.Apps.FocusClock.Shared.RollOver(DateTime.UtcNow) && Context.IsWorldReady)
+		{
+			StardewValley.Game1.playSound("reward");
+			StardewValley.Game1.addHUDMessage(new StardewValley.HUDMessage(AISV.Core.Apps.FocusClock.Shared.Resting ? Tr.Get("tools.focus.doneWork", "专心时间到了，歇一会儿吧。") : Tr.Get("tools.focus.doneRest", "歇够了，开始下一轮吧。")));
+		}
+	}
+
+	private void OpenDevice(ShellMenu.Device device, ShellMenu.SocialTab? chat = null)
+	{
+		if (Context.IsWorldReady && _saveData.Current != null)
+		{
+			StardewValley.Game1.playSound("bigSelect");
+			StardewValley.Game1.activeClickableMenu = new ShellMenu(_shell, chat == null ? null : ShellMenu.Tab.Social, chat, device: device);
+		}
 	}
 
 	private void OpenShell(string where)
 	{
+		if (where is "phone" or "computer")
+		{
+			OpenDevice(where == "phone" ? ShellMenu.Device.Phone : ShellMenu.Device.Computer);
+			return;
+		}
 		string arg = where.Contains(':') ? where[(where.IndexOf(':') + 1)..] : "";
 		where = where.Contains(':') ? where[..where.IndexOf(':')] : where;
 		if (!Context.IsWorldReady || _saveData.Current == null)
@@ -1036,6 +1074,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	private void SaveConfig(ModConfig config)
 	{
 		_config = config;
+		AISV.UI.Theme.Hearth.UseSkin(config.ShellSkin);
 		Helper.WriteConfig(config);
 		_moments?.OnStyleChanged();
 	}
@@ -1147,6 +1186,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	{
 		_looks.OnAssetRequested(e);
 		_phone.OnAssetRequested(e);
+		_computer.OnAssetRequested(e);
 		if (e.NameWithoutLocale.IsEquivalentTo("Data/mail"))
 		{
 			e.Edit(asset => AISV.Game.Phone.PhoneItem.EditMail(asset.AsDictionary<string, string>().Data));

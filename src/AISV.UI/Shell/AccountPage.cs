@@ -312,7 +312,7 @@ internal sealed class AccountPage : ShellPage
 		int y = area.Y + 20;
 		if (Ctx.Account == null || !Ctx.UsesServer())
 		{
-			Paragraph(b, Tr.Get("account.ownGateway", "现在用的是自己的 AI 网关，不需要账号。"), x, y, w, AisvTheme.TextMuted);
+			Paragraph(b, Tr.Get("account.ownGateway", "现在用的是自己的 AI 网关，不需要账号。"), x, y, w, Hearth.QuillSoft);
 			return;
 		}
 		switch (_view)
@@ -331,7 +331,7 @@ internal sealed class AccountPage : ShellPage
 
 	private void DrawEnter(SpriteBatch b, Hits hits, int x, int y, int w)
 	{
-		y = Paragraph(b, Tr.Get("account.subEnter", "第一次来：起个用户名、设个密码，点“开始”就注册好了（免费）。\n已经有账号：填同样的用户名和密码就是登录。"), x, y, w, AisvTheme.TextMuted) + 16;
+		y = Paragraph(b, Tr.Get("account.subEnter", "第一次来：起个用户名、设个密码，点“开始”就注册好了（免费）。\n已经有账号：填同样的用户名和密码就是登录。"), x, y, w, Hearth.QuillSoft) + 16;
 		y = Input(b, hits, Tr.Get("account.userName", "用户名"), _inputs[0], x, y, w);
 		y = Input(b, hits, Tr.Get("account.password", "密码"), _inputs[1], x, y, w, reveal: true);
 		y = Message(b, x, y, w);
@@ -340,7 +340,7 @@ internal sealed class AccountPage : ShellPage
 
 	private void DrawPassword(SpriteBatch b, Hits hits, int x, int y, int w)
 	{
-		y = Paragraph(b, Tr.Get("account.subPassword", "改完以后，其他电脑上的登录会退出。"), x, y, w, AisvTheme.TextMuted) + 16;
+		y = Paragraph(b, Tr.Get("account.subPassword", "改完以后，其他电脑上的登录会退出。"), x, y, w, Hearth.QuillSoft) + 16;
 		y = Input(b, hits, Tr.Get("account.oldPassword", "原密码"), _inputs[0], x, y, w);
 		y = Input(b, hits, Tr.Get("account.newPassword", "新密码"), _inputs[1], x, y, w, reveal: true);
 		y = Input(b, hits, Tr.Get("account.confirmPassword", "再输一遍新密码"), _inputs[2], x, y, w);
@@ -352,10 +352,10 @@ internal sealed class AccountPage : ShellPage
 	{
 		ServerAccount account = Ctx.Account!;
 		string text = account.StatusText("");
-		int lines = AisvTheme.Wrap(text, w - 40).Split('\n').Length;
-		Rectangle card = new Rectangle(x, y, w, lines * AisvTheme.LineHeight() + 36);
-		AisvTheme.DrawCard(b, card);
-		Paragraph(b, text, x + 20, y + 18, w - 40, AisvTheme.Text);
+		int lines = Hearth.Wrap(text, w - 40).Split('\n').Length;
+		Rectangle card = new Rectangle(x, y, w, lines * Hearth.LineHeight() + 36);
+		Hearth.CardSlip(b, card);
+		Paragraph(b, text, x + 20, y + 18, w - 40, Hearth.Quill);
 		y = card.Bottom + 12;
 		y = Message(b, x, y, w);
 		Buttons(b, hits, x, y, Tr.Get("account.changePassword", "改密码"), () => Show(View.Password), Tr.Get("account.logout", "退出登录"), Logout);
@@ -363,15 +363,15 @@ internal sealed class AccountPage : ShellPage
 
 	private int Input(SpriteBatch b, Hits hits, string label, TextArea input, int x, int y, int w, bool reveal = false)
 	{
-		AisvTheme.DrawText(b, label, new Vector2(x + 2, y), AisvTheme.TextMuted, 0.8f);
+		Hearth.Ink(b, label, new Vector2(x + 2, y), Hearth.QuillSoft, 0.8f);
 		if (reveal)
 		{
 			string text = _revealed ? Tr.Get("account.hide", "隐藏密码") : Tr.Get("account.reveal", "显示密码");
 			Rectangle r = new Rectangle(x + w - 130, y - 6, 130, 34);
-			AisvTheme.Button(b, r, text, hover: AisvTheme.Hover(r));
+			Hearth.PressPlate(b, r, text, hover: Hearth.Hover(r));
 			hits.Add(r, ToggleReveal);
 		}
-		input.Bounds = new Rectangle(x, y + 30, w, AisvTheme.LineHeight() + 24);
+		input.Bounds = new Rectangle(x, y + 30, w, Hearth.LineHeight() + 24);
 		input.Locked = _busy;
 		input.Draw(b);
 		hits.Add(input.Bounds, () =>
@@ -388,17 +388,17 @@ internal sealed class AccountPage : ShellPage
 	{
 		if (_busy)
 		{
-			return Paragraph(b, Tr.Get("account.connecting", "正在连接服务器……"), x, y, w, AisvTheme.TextMuted) + 10;
+			return Paragraph(b, Tr.Get("account.connecting", "正在连接服务器……"), x, y, w, Hearth.QuillSoft) + 10;
 		}
-		return _error.Length > 0 ? Paragraph(b, _error, x, y, w, AisvTheme.Danger) + 10 : y;
+		return _error.Length > 0 ? Paragraph(b, _error, x, y, w, Hearth.Berry) + 10 : y;
 	}
 
 	private void Buttons(SpriteBatch b, Hits hits, int x, int y, string primary, Action onPrimary, string secondary, Action onSecondary)
 	{
 		Rectangle first = new Rectangle(x, y, 200, 52);
 		Rectangle second = new Rectangle(first.Right + 16, y, 200, 52);
-		AisvTheme.Button(b, first, primary, primary: true, hover: AisvTheme.Hover(first), disabled: _busy);
-		AisvTheme.Button(b, second, secondary, hover: AisvTheme.Hover(second), disabled: _busy);
+		Hearth.PressPlate(b, first, primary, primary: true, hover: Hearth.Hover(first), disabled: _busy);
+		Hearth.PressPlate(b, second, secondary, hover: Hearth.Hover(second), disabled: _busy);
 		if (!_busy)
 		{
 			hits.Add(first, onPrimary);
@@ -408,8 +408,8 @@ internal sealed class AccountPage : ShellPage
 
 	private static int Paragraph(SpriteBatch b, string text, int x, int y, int w, Color color)
 	{
-		string wrapped = AisvTheme.Wrap(text, w);
+		string wrapped = Hearth.Wrap(text, w);
 		b.DrawString(Game1.smallFont, wrapped, new Vector2(x, y), color);
-		return y + wrapped.Split('\n').Length * AisvTheme.LineHeight();
+		return y + wrapped.Split('\n').Length * Hearth.LineHeight();
 	}
 }

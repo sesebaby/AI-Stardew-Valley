@@ -69,18 +69,18 @@ internal sealed class ThanksPage : ShellPage
 		_view = area;
 		int pad = area.Width < 900 ? 16 : 32;
 		int x = area.X + pad, w = area.Width - pad * 2 - 12;
-		AisvTheme.BeginClip(b, area);
+		Hearth.BeginClip(b, area);
 		int y = area.Y + 20 - _scroll.Offset;
 		foreach (Section section in _sections)
 		{
 			y = Card(b, section, x, y, w) + 18;
 		}
-		foreach (string line in AisvTheme.WrapLines(Tr.Get("thanks.footer", "由于记录所限，难免有遗漏。如有帮助过我但未被列出的老乡，请通过群内或 N 网私信告知，我会在后续版本补上。"), w, 0.74f))
+		foreach (string line in Hearth.WrapLines(Tr.Get("thanks.footer", "由于记录所限，难免有遗漏。如有帮助过我但未被列出的老乡，请通过群内或 N 网私信告知，我会在后续版本补上。"), w, 0.74f))
 		{
-			AisvTheme.DrawText(b, line, new Vector2(x, y), AisvTheme.TextMuted, 0.74f);
-			y += AisvTheme.LineHeight(0.74f);
+			Hearth.Ink(b, line, new Vector2(x, y), Hearth.QuillSoft, 0.74f);
+			y += Hearth.LineHeight(0.74f);
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, area, y + 12);
 	}
 
@@ -88,33 +88,33 @@ internal sealed class ThanksPage : ShellPage
 	{
 		const int inner = 20;
 		int tw = w - inner * 2;
-		List<string> intro = s.Intro.Length > 0 ? AisvTheme.WrapLines(s.Intro, tw, 0.78f).ToList() : new List<string>();
+		List<string> intro = s.Intro.Length > 0 ? Hearth.WrapLines(s.Intro, tw, 0.78f).ToList() : new List<string>();
 		List<(List<string> Name, List<string> Detail)> credits = s.Credits
-			.Select(c => (AisvTheme.WrapLines(c.Name, tw, 0.8f).ToList(), AisvTheme.WrapLines(c.Detail, tw, 0.76f).ToList()))
+			.Select(c => (Hearth.WrapLines(c.Name, tw, 0.8f).ToList(), Hearth.WrapLines(c.Detail, tw, 0.76f).ToList()))
 			.ToList();
-		int height = inner * 2 + AisvTheme.LineHeight(0.95f) + 10 + intro.Count * AisvTheme.LineHeight(0.78f) + (intro.Count > 0 ? 10 : 0)
-			+ credits.Sum(c => c.Name.Count * AisvTheme.LineHeight(0.8f) + c.Detail.Count * AisvTheme.LineHeight(0.76f) + 10);
-		AisvTheme.DrawCard(b, new Rectangle(x, y, w, height));
+		int height = inner * 2 + Hearth.LineHeight(0.95f) + 10 + intro.Count * Hearth.LineHeight(0.78f) + (intro.Count > 0 ? 10 : 0)
+			+ credits.Sum(c => c.Name.Count * Hearth.LineHeight(0.8f) + c.Detail.Count * Hearth.LineHeight(0.76f) + 10);
+		Hearth.CardSlip(b, new Rectangle(x, y, w, height));
 		int tx = x + inner, ty = y + inner;
-		AisvTheme.Bold(b, s.Title, new Vector2(tx, ty), AisvTheme.AccentDark, 0.95f);
-		ty += AisvTheme.LineHeight(0.95f) + 10;
+		Hearth.InkBold(b, s.Title, new Vector2(tx, ty), Hearth.LeafDeep, 0.95f);
+		ty += Hearth.LineHeight(0.95f) + 10;
 		foreach (string line in intro)
 		{
-			AisvTheme.DrawText(b, line, new Vector2(tx, ty), AisvTheme.TextMuted, 0.78f);
-			ty += AisvTheme.LineHeight(0.78f);
+			Hearth.Ink(b, line, new Vector2(tx, ty), Hearth.QuillSoft, 0.78f);
+			ty += Hearth.LineHeight(0.78f);
 		}
 		ty += intro.Count > 0 ? 10 : 0;
 		foreach ((List<string> name, List<string> detail) in credits)
 		{
 			foreach (string line in name)
 			{
-				AisvTheme.Bold(b, line, new Vector2(tx, ty), AisvTheme.Text, 0.8f);
-				ty += AisvTheme.LineHeight(0.8f);
+				Hearth.InkBold(b, line, new Vector2(tx, ty), Hearth.Quill, 0.8f);
+				ty += Hearth.LineHeight(0.8f);
 			}
 			foreach (string line in detail)
 			{
-				AisvTheme.DrawText(b, line, new Vector2(tx, ty), AisvTheme.TextMuted, 0.76f);
-				ty += AisvTheme.LineHeight(0.76f);
+				Hearth.Ink(b, line, new Vector2(tx, ty), Hearth.QuillSoft, 0.76f);
+				ty += Hearth.LineHeight(0.76f);
 			}
 			ty += 10;
 		}

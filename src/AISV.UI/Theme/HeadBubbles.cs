@@ -84,31 +84,31 @@ public static class HeadBubbles
 		{
 			return Rectangle.Empty;
 		}
-		string wrapped = AisvTheme.Wrap(text, Width);
+		string wrapped = Hearth.Wrap(text, Width);
 		Vector2 size = Game1.smallFont.MeasureString(wrapped);
 		int nameH = name.Length > 0 ? 24 : 0;
-		float nameW = name.Length > 0 ? AisvTheme.Width(name, 0.7f) : 0;
+		float nameW = name.Length > 0 ? Hearth.Width(name, 0.7f) : 0;
 		int w = (int)Math.Max(size.X, nameW) + 32;
 		int h = (int)size.Y + 20 + nameH;
 		int x = Math.Clamp((int)anchor.X - w / 2, 8, Math.Max(8, Game1.uiViewport.Width - w - 8));
 		int y = Math.Max(8, (int)anchor.Y - h - 14);
 		Rectangle r = new Rectangle(x, y, w, h);
-		Color fill = mine ? new Color(214, 236, 190) : AisvTheme.Card;
-		Color border = mine ? new Color(139, 186, 102) : AisvTheme.CardBorder;
-		AisvTheme.DrawShadow(b, r, 12, 4);
-		AisvTheme.Bordered(b, r, fill * alpha, border * alpha, 12);
+		Color fill = mine ? new Color(214, 236, 190) : Hearth.Slip;
+		Color border = mine ? new Color(139, 186, 102) : Hearth.SlipEdge;
+		Hearth.CastShadow(b, r, 12, 4);
+		Hearth.Bordered(b, r, fill * alpha, border * alpha, 12);
 		int tx = Math.Clamp((int)anchor.X, r.X + 16, r.Right - 16);
 		for (int i = 0; i < 4; i++)
 		{
 			int half = 8 - i * 2;
-			AisvTheme.Fill(b, new Rectangle(tx - half - 2, r.Bottom - 2 + i * 3, (half + 2) * 2, 3), border * alpha);
-			AisvTheme.Fill(b, new Rectangle(tx - half, r.Bottom - 2 + i * 3, half * 2, 3), fill * alpha);
+			Hearth.Fill(b, new Rectangle(tx - half - 2, r.Bottom - 2 + i * 3, (half + 2) * 2, 3), border * alpha);
+			Hearth.Fill(b, new Rectangle(tx - half, r.Bottom - 2 + i * 3, half * 2, 3), fill * alpha);
 		}
 		if (name.Length > 0)
 		{
-			AisvTheme.DrawText(b, name, new Vector2(r.X + 16, r.Y + 8), AisvTheme.AccentDark * alpha, 0.7f);
+			Hearth.Ink(b, name, new Vector2(r.X + 16, r.Y + 8), Hearth.LeafDeep * alpha, 0.7f);
 		}
-		AisvTheme.DrawText(b, wrapped, new Vector2(r.X + 16, r.Y + 10 + nameH), AisvTheme.Text * alpha);
+		Hearth.Ink(b, wrapped, new Vector2(r.X + 16, r.Y + 10 + nameH), Hearth.Quill * alpha);
 		return r;
 	}
 }

@@ -91,8 +91,26 @@ internal sealed class NpcCompatPage : ShellPage
 		Reload();
 	}
 
+	private readonly Flip _flip = new Flip();
+
+	public override bool StepBack() => _flip.StepBack();
+
 	public override void Draw(SpriteBatch b, Rectangle area, Hits hits)
 	{
+		if (Flip.Applies(area))
+		{
+			_flip.Draw(b, area, hits, r =>
+			{
+				_detail = Rectangle.Empty;
+				DrawList(b, r, hits);
+			}, r =>
+			{
+				_listView = Rectangle.Empty;
+				_detail = r;
+				DrawDetail(b, hits);
+			});
+			return;
+		}
 		int listW = Math.Clamp(area.Width * 34 / 100, 320, 440);
 		Rectangle panel = new Rectangle(area.X, area.Y, listW, area.Height);
 		_detail = new Rectangle(panel.Right, area.Y, area.Right - panel.Right, area.Height);
@@ -102,12 +120,12 @@ internal sealed class NpcCompatPage : ShellPage
 
 	private void DrawList(SpriteBatch b, Rectangle panel, Hits hits)
 	{
-		AisvTheme.Fill(b, panel, AisvTheme.Card);
-		AisvTheme.VLine(b, panel.Right - 2, panel.Y, panel.Height, AisvTheme.Divider);
+		Hearth.Fill(b, panel, Hearth.Slip);
+		Hearth.VLine(b, panel.Right - 2, panel.Y, panel.Height, Hearth.Seam);
 		int active = _entries.Count(e => e.Kind == NpcCompatKind.Active);
-		AisvTheme.DrawText(b, Tr.Get("compat.summary", "{{total}} 位村民，{{active}} 位用 AI", ("total", _entries.Count), ("active", active)), new Vector2(panel.X + 18, panel.Y + 16), AisvTheme.TextMuted, 0.78f);
+		Hearth.Ink(b, Tr.Get("compat.summary", "{{total}} 位村民，{{active}} 位用 AI", ("total", _entries.Count), ("active", active)), new Vector2(panel.X + 18, panel.Y + 16), Hearth.QuillSoft, 0.78f);
 		_listView = new Rectangle(panel.X + 6, panel.Y + 50, panel.Width - 12, panel.Height - 56);
-		AisvTheme.BeginClip(b, _listView);
+		Hearth.BeginClip(b, _listView);
 		int y = _listView.Y - _listScroll.Offset;
 		string group = "";
 		const int rowH = 62;
@@ -116,7 +134,7 @@ internal sealed class NpcCompatPage : ShellPage
 			if (e.Group != group)
 			{
 				group = e.Group;
-				AisvTheme.DrawText(b, AisvTheme.Truncate(group, _listView.Width - 24, 0.72f), new Vector2(_listView.X + 12, y + 8), AisvTheme.TextFaint, 0.72f);
+				Hearth.Ink(b, Hearth.Truncate(group, _listView.Width - 24, 0.72f), new Vector2(_listView.X + 12, y + 8), Hearth.QuillPale, 0.72f);
 				y += 34;
 			}
 			Rectangle row = new Rectangle(_listView.X, y, _listView.Width, rowH);
@@ -136,7 +154,7 @@ internal sealed class NpcCompatPage : ShellPage
 			}
 			y += rowH + 2;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_listScroll.Finish(b, _listView, y, 6);
 	}
 
@@ -144,30 +162,30 @@ internal sealed class NpcCompatPage : ShellPage
 	{
 		if (e.Name == _selected)
 		{
-			AisvTheme.FillRounded(b, row, AisvTheme.SelectedRow, 10);
-			AisvTheme.Fill(b, new Rectangle(row.X, row.Y + 8, 4, row.Height - 16), AisvTheme.Accent);
+			Hearth.FillRounded(b, row, Hearth.Honey, 10);
+			Hearth.Fill(b, new Rectangle(row.X, row.Y + 8, 4, row.Height - 16), Hearth.Leaf);
 		}
-		else if (AisvTheme.Hover(row, _listView))
+		else if (Hearth.Hover(row, _listView))
 		{
-			AisvTheme.FillRounded(b, row, AisvTheme.PageDeep, 10);
+			Hearth.FillRounded(b, row, Hearth.ParchmentDeep, 10);
 		}
-		AisvTheme.Avatar(b, new Rectangle(row.X + 12, row.Center.Y - 22, 44, 44), e.Npc);
+		Hearth.Cameo(b, new Rectangle(row.X + 12, row.Center.Y - 22, 44, 44), e.Npc);
 		string chip = NpcCompat.KindWord(e.Kind);
-		int cw = AisvTheme.ChipWidth(chip, 0.66f);
-		AisvTheme.Chip(b, new Vector2(row.Right - 12 - cw, row.Center.Y - 14), chip, ChipFill(e.Kind), e.Kind == NpcCompatKind.Active ? Color.White : AisvTheme.TextMuted, 0.66f);
-		AisvTheme.DrawText(b, AisvTheme.Truncate(e.Display, row.Width - 84 - cw - 16, 0.9f), new Vector2(row.X + 68, row.Center.Y - AisvTheme.LineHeight(0.9f) / 2), AisvTheme.Text, 0.9f);
+		int cw = Hearth.TagWidth(chip, 0.66f);
+		Hearth.Tag(b, new Vector2(row.Right - 12 - cw, row.Center.Y - 14), chip, ChipFill(e.Kind), e.Kind == NpcCompatKind.Active ? Color.White : Hearth.QuillSoft, 0.66f);
+		Hearth.Ink(b, Hearth.Truncate(e.Display, row.Width - 84 - cw - 16, 0.9f), new Vector2(row.X + 68, row.Center.Y - Hearth.LineHeight(0.9f) / 2), Hearth.Quill, 0.9f);
 	}
 
 	private static Color ChipFill(NpcCompatKind kind) => kind switch
 	{
-		NpcCompatKind.Active => AisvTheme.Accent,
-		NpcCompatKind.AuthorOptOut => AisvTheme.GoldSoft,
-		_ => AisvTheme.PageDeep
+		NpcCompatKind.Active => Hearth.Leaf,
+		NpcCompatKind.AuthorOptOut => Hearth.AmberPale,
+		_ => Hearth.ParchmentDeep
 	};
 
 	private void DrawDetail(SpriteBatch b, Hits hits)
 	{
-		AisvTheme.BeginClip(b, _detail);
+		Hearth.BeginClip(b, _detail);
 		int w = Math.Min(_detail.Width - 56, 760), x = _detail.X + (_detail.Width - w) / 2;
 		int y = _detail.Y + 20 - _detailScroll.Offset;
 		if (_entries.FirstOrDefault(e => e.Name == _selected) is Entry entry)
@@ -175,29 +193,29 @@ internal sealed class NpcCompatPage : ShellPage
 			y = DrawEntry(b, entry, x, y, w, hits) + 16;
 		}
 		y = DrawScope(b, x, y, w, hits);
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_detailScroll.Finish(b, _detail, y + 12);
 	}
 
 	private int DrawEntry(SpriteBatch b, Entry e, int x, int y, int w, Hits hits)
 	{
 		const float scale = 0.8f;
-		List<string> why = AisvTheme.WrapLines(NpcCompat.Explain(e.Reason, e.Enabled, e.Display), w - 170, scale);
+		List<string> why = Hearth.WrapLines(NpcCompat.Explain(e.Reason, e.Enabled, e.Display), w - 170, scale);
 		string source = Tr.Get("compat.persona", "人设来自：{{where}}", ("where", PersonaWord(Ctx.Npcs.Persona(e.Name, e.Npc).Source)));
-		Rectangle card = new Rectangle(x, y, w, Math.Max(148, 60 + why.Count * AisvTheme.LineHeight(scale) + 34) + 76);
-		AisvTheme.DrawCard(b, card);
-		AisvTheme.Avatar(b, new Rectangle(card.X + 20, card.Y + 20, 108, 108), e.Npc);
+		Rectangle card = new Rectangle(x, y, w, Math.Max(148, 60 + why.Count * Hearth.LineHeight(scale) + 34) + 76);
+		Hearth.CardSlip(b, card);
+		Hearth.Cameo(b, new Rectangle(card.X + 20, card.Y + 20, 108, 108), e.Npc);
 		int tx = card.X + 148;
-		AisvTheme.Bold(b, AisvTheme.Truncate(e.Display, card.Right - 20 - tx, 1.15f), new Vector2(tx, card.Y + 20), AisvTheme.Text, 1.15f);
+		Hearth.InkBold(b, Hearth.Truncate(e.Display, card.Right - 20 - tx, 1.15f), new Vector2(tx, card.Y + 20), Hearth.Quill, 1.15f);
 		int ty = card.Y + 60;
 		foreach (string line in why)
 		{
-			AisvTheme.DrawText(b, line, new Vector2(tx, ty), e.Kind == NpcCompatKind.Active ? AisvTheme.AccentDark : AisvTheme.TextMuted, scale);
-			ty += AisvTheme.LineHeight(scale);
+			Hearth.Ink(b, line, new Vector2(tx, ty), e.Kind == NpcCompatKind.Active ? Hearth.LeafDeep : Hearth.QuillSoft, scale);
+			ty += Hearth.LineHeight(scale);
 		}
-		AisvTheme.DrawText(b, AisvTheme.Truncate(source, card.Right - 20 - tx, 0.72f), new Vector2(tx, ty + 4), AisvTheme.TextFaint, 0.72f);
+		Hearth.Ink(b, Hearth.Truncate(source, card.Right - 20 - tx, 0.72f), new Vector2(tx, ty + 4), Hearth.QuillPale, 0.72f);
 		Rectangle row = new Rectangle(card.X + 4, card.Bottom - 72, card.Width - 8, 68);
-		AisvTheme.HLine(b, row.X + 16, row.Y, row.Width - 32, AisvTheme.Divider);
+		Hearth.HLine(b, row.X + 16, row.Y, row.Width - 32, Hearth.Seam);
 		bool off = e.Kind == NpcCompatKind.TurnedOff;
 		SwitchRow(b, row, Tr.Get("compat.useAi", "让 AI 驱动这位村民"), Tr.Get("compat.useAiNote", "关掉后说游戏原来的台词，也不记忆、不传八卦"), !off, hits, () => Change(c => NpcCompat.SetOff(c, e.Name, !off)));
 		return card.Bottom;
@@ -220,16 +238,16 @@ internal sealed class NpcCompatPage : ShellPage
 		const int rowH = 68;
 		int rows = 2 + mods.Count + (picking ? 1 : 0);
 		Rectangle card = new Rectangle(x, y, w, 56 + rows * rowH + 8);
-		AisvTheme.DrawCard(b, card);
+		Hearth.CardSlip(b, card);
 		Kit.SectionTitle(b, Tr.Get("compat.scopeTitle", "其他 NPC mod"), x + 20, y + 18);
 		int ry = y + 52;
 		int index = Math.Max(0, Array.IndexOf(Scopes, config.ModVillagerScope));
 		string label = ScopeWord(Scopes[index]);
-		AisvTheme.DrawText(b, Tr.Get("compat.scope", "用哪些村民"), new Vector2(x + 24, ry + 20), AisvTheme.Text, 0.86f);
-		int bw = (int)AisvTheme.Width(label, 0.8f) + 56;
+		Hearth.Ink(b, Tr.Get("compat.scope", "用哪些村民"), new Vector2(x + 24, ry + 20), Hearth.Quill, 0.86f);
+		int bw = (int)Hearth.Width(label, 0.8f) + 56;
 		Rectangle btn = new Rectangle(card.Right - 20 - bw, ry + 12, bw, 44);
-		AisvTheme.Button(b, btn, label, hover: AisvTheme.Hover(btn, _detail), scale: 0.8f);
-		AisvTheme.Chevron(b, new Vector2(btn.Right - 18, btn.Center.Y), left: false, AisvTheme.TextFaint);
+		Hearth.PressPlate(b, btn, label, hover: Hearth.Hover(btn, _detail), scale: 0.8f);
+		Hearth.Chevron(b, new Vector2(btn.Right - 18, btn.Center.Y), left: false, Hearth.QuillPale);
 		hits.Add(btn, () => Change(c => c.ModVillagerScope = Scopes[(index + 1) % Scopes.Length]), _detail);
 		ry += rowH;
 		foreach (string mod in mods)
@@ -260,13 +278,13 @@ internal sealed class NpcCompatPage : ShellPage
 
 	private void SwitchRow(SpriteBatch b, Rectangle r, string label, string note, bool on, Hits hits, Action toggle)
 	{
-		if (AisvTheme.Hover(r, _detail))
+		if (Hearth.Hover(r, _detail))
 		{
-			AisvTheme.FillRounded(b, AisvTheme.Inflate(r, -2), AisvTheme.SelectedRow, 10);
+			Hearth.FillRounded(b, Hearth.Inflate(r, -2), Hearth.Honey, 10);
 		}
-		AisvTheme.DrawText(b, AisvTheme.Truncate(label, r.Width - 120, 0.86f), new Vector2(r.X + 20, r.Y + 10), AisvTheme.Text, 0.86f);
-		AisvTheme.DrawText(b, AisvTheme.Truncate(note, r.Width - 120, 0.68f), new Vector2(r.X + 20, r.Y + 38), AisvTheme.TextFaint, 0.68f);
-		AisvTheme.Toggle(b, new Rectangle(r.Right - 20 - 64, r.Center.Y - 18, 64, 36), on);
+		Hearth.Ink(b, Hearth.Truncate(label, r.Width - 120, 0.86f), new Vector2(r.X + 20, r.Y + 10), Hearth.Quill, 0.86f);
+		Hearth.Ink(b, Hearth.Truncate(note, r.Width - 120, 0.68f), new Vector2(r.X + 20, r.Y + 38), Hearth.QuillPale, 0.68f);
+		Hearth.Latch(b, new Rectangle(r.Right - 20 - 64, r.Center.Y - 18, 64, 36), on);
 		hits.Add(r, toggle, _detail);
 	}
 }

@@ -459,12 +459,12 @@ internal sealed class MapGroupChat : IGroupView
 		int keyW = (int)ks.X + 20;
 		int w = keyW + 12 + (int)ts.X + 24;
 		Rectangle r = new Rectangle(Game1.uiViewport.Width / 2 - w / 2, Game1.uiViewport.Height - 168, w, 40);
-		AisvTheme.DrawShadow(b, r, 20, 3);
-		AisvTheme.Bordered(b, r, AisvTheme.Card * 0.95f, AisvTheme.CardBorder, 20);
+		Hearth.CastShadow(b, r, 20, 3);
+		Hearth.Bordered(b, r, Hearth.Slip * 0.95f, Hearth.SlipEdge, 20);
 		Rectangle k = new Rectangle(r.X + 8, r.Y + 6, keyW, r.Height - 12);
-		AisvTheme.FillRounded(b, k, AisvTheme.Accent, 8);
-		AisvTheme.DrawText(b, key, new Vector2(k.Center.X - ks.X / 2f, k.Center.Y - ks.Y / 2f + 2f), Color.White, scale);
-		AisvTheme.DrawText(b, text, new Vector2(k.Right + 12, r.Center.Y - ts.Y / 2f + 2f), AisvTheme.TextMuted, scale);
+		Hearth.FillRounded(b, k, Hearth.Leaf, 8);
+		Hearth.Ink(b, key, new Vector2(k.Center.X - ks.X / 2f, k.Center.Y - ks.Y / 2f + 2f), Color.White, scale);
+		Hearth.Ink(b, text, new Vector2(k.Right + 12, r.Center.Y - ts.Y / 2f + 2f), Hearth.QuillSoft, scale);
 	}
 
 	private static float Fade(Bubble bubble) => (float)Math.Clamp(Math.Min(bubble.Elapsed / 150.0, (bubble.Duration - bubble.Elapsed) / 250.0), 0, 1);
@@ -474,15 +474,15 @@ internal sealed class MapGroupChat : IGroupView
 		const int w = 84, h = 40;
 		int x = Math.Clamp((int)anchor.X - w / 2, 8, Math.Max(8, Game1.uiViewport.Width - w - 8));
 		Rectangle r = new Rectangle(x, Math.Max(8, (int)anchor.Y - h - 14), w, h);
-		if (!avoid.IsEmpty && r.Intersects(AisvTheme.Inflate(avoid, 6)))
+		if (!avoid.IsEmpty && r.Intersects(Hearth.Inflate(avoid, 6)))
 		{
 			r.Y = Math.Max(8, avoid.Y - h - 10);
 		}
-		AisvTheme.DrawShadow(b, r, 12, 4);
-		AisvTheme.Bordered(b, r, AisvTheme.Card, AisvTheme.CardBorder, 12);
+		Hearth.CastShadow(b, r, 12, 4);
+		Hearth.Bordered(b, r, Hearth.Slip, Hearth.SlipEdge, 12);
 		for (int i = 0; i < 3; i++)
 		{
-			AisvTheme.FillRounded(b, new Rectangle(r.X + 18 + i * 18, r.Center.Y - 5, 10, 10), i < _dots ? AisvTheme.Accent : AisvTheme.CardBorder, 5);
+			Hearth.FillRounded(b, new Rectangle(r.X + 18 + i * 18, r.Center.Y - 5, 10, 10), i < _dots ? Hearth.Leaf : Hearth.SlipEdge, 5);
 		}
 	}
 }

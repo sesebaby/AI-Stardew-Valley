@@ -56,7 +56,7 @@ internal sealed class GatewayPage : ShellPage
 	{
 		ModConfig c = ctx.Config();
 		_url = Field(c.CustomLlmBaseUrl, 300, "https://example.com/v1");
-		_key = Field(c.CustomLlmApiKey, 300, Tr.Get("gateway.keyHint", "本地模型不需要可以留空"));
+		_key = Field(c.CustomLlmApiKey, 1000, Tr.Get("gateway.keyHint", "本地模型可以留空；有几把就用逗号隔开，一把不行自动换下一把"));
 		_key.Masked = true;
 		_model = Field(c.CustomLlmModel, 120, Tr.Get("gateway.modelHint", "比如 deepseek-chat"));
 		_backups = Field(c.ChatBackupModels, 300, Tr.Get("gateway.backupsHint", "主模型失败时依次换，用逗号隔开，可以留空"));
@@ -146,7 +146,7 @@ internal sealed class GatewayPage : ShellPage
 		_view = area;
 		ModConfig c = Ctx.Config();
 		bool server = Ctx.UsesServer();
-		AisvTheme.BeginClip(b, area);
+		Hearth.BeginClip(b, area);
 		int w = Math.Min(area.Width - 64, 820);
 		int x = area.X + (area.Width - w) / 2;
 		int y = area.Y + 18 - _scroll.Offset;
@@ -159,7 +159,7 @@ internal sealed class GatewayPage : ShellPage
 		y = Section(b, Tr.Get("gateway.replies", "回复"), x, y);
 		y = Number(b, hits, Tr.Get("gateway.replyLength", "村民每句话最多几个字"), ReplyLengths, c.ReplyLength, (m, v) => m.ReplyLength = v, "{0}", x, y, w);
 		y = Number(b, hits, Tr.Get("gateway.memory", "带给 AI 的对话记录条数"), Memories, c.RecentTurnsInPrompt, (m, v) => m.RecentTurnsInPrompt = v, "{0}", x, y, w);
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, area, y + 20);
 	}
 
@@ -189,18 +189,19 @@ internal sealed class GatewayPage : ShellPage
 	private int DrawOwn(SpriteBatch b, Hits hits, ModConfig c, int x, int y, int w)
 	{
 		y = Section(b, Tr.Get("gateway.ownGroup", "我的网关（OpenAI 兼容接口）"), x, y);
+		y = Presets(b, hits, x, y, w);
 		y = Input(b, hits, Tr.Get("gateway.url", "网关地址"), _url, x, y, w);
 		y = Input(b, hits, Tr.Get("gateway.key", "密钥"), _key, x, y, w);
 		y = Input(b, hits, Tr.Get("gateway.model", "对话模型"), _model, x, y, w);
 		Rectangle test = new Rectangle(x, y, 200, 48);
-		AisvTheme.Button(b, test, _testing ? Tr.Get("gateway.testing", "正在测试……") : Tr.Get("gateway.test", "测试连接"), primary: true, hover: AisvTheme.Hover(test, _view), disabled: _testing);
+		Hearth.PressPlate(b, test, _testing ? Tr.Get("gateway.testing", "正在测试……") : Tr.Get("gateway.test", "测试连接"), primary: true, hover: Hearth.Hover(test, _view), disabled: _testing);
 		hits.Add(test, Test, _view);
 		y = test.Bottom + 10;
 		if (_result.Length > 0)
 		{
-			string wrapped = AisvTheme.Wrap(_result, w);
-			b.DrawString(Game1.smallFont, wrapped, new Vector2(x, y), _resultOk ? AisvTheme.AccentDark : AisvTheme.Danger);
-			y += wrapped.Split('\n').Length * AisvTheme.LineHeight() + 8;
+			string wrapped = Hearth.Wrap(_result, w);
+			b.DrawString(Game1.smallFont, wrapped, new Vector2(x, y), _resultOk ? Hearth.LeafDeep : Hearth.Berry);
+			y += wrapped.Split('\n').Length * Hearth.LineHeight() + 8;
 		}
 		y += 10;
 		y = Input(b, hits, Tr.Get("gateway.backups", "对话备用模型"), _backups, x, y, w);
@@ -217,6 +218,44 @@ internal sealed class GatewayPage : ShellPage
 		return Toggle(b, hits, Tr.Get("gateway.log", "把 AI 收发的全文写进日志"), c.LogAiTraffic, (m, v) => m.LogAiTraffic = v, x, y, w);
 	}
 
+	/// <summary>常见的本地模型程序：只填地址，模型名要看你自己装了哪个。</summary>
+	private static readonly (string Name, string Url)[] LocalPrograms =
+	{
+		("Ollama", "http://localhost:11434/v1"),
+		("LM Studio", "http://localhost:1234/v1"),
+		("llama.cpp", "http://localhost:8080/v1"),
+		("KoboldCpp", "http://localhost:5001/v1")
+	};
+
+	private int Presets(SpriteBatch b, Hits hits, int x, int y, int w)
+	{
+		Hearth.Ink(b, Tr.Get("gateway.local", "本地模型：点一下填好地址"), new Vector2(x + 2, y), Hearth.QuillSoft, 0.8f);
+		y += 30;
+		int bx = x;
+		foreach ((string name, string url) in LocalPrograms)
+		{
+			int bw = (int)Hearth.Width(name, 0.8f) + 36;
+			if (bx + bw > x + w)
+			{
+				bx = x;
+				y += 52;
+			}
+			Rectangle r = new Rectangle(bx, y, bw, 44);
+			Hearth.PressPlate(b, r, name, hover: Hearth.Hover(r, _view), scale: 0.8f);
+			hits.Add(r, () => UseLocal(url), _view);
+			bx = r.Right + 10;
+		}
+		return y + 60;
+	}
+
+	private void UseLocal(string url)
+	{
+		_url.Text = url;
+		Change(c => c.ChatWaitSeconds = Math.Max(c.ChatWaitSeconds, 60));
+		_result = Tr.Get("gateway.localDone", "地址填好了，等待时间放宽到 60 秒。再填上模型名，点“测试连接”试试。");
+		_resultOk = true;
+	}
+
 	private static string Thinking(string v) => v switch
 	{
 		"auto" => Tr.Get("gateway.level.auto", "自动"),
@@ -229,14 +268,14 @@ internal sealed class GatewayPage : ShellPage
 
 	private static int Section(SpriteBatch b, string title, int x, int y)
 	{
-		AisvTheme.DrawText(b, title, new Vector2(x + 6, y + 8), AisvTheme.TextFaint, 0.75f);
+		Hearth.Ink(b, title, new Vector2(x + 6, y + 8), Hearth.QuillPale, 0.75f);
 		return y + 38;
 	}
 
 	private int Input(SpriteBatch b, Hits hits, string label, TextArea input, int x, int y, int w)
 	{
-		AisvTheme.DrawText(b, label, new Vector2(x + 2, y), AisvTheme.TextMuted, 0.8f);
-		input.Bounds = new Rectangle(x, y + 28, w, AisvTheme.LineHeight() + 24);
+		Hearth.Ink(b, label, new Vector2(x + 2, y), Hearth.QuillSoft, 0.8f);
+		input.Bounds = new Rectangle(x, y + 28, w, Hearth.LineHeight() + 24);
 		input.Draw(b);
 		hits.Add(input.Bounds, () => _fields.Focus(input), _view);
 		return input.Bounds.Bottom + 12;
@@ -246,11 +285,11 @@ internal sealed class GatewayPage : ShellPage
 	{
 		int index = Math.Max(0, Array.IndexOf(values, current));
 		string text = format(values[index]);
-		int bw = (int)AisvTheme.Width(text, 0.8f) + 56;
+		int bw = (int)Hearth.Width(text, 0.8f) + 56;
 		Rectangle btn = new Rectangle(x + w - bw, y + 8, bw, 44);
 		Label(b, label, note, x, y, w - bw - 16);
-		AisvTheme.Button(b, btn, text, hover: AisvTheme.Hover(btn, _view), scale: 0.8f);
-		AisvTheme.Chevron(b, new Vector2(btn.Right - 18, btn.Center.Y), left: false, AisvTheme.TextFaint);
+		Hearth.PressPlate(b, btn, text, hover: Hearth.Hover(btn, _view), scale: 0.8f);
+		Hearth.Chevron(b, new Vector2(btn.Right - 18, btn.Center.Y), left: false, Hearth.QuillPale);
 		string next = values[(index + 1) % values.Length];
 		hits.Add(btn, () => Change(c => set(c, next)), _view);
 		return y + 62;
@@ -274,17 +313,17 @@ internal sealed class GatewayPage : ShellPage
 	{
 		Rectangle sw = new Rectangle(x + w - 64, y + 12, 64, 36);
 		Label(b, label, "", x, y, w - 80);
-		AisvTheme.Toggle(b, sw, on);
+		Hearth.Latch(b, sw, on);
 		hits.Add(sw, () => Change(c => set(c, !on)), _view);
 		return y + 62;
 	}
 
 	private static void Label(SpriteBatch b, string label, string note, int x, int y, int w)
 	{
-		AisvTheme.DrawText(b, label, new Vector2(x + 2, note.Length > 0 ? y + 2 : y + 16), AisvTheme.Text, 0.85f);
+		Hearth.Ink(b, label, new Vector2(x + 2, note.Length > 0 ? y + 2 : y + 16), Hearth.Quill, 0.85f);
 		if (note.Length > 0)
 		{
-			AisvTheme.DrawText(b, AisvTheme.Truncate(note, w, 0.7f), new Vector2(x + 2, y + 30), AisvTheme.TextFaint, 0.7f);
+			Hearth.Ink(b, Hearth.Truncate(note, w, 0.7f), new Vector2(x + 2, y + 30), Hearth.QuillPale, 0.7f);
 		}
 	}
 }

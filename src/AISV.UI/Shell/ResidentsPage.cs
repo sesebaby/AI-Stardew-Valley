@@ -146,7 +146,7 @@ internal sealed class ResidentsPage : ShellPage
 		ResidentsService? service = Service;
 		Rectangle header = new Rectangle(area.X, area.Y, area.Width, 72);
 		DrawHeader(b, header, service);
-		int composeH = 28 + AisvTheme.LineHeight() * 2 + 44;
+		int composeH = 28 + Hearth.LineHeight() * 2 + 44;
 		Rectangle compose = new Rectangle(area.X, area.Bottom - composeH, area.Width, composeH);
 		Rectangle list = new Rectangle(area.X + 12, header.Bottom + 4, area.Width - 24, compose.Y - header.Bottom - 8);
 		DrawMessages(b, list, service, hits);
@@ -188,22 +188,22 @@ internal sealed class ResidentsPage : ShellPage
 
 	private void DrawHeader(SpriteBatch b, Rectangle r, ResidentsService? service)
 	{
-		AisvTheme.Fill(b, r, AisvTheme.PageDeep);
-		AisvTheme.HLine(b, r.X, r.Bottom - 2, r.Width, AisvTheme.Divider);
+		Hearth.Fill(b, r, Hearth.ParchmentDeep);
+		Hearth.HLine(b, r.X, r.Bottom - 2, r.Width, Hearth.Seam);
 		string title = Tr.Get("residents.title", "居民群");
-		AisvTheme.Bold(b, title, new Vector2(r.X + 20, r.Y + 12), AisvTheme.Text, 1.05f);
-		int titleW = (int)AisvTheme.Width(title, 1.05f);
+		Hearth.InkBold(b, title, new Vector2(r.X + 20, r.Y + 12), Hearth.Quill, 1.05f);
+		int titleW = (int)Hearth.Width(title, 1.05f);
 		string invite = Tr.Get("residents.invite", "本群群号：1464326733，欢迎鹈鹕镇居民加入");
 		Vector2 inviteSize = invite.Length == 0 ? Vector2.Zero : Game1.smallFont.MeasureString(invite) * 0.9f;
 		int inviteW = invite.Length == 0 ? 0 : (int)inviteSize.X + 24;
 		if (inviteW > 0)
 		{
 			Rectangle chip = new Rectangle(r.X + 20 + titleW + 14, r.Y + 8, inviteW, (int)inviteSize.Y + 8);
-			AisvTheme.FillRounded(b, chip, InviteColor, chip.Height / 2);
-			AisvTheme.Bold(b, invite, new Vector2(chip.X + 12, chip.Y + 4), Color.White, 0.9f);
+			Hearth.FillRounded(b, chip, InviteColor, chip.Height / 2);
+			Hearth.InkBold(b, invite, new Vector2(chip.X + 12, chip.Y + 4), Color.White, 0.9f);
 		}
 		string sub = service == null ? "" : Tr.Get("residents.sub", "{{count}} 位居民 · 今天还能发 {{left}} 条", ("count", _members.Count), ("left", service.PostsLeft));
-		AisvTheme.DrawText(b, sub, new Vector2(r.X + 20, r.Y + 44), AisvTheme.TextFaint, 0.72f);
+		Hearth.Ink(b, sub, new Vector2(r.X + 20, r.Y + 44), Hearth.QuillPale, 0.72f);
 		int slots = Math.Max(0, (r.Width - titleW - (inviteW > 0 ? inviteW + 14 : 0) - 120) / (AvatarSize + 6));
 		slots = Math.Min(slots, 10);
 		int x = r.Right - 16 - AvatarSize;
@@ -214,12 +214,12 @@ internal sealed class ResidentsPage : ShellPage
 			bool more = i == slots - 1 && _members.Count > slots;
 			if (more)
 			{
-				AisvTheme.Glyph(b, a, AisvTheme.AccentSoft, "+" + (_members.Count - slots + 1));
+				Hearth.Glyph(b, a, Hearth.LeafPale, "+" + (_members.Count - slots + 1));
 			}
 			else
 			{
 				NPC npc = _members[i];
-				AisvTheme.Avatar(b, a, npc, Ctx.Display(npc.Name));
+				Hearth.Cameo(b, a, npc, Ctx.Display(npc.Name));
 			}
 		}
 	}
@@ -227,13 +227,13 @@ internal sealed class ResidentsPage : ShellPage
 	private void DrawMessages(SpriteBatch b, Rectangle view, ResidentsService? service, Hits hits)
 	{
 		IReadOnlyList<ResidentsMessage> messages = service?.Messages ?? Array.Empty<ResidentsMessage>();
-		int lh = AisvTheme.LineHeight();
+		int lh = Hearth.LineHeight();
 		int bubbleMax = Math.Max(240, (int)(view.Width * 0.62f));
-		AisvTheme.BeginClip(b, view);
+		Hearth.BeginClip(b, view);
 		int y = view.Y + 12 - _scroll.Offset;
 		if (messages.Count == 0)
 		{
-			AisvTheme.TextCentered(b, Tr.Get("residents.emptyThread", "群里还没人说话，打个招呼吧"), new Rectangle(view.X, view.Y + 40, view.Width, 40), AisvTheme.TextFaint, 0.85f);
+			Hearth.InkMiddle(b, Tr.Get("residents.emptyThread", "群里还没人说话，打个招呼吧"), new Rectangle(view.X, view.Y + 40, view.Width, 40), Hearth.QuillPale, 0.85f);
 		}
 		string lastDay = "";
 		foreach (ResidentsMessage m in messages)
@@ -243,30 +243,30 @@ internal sealed class ResidentsPage : ShellPage
 			{
 				lastDay = day;
 				string label = Tr.Get("residents.date", "第 {{year}} 年{{season}} {{day}} 日", ("year", m.Year), ("season", HistoryFormatter.SeasonName(m.Season)), ("day", m.Day));
-				int cw = AisvTheme.ChipWidth(label, 0.7f);
-				AisvTheme.Chip(b, new Vector2(view.Center.X - cw / 2, y), label, AisvTheme.Divider, AisvTheme.TextMuted, 0.7f);
+				int cw = Hearth.TagWidth(label, 0.7f);
+				Hearth.Tag(b, new Vector2(view.Center.X - cw / 2, y), label, Hearth.Seam, Hearth.QuillSoft, 0.7f);
 				y += 40;
 			}
-			string wrapped = AisvTheme.Wrap(m.Text, bubbleMax - 32);
+			string wrapped = Hearth.Wrap(m.Text, bubbleMax - 32);
 			Vector2 size = Game1.smallFont.MeasureString(wrapped);
 			int w = Math.Max(72, (int)size.X + 32);
 			int h = wrapped.Split('\n').Length * lh + 22;
 			if (m.IsPlayer)
 			{
 				Rectangle r = new Rectangle(view.Right - 20 - w, y, w, h);
-				AisvTheme.Bordered(b, r, new Color(214, 236, 190), new Color(139, 186, 102), 12);
-				AisvTheme.DrawText(b, wrapped, new Vector2(r.X + 16, r.Y + 11), AisvTheme.Text);
+				Hearth.Bordered(b, r, new Color(214, 236, 190), new Color(139, 186, 102), 12);
+				Hearth.Ink(b, wrapped, new Vector2(r.X + 16, r.Y + 11), Hearth.Quill);
 				y += h + 14;
 			}
 			else
 			{
 				NPC? npc = Game1.getCharacterFromName(m.Speaker);
 				Rectangle avatar = new Rectangle(view.X + 6, y, AvatarSize, AvatarSize);
-				AisvTheme.Avatar(b, avatar, npc, Ctx.Display(m.Speaker));
-				AisvTheme.DrawText(b, Ctx.Display(m.Speaker) + "  " + Clock(m.Time), new Vector2(avatar.Right + 12, y - 2), AisvTheme.TextFaint, 0.68f);
+				Hearth.Cameo(b, avatar, npc, Ctx.Display(m.Speaker));
+				Hearth.Ink(b, Ctx.Display(m.Speaker) + "  " + Clock(m.Time), new Vector2(avatar.Right + 12, y - 2), Hearth.QuillPale, 0.68f);
 				Rectangle r = new Rectangle(avatar.Right + 10, y + 22, w, h);
-				AisvTheme.Bordered(b, r, AisvTheme.Card, AisvTheme.CardBorder, 12);
-				AisvTheme.DrawText(b, wrapped, new Vector2(r.X + 16, r.Y + 11), AisvTheme.Text);
+				Hearth.Bordered(b, r, Hearth.Slip, Hearth.SlipEdge, 12);
+				Hearth.Ink(b, wrapped, new Vector2(r.X + 16, r.Y + 11), Hearth.Quill);
 				y += h + 22 + 14;
 			}
 		}
@@ -287,10 +287,10 @@ internal sealed class ResidentsPage : ShellPage
 		if (service?.TypingSpeaker is string typing)
 		{
 			string text = typing.Length == 0 ? Tr.Get("residents.thinking", "大家在看消息……") : Tr.Get("residents.typing", "{{name}}正在输入……", ("name", Ctx.Display(typing)));
-			AisvTheme.DrawText(b, text, new Vector2(view.X + 16, y), AisvTheme.TextFaint, 0.75f);
+			Hearth.Ink(b, text, new Vector2(view.X + 16, y), Hearth.QuillPale, 0.75f);
 			y += 32;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		int bottom = y + 8;
 		_scroll.Finish(b, view, bottom);
 		if (_stick)
@@ -301,10 +301,10 @@ internal sealed class ResidentsPage : ShellPage
 
 	private void DrawCompose(SpriteBatch b, Rectangle r, Hits hits, ResidentsService? service)
 	{
-		AisvTheme.HLine(b, r.X, r.Y, r.Width, AisvTheme.Divider);
+		Hearth.HLine(b, r.X, r.Y, r.Width, Hearth.Seam);
 		if (_status.Length > 0)
 		{
-			AisvTheme.DrawText(b, _status, new Vector2(r.X + 20, r.Y + 8), AisvTheme.Warn, 0.72f);
+			Hearth.Ink(b, _status, new Vector2(r.X + 20, r.Y + 8), Hearth.Rust, 0.72f);
 		}
 		const int bw = 112;
 		Rectangle send = new Rectangle(r.Right - 20 - bw, r.Bottom - 16 - 48, bw, 48);
@@ -312,9 +312,9 @@ internal sealed class ResidentsPage : ShellPage
 		_box.Draw(b);
 		string count = _box.Text.Length + "/" + ResidentsGroup.MaxPostChars;
 		Vector2 cs = Game1.smallFont.MeasureString(count) * 0.7f;
-		AisvTheme.DrawText(b, count, new Vector2(_box.Bounds.Right - cs.X - 12, _box.Bounds.Bottom - cs.Y - 6), AisvTheme.TextFaint, 0.7f);
+		Hearth.Ink(b, count, new Vector2(_box.Bounds.Right - cs.X - 12, _box.Bounds.Bottom - cs.Y - 6), Hearth.QuillPale, 0.7f);
 		bool canSend = service != null && ResidentsGroup.Check(_box.Text, service.IsAiAvailable, service.IsBusy, service.PostsLeft, _members.Count) == ResidentsBlock.None || Ctx.Ai?.NeedsLogin == true;
-		AisvTheme.Button(b, send, Tr.Get("reply.send", "发送"), primary: true, hover: AisvTheme.Hover(send), disabled: !canSend);
+		Hearth.PressPlate(b, send, Tr.Get("reply.send", "发送"), primary: true, hover: Hearth.Hover(send), disabled: !canSend);
 		hits.Add(_box.Bounds, () => _box.Focus());
 		hits.Add(send, Send);
 	}

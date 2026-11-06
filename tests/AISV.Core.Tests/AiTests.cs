@@ -188,6 +188,72 @@ public class AiTests
 	}
 
 	[Fact]
+	public async Task BadKeyMovesToTheNextAndStaysThere()
+	{
+		(AiService ai, FakeHttp http, _) = Own(new ModConfig { AiConnectionMode = "own", CustomLlmBaseUrl = "http://gw.test/v1", CustomLlmApiKey = "one, two" });
+		http.Reply(HttpStatusCode.Unauthorized, "{\"error\":{\"message\":\"bad key\"}}").Reply(HttpStatusCode.OK, FakeHttp.Chat("hi")).Reply(HttpStatusCode.OK, FakeHttp.Chat("again"));
+		Assert.True((await ai.SendAsync(Req())).Ok);
+		Assert.True((await ai.SendAsync(Req())).Ok);
+		Assert.Equal(new[] { "Bearer one", "Bearer two", "Bearer two" }, http.Requests.ConvertAll(r => r.Headers["Authorization"]));
+		Assert.Equal(0, ai.FailedToday);
+	}
+
+	[Fact]
+	public async Task AllKeysBadStopsAfterOneRound()
+	{
+		(AiService ai, FakeHttp http, _) = Own(new ModConfig { AiConnectionMode = "own", CustomLlmBaseUrl = "http://gw.test/v1", CustomLlmApiKey = "one,two" });
+		http.Reply(HttpStatusCode.Forbidden, "{}").Reply(HttpStatusCode.Unauthorized, "{}");
+		Assert.False((await ai.SendAsync(Req())).Ok);
+		Assert.Equal(2, http.Requests.Count);
+	}
+
+	[Fact]
+	public void KeyListAcceptsAnySeparatorAndDropsRepeats()
+	{
+		Assert.Equal(new[] { "a", "b", "c" }, KeyRing.Split("a, b；c\na"));
+		Assert.Empty(KeyRing.Split(" "));
+		Assert.Equal("", new KeyRing().Current(""));
+	}
+
+	[Fact]
+	public void TwoRequestsFailingOnTheSameKeyDoNotTurnBackToIt()
+	{
+		KeyRing ring = new KeyRing();
+		ring.MoveOff("a,b", "a");
+		ring.MoveOff("a,b", "a");
+		Assert.Equal("b", ring.Current("a,b"));
+	}
+
+	[Fact]
+	public async Task EchoedKeyIsHiddenFromTheFailureMessage()
+	{
+		(AiService ai, FakeHttp http, _) = Own(new ModConfig { AiConnectionMode = "own", CustomLlmBaseUrl = "http://gw.test/v1", CustomLlmApiKey = "secret-key-1" });
+		http.Reply(HttpStatusCode.Unauthorized, "{\"error\":{\"message\":\"bad key secret-key-1\"}}");
+		AiResult r = await ai.SendAsync(Req());
+		Assert.DoesNotContain("secret-key-1", r.Message);
+	}
+
+	[Fact]
+	public async Task ConnectionTestSaysWhenAKeyHadToBeSkipped()
+	{
+		(AiService ai, FakeHttp http, _) = Own(new ModConfig { AiConnectionMode = "own", CustomLlmBaseUrl = "http://gw.test/v1", CustomLlmApiKey = "one,two" });
+		http.Reply(HttpStatusCode.Unauthorized, "{}").Reply(HttpStatusCode.OK, FakeHttp.Chat("好"));
+		Assert.True((await ai.SendAsync(new ChatRequest("connection_test", "s", "u", 64, 0.1))).Ok);
+		Assert.Equal(1, ai.BadKeysInLastTest);
+	}
+
+	[Fact]
+	public async Task TalliesCountCallsAndFailures()
+	{
+		(AiService ai, FakeHttp http, _) = Own();
+		http.Reply(HttpStatusCode.OK, FakeHttp.Chat("hi")).Reply(HttpStatusCode.Unauthorized, "{}");
+		await ai.SendAsync(Req());
+		await ai.SendAsync(Req());
+		RequestTally tally = Assert.Single(ai.Tallies);
+		Assert.Equal(("npc_dialogue", 2, 1), (tally.Name, tally.Calls, tally.Failures));
+	}
+
+	[Fact]
 	public async Task DoesNotFallBackOnInvalidKey()
 	{
 		(AiService ai, FakeHttp http, _) = Own();

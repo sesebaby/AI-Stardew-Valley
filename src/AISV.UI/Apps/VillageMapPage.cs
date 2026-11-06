@@ -47,13 +47,17 @@ internal sealed class VillageMapPage : ShellPage
 
 	public override void Scroll(int direction)
 	{
-		if (AisvTheme.Hover(_list))
+		if (Hearth.Hover(_list))
 		{
 			_listScroll.Wheel(direction);
 		}
 		else if (_person == null)
 		{
 			_overviewScroll.Wheel(direction);
+		}
+		else
+		{
+			_personScroll.Wheel(direction);
 		}
 	}
 
@@ -83,9 +87,33 @@ internal sealed class VillageMapPage : ShellPage
 			Kit.Empty(b, new Rectangle(area.X, area.Y + area.Height / 3, area.Width, 80), Tr.Get("web.empty", "村民之间还没什么来往"), Tr.Get("web.emptyHint", "在镇上过几天，等他们碰过几次面再来看。"));
 			return;
 		}
+		if (Flip.Applies(area))
+		{
+			_flip.Draw(b, area, hits, r =>
+			{
+				_list = Hearth.Inflate(r, -12);
+				_right = Rectangle.Empty;
+				List(b, hits);
+			}, r =>
+			{
+				_list = Rectangle.Empty;
+				_right = Hearth.Inflate(r, -12);
+				Chosen(b, hits);
+			});
+			return;
+		}
 		_list = new Rectangle(area.X + 12, area.Y + 12, 290, area.Height - 24);
 		_right = new Rectangle(_list.Right + 16, area.Y + 12, area.Right - 12 - _list.Right - 16, area.Height - 24);
 		List(b, hits);
+		Chosen(b, hits);
+	}
+
+	private readonly Flip _flip = new Flip();
+
+	public override bool StepBack() => _flip.StepBack();
+
+	private void Chosen(SpriteBatch b, Hits hits)
+	{
 		if (_person == null)
 		{
 			Overview(b, hits);
@@ -98,14 +126,14 @@ internal sealed class VillageMapPage : ShellPage
 
 	private void List(SpriteBatch b, Hits hits)
 	{
-		AisvTheme.Bordered(b, _list, AisvTheme.PageDeep, AisvTheme.Divider, 12);
-		Rectangle view = AisvTheme.Inflate(_list, -6);
-		AisvTheme.BeginClip(b, view);
+		Hearth.Bordered(b, _list, Hearth.ParchmentDeep, Hearth.Seam, 12);
+		Rectangle view = Hearth.Inflate(_list, -6);
+		Hearth.BeginClip(b, view);
 		int y = view.Y + 4 - _listScroll.Offset;
 		Rectangle focus = new Rectangle(view.X + 4, y, view.Width - 18, 60);
 		Row(b, focus, null, Tr.Get("web.focus", "焦点"), Tr.Get("web.focusSub", "最亲和最僵的几对"), hits, view);
 		y = focus.Bottom + 10;
-		AisvTheme.HLine(b, view.X + 14, y, view.Width - 40, AisvTheme.Divider);
+		Hearth.HLine(b, view.X + 14, y, view.Width - 40, Hearth.Seam);
 		y += 12;
 		foreach (string p in _model.People)
 		{
@@ -117,7 +145,7 @@ internal sealed class VillageMapPage : ShellPage
 			}
 			y += 64;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_listScroll.Finish(b, view, y, 6);
 	}
 
@@ -126,39 +154,39 @@ internal sealed class VillageMapPage : ShellPage
 		bool selected = Same(npc, _person);
 		if (selected)
 		{
-			AisvTheme.FillRounded(b, r, AisvTheme.Card, 10);
-			AisvTheme.FillRounded(b, new Rectangle(r.X, r.Y + 12, 4, r.Height - 24), AisvTheme.Accent, 2);
+			Hearth.FillRounded(b, r, Hearth.Slip, 10);
+			Hearth.FillRounded(b, new Rectangle(r.X, r.Y + 12, 4, r.Height - 24), Hearth.Leaf, 2);
 		}
-		else if (AisvTheme.Hover(r, clip))
+		else if (Hearth.Hover(r, clip))
 		{
-			AisvTheme.FillRounded(b, r, AisvTheme.Card * 0.6f, 10);
+			Hearth.FillRounded(b, r, Hearth.Slip * 0.6f, 10);
 		}
 		Rectangle icon = new Rectangle(r.X + 12, r.Y + 8, 44, 44);
 		if (npc == null)
 		{
-			AisvTheme.FillRounded(b, icon, new Color(252, 230, 238), 10);
+			Hearth.FillRounded(b, icon, new Color(252, 230, 238), 10);
 			AppIcons.Web.Draw(b, icon.X + 6, icon.Y + 6, 2);
 		}
 		else
 		{
 			Kit.Avatar(b, icon, Ctx, npc);
 		}
-		AisvTheme.Bold(b, AisvTheme.Truncate(name, r.Right - icon.Right - 22, 0.82f), new Vector2(icon.Right + 12, r.Y + 8), AisvTheme.Text, 0.82f);
-		AisvTheme.DrawText(b, AisvTheme.Truncate(sub, r.Right - icon.Right - 22, 0.66f), new Vector2(icon.Right + 12, r.Y + 34), AisvTheme.TextFaint, 0.66f);
+		Hearth.InkBold(b, Hearth.Truncate(name, r.Right - icon.Right - 22, 0.82f), new Vector2(icon.Right + 12, r.Y + 8), Hearth.Quill, 0.82f);
+		Hearth.Ink(b, Hearth.Truncate(sub, r.Right - icon.Right - 22, 0.66f), new Vector2(icon.Right + 12, r.Y + 34), Hearth.QuillPale, 0.66f);
 		hits.Add(r, () => Pick(npc), clip);
 	}
 
 	private void Overview(SpriteBatch b, Hits hits)
 	{
-		AisvTheme.BeginClip(b, _right);
+		Hearth.BeginClip(b, _right);
 		int x = _right.X + 12, w = _right.Width - 36;
 		int y = _right.Y + 8 - _overviewScroll.Offset;
-		AisvTheme.DrawText(b, Tr.Get("web.caption", "亲疏远近、恩怨暗恋，都画在这张图上。"), new Vector2(x, y), AisvTheme.TextMuted, 0.78f);
+		Hearth.Ink(b, Tr.Get("web.caption", "亲疏远近、恩怨暗恋，都画在这张图上。"), new Vector2(x, y), Hearth.QuillSoft, 0.78f);
 		y += 44;
 		y = Section(b, Tr.Get("web.topBonds", "最要好的"), _model.TopBonds, Tr.Get("web.noBonds", "还没有特别要好的朋友或情侣。"), x, y, w, hits);
 		y += 18;
 		y = Section(b, Tr.Get("web.topFeuds", "最僵的"), _model.TopFeuds, Tr.Get("web.noFeuds", "镇上一团和气，眼下没人闹别扭。"), x, y, w, hits);
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_overviewScroll.Finish(b, _right, y, 4);
 	}
 
@@ -169,8 +197,8 @@ internal sealed class VillageMapPage : ShellPage
 		if (ties.Count == 0)
 		{
 			Rectangle r = new Rectangle(x, y, w, 64);
-			AisvTheme.FillRounded(b, r, AisvTheme.PageDeep, 12);
-			AisvTheme.TextCentered(b, empty, r, AisvTheme.TextFaint, 0.76f);
+			Hearth.FillRounded(b, r, Hearth.ParchmentDeep, 12);
+			Hearth.InkMiddle(b, empty, r, Hearth.QuillPale, 0.76f);
 			return r.Bottom;
 		}
 		foreach (Tie t in ties)
@@ -185,26 +213,26 @@ internal sealed class VillageMapPage : ShellPage
 	private void PairCard(SpriteBatch b, Rectangle r, Tie t, Hits hits)
 	{
 		Color c = BondColor(t.Bond);
-		bool hover = AisvTheme.Hover(r, _right);
-		AisvTheme.Bordered(b, r, AisvTheme.Card, hover ? c : AisvTheme.CardBorder, 14);
+		bool hover = Hearth.Hover(r, _right);
+		Hearth.Bordered(b, r, Hearth.Slip, hover ? c : Hearth.SlipEdge, 14);
 		Rectangle a = new Rectangle(r.X + 20, r.Y + 20, 72, 72), bb = new Rectangle(r.X + 20 + 72 + 80, r.Y + 20, 72, 72);
-		AisvTheme.Line(b, new Vector2(a.Right + 4, a.Center.Y), new Vector2(bb.X - 4, bb.Center.Y), c, 4f);
+		Hearth.Line(b, new Vector2(a.Right + 4, a.Center.Y), new Vector2(bb.X - 4, bb.Center.Y), c, 4f);
 		Rectangle knot = new Rectangle((a.Right + bb.X) / 2 - 12, a.Center.Y - 12, 24, 24);
-		AisvTheme.FillRounded(b, knot, c, 12);
+		Hearth.FillRounded(b, knot, c, 12);
 		if (VillageMap.IsRomantic(t.Bond))
 		{
-			AisvTheme.Heart(b, new Rectangle(knot.X + 5, knot.Y + 6, 14, 12));
+			Hearth.Heart(b, new Rectangle(knot.X + 5, knot.Y + 6, 14, 12));
 		}
 		Kit.Avatar(b, a, Ctx, t.A);
 		Kit.Avatar(b, bb, Ctx, t.B);
 		int tx = bb.Right + 28;
-		AisvTheme.Bold(b, AisvTheme.Truncate(Ctx.Display(t.A) + " · " + Ctx.Display(t.B), r.Right - tx - 160, 0.88f), new Vector2(tx, r.Y + 18), AisvTheme.Text, 0.88f);
-		AisvTheme.Chip(b, new Vector2(tx, r.Y + 54), BondName(t.Bond), Color.Lerp(c, Color.White, 0.8f), Color.Lerp(c, AisvTheme.Text, 0.4f), 0.7f);
+		Hearth.InkBold(b, Hearth.Truncate(Ctx.Display(t.A) + " · " + Ctx.Display(t.B), r.Right - tx - 160, 0.88f), new Vector2(tx, r.Y + 18), Hearth.Quill, 0.88f);
+		Hearth.Tag(b, new Vector2(tx, r.Y + 54), BondName(t.Bond), Color.Lerp(c, Color.White, 0.8f), Color.Lerp(c, Hearth.Quill, 0.4f), 0.7f);
 		string memory = t.Memories.FirstOrDefault()?.Summary ?? BondHint(t.Bond);
-		int chipW = AisvTheme.ChipWidth(BondName(t.Bond), 0.7f);
-		AisvTheme.DrawText(b, AisvTheme.Truncate(ShellText.Clean(memory), r.Right - tx - chipW - 30, 0.68f), new Vector2(tx + chipW + 12, r.Y + 58), AisvTheme.TextMuted, 0.68f);
+		int chipW = Hearth.TagWidth(BondName(t.Bond), 0.7f);
+		Hearth.Ink(b, Hearth.Truncate(ShellText.Clean(memory), r.Right - tx - chipW - 30, 0.68f), new Vector2(tx + chipW + 12, r.Y + 58), Hearth.QuillSoft, 0.68f);
 		string pct = VillageMap.IsFeud(t.Bond) ? Tr.Get("web.tensionPct", "紧张 {{value}}%", ("value", (int)Math.Round(t.Tension * 100))) : Tr.Get("web.warmthPct", "亲近 {{value}}%", ("value", (int)Math.Round(t.Warmth * 100)));
-		AisvTheme.DrawText(b, pct, new Vector2(r.Right - 24 - AisvTheme.Width(pct, 0.72f), r.Y + 20), c, 0.72f);
+		Hearth.Ink(b, pct, new Vector2(r.Right - 24 - Hearth.Width(pct, 0.72f), r.Y + 20), c, 0.72f);
 		hits.Add(r, () =>
 		{
 			Game1.playSound("smallSelect");
@@ -217,9 +245,14 @@ internal sealed class VillageMapPage : ShellPage
 	{
 		IReadOnlyList<Tie> ties = VillageMap.TiesOf(_model, npc);
 		int detailW = Math.Clamp(_right.Width * 2 / 5, 340, 460);
-		Rectangle graph = new Rectangle(_right.X, _right.Y, _right.Width - detailW - 16, _right.Height);
-		Rectangle detail = new Rectangle(graph.Right + 16, _right.Y, detailW, _right.Height);
-		AisvTheme.Bordered(b, graph, new Color(250, 247, 238), AisvTheme.Divider, 14);
+		bool stacked = _right.Width < 700;
+		if (stacked)
+		{
+			Hearth.BeginClip(b, _right);
+		}
+		Rectangle graph = stacked ? new Rectangle(_right.X, _right.Y - _personScroll.Offset, _right.Width - 20, 380) : new Rectangle(_right.X, _right.Y, _right.Width - detailW - 16, _right.Height);
+		Rectangle detail = stacked ? new Rectangle(_right.X, graph.Bottom + 16, _right.Width - 20, 560) : new Rectangle(graph.Right + 16, _right.Y, detailW, _right.Height);
+		Hearth.Bordered(b, graph, new Color(250, 247, 238), Hearth.Seam, 14);
 		Graph(b, graph, npc, ties, hits);
 		Tie? sel = ties.FirstOrDefault(t => Same(t.Other(npc), _other)) ?? ties.FirstOrDefault();
 		if (sel != null)
@@ -228,10 +261,17 @@ internal sealed class VillageMapPage : ShellPage
 		}
 		else
 		{
-			AisvTheme.DrawCard(b, detail);
-			AisvTheme.TextCentered(b, Tr.Get("web.noTies", "还没和谁有来往。"), detail, AisvTheme.TextFaint, 0.8f);
+			Hearth.CardSlip(b, detail);
+			Hearth.InkMiddle(b, Tr.Get("web.noTies", "还没和谁有来往。"), detail, Hearth.QuillPale, 0.8f);
+		}
+		if (stacked)
+		{
+			Hearth.EndClip(b);
+			_personScroll.Finish(b, _right, detail.Bottom + 8);
 		}
 	}
+
+	private readonly Scroller _personScroll = new Scroller();
 
 	private void Graph(SpriteBatch b, Rectangle r, string npc, IReadOnlyList<Tie> ties, Hits hits)
 	{
@@ -251,26 +291,26 @@ internal sealed class VillageMapPage : ShellPage
 			bool sel = Same(t.Other(npc), _other);
 			Color color = BondColor(t.Bond) * (sel ? 1f : 0.7f);
 			float thick = 2f + t.Intensity * 5f + (sel ? 2f : 0f);
-			AisvTheme.Line(b, new Vector2(c.X, c.Y), new Vector2(box.Center.X, box.Center.Y), color, thick);
+			Hearth.Line(b, new Vector2(c.X, c.Y), new Vector2(box.Center.X, box.Center.Y), color, thick);
 		}
 		Rectangle center = new Rectangle(c.X - 50, c.Y - 50, 100, 100);
-		AisvTheme.FillRounded(b, AisvTheme.Inflate(center, 6), AisvTheme.Card, 16);
+		Hearth.FillRounded(b, Hearth.Inflate(center, 6), Hearth.Slip, 16);
 		Kit.Avatar(b, center, Ctx, npc);
 		string cn = Ctx.Display(npc);
-		Rectangle tag = new Rectangle(c.X - (int)AisvTheme.Width(cn, 0.8f) / 2 - 12, center.Bottom + 8, (int)AisvTheme.Width(cn, 0.8f) + 24, 32);
-		AisvTheme.FillRounded(b, tag, AisvTheme.Text * 0.85f, 16);
-		AisvTheme.TextCentered(b, cn, tag, Color.White, 0.8f);
+		Rectangle tag = new Rectangle(c.X - (int)Hearth.Width(cn, 0.8f) / 2 - 12, center.Bottom + 8, (int)Hearth.Width(cn, 0.8f) + 24, 32);
+		Hearth.FillRounded(b, tag, Hearth.Quill * 0.85f, 16);
+		Hearth.InkMiddle(b, cn, tag, Color.White, 0.8f);
 		foreach ((Tie t, Rectangle box) in nodes)
 		{
 			string other = t.Other(npc);
 			bool sel = Same(other, _other);
 			Color color = BondColor(t.Bond);
-			AisvTheme.FillRounded(b, AisvTheme.Inflate(box, sel ? 5 : 3), sel ? color : AisvTheme.Card, 12);
+			Hearth.FillRounded(b, Hearth.Inflate(box, sel ? 5 : 3), sel ? color : Hearth.Slip, 12);
 			Kit.Avatar(b, box, Ctx, other);
-			string name = AisvTheme.Truncate(Ctx.Display(other), node + 50, 0.62f);
-			float nw = AisvTheme.Width(name, 0.62f);
-			AisvTheme.DrawText(b, name, new Vector2(box.Center.X - nw / 2f, box.Bottom + 6), sel ? AisvTheme.Text : AisvTheme.TextMuted, 0.62f);
-			hits.Add(AisvTheme.Inflate(box, 6), () =>
+			string name = Hearth.Truncate(Ctx.Display(other), node + 50, 0.62f);
+			float nw = Hearth.Width(name, 0.62f);
+			Hearth.Ink(b, name, new Vector2(box.Center.X - nw / 2f, box.Bottom + 6), sel ? Hearth.Quill : Hearth.QuillSoft, 0.62f);
+			hits.Add(Hearth.Inflate(box, 6), () =>
 			{
 				Game1.playSound("smallSelect");
 				_other = other;
@@ -281,9 +321,9 @@ internal sealed class VillageMapPage : ShellPage
 		foreach (Bond bond in ties.Select(t => t.Bond).Distinct().OrderBy(x => x))
 		{
 			string label = BondName(bond);
-			AisvTheme.FillRounded(b, new Rectangle(lx, ly + 7, 12, 12), BondColor(bond), 6);
-			AisvTheme.DrawText(b, label, new Vector2(lx + 18, ly), AisvTheme.TextMuted, 0.62f);
-			lx += 18 + (int)AisvTheme.Width(label, 0.62f) + 18;
+			Hearth.FillRounded(b, new Rectangle(lx, ly + 7, 12, 12), BondColor(bond), 6);
+			Hearth.Ink(b, label, new Vector2(lx + 18, ly), Hearth.QuillSoft, 0.62f);
+			lx += 18 + (int)Hearth.Width(label, 0.62f) + 18;
 			if (lx > r.Right - 80)
 			{
 				break;
@@ -294,73 +334,73 @@ internal sealed class VillageMapPage : ShellPage
 	private void Detail(SpriteBatch b, Rectangle r, string npc, Tie t)
 	{
 		Color c = BondColor(t.Bond);
-		AisvTheme.DrawCard(b, r);
+		Hearth.CardSlip(b, r);
 		Rectangle head = new Rectangle(r.X + 2, r.Y + 2, r.Width - 4, 120);
-		AisvTheme.FillRounded(b, head, Color.Lerp(c, Color.White, 0.84f), 12);
-		AisvTheme.Fill(b, new Rectangle(head.X, head.Bottom - 12, head.Width, 12), Color.Lerp(c, Color.White, 0.84f));
+		Hearth.FillRounded(b, head, Color.Lerp(c, Color.White, 0.84f), 12);
+		Hearth.Fill(b, new Rectangle(head.X, head.Bottom - 12, head.Width, 12), Color.Lerp(c, Color.White, 0.84f));
 		string other = t.Other(npc);
 		Rectangle a = new Rectangle(r.X + 22, r.Y + 22, 64, 64), o = new Rectangle(a.Right + 40, r.Y + 22, 64, 64);
-		AisvTheme.Line(b, new Vector2(a.Right, a.Center.Y), new Vector2(o.X, o.Center.Y), c, 4f);
+		Hearth.Line(b, new Vector2(a.Right, a.Center.Y), new Vector2(o.X, o.Center.Y), c, 4f);
 		Kit.Avatar(b, a, Ctx, npc);
 		Kit.Avatar(b, o, Ctx, other);
 		int tx = o.Right + 18;
-		AisvTheme.Bold(b, AisvTheme.Truncate(Ctx.Display(other), r.Right - tx - 16, 0.95f), new Vector2(tx, r.Y + 24), AisvTheme.Text, 0.95f);
-		AisvTheme.Chip(b, new Vector2(tx, r.Y + 60), BondName(t.Bond), c, Color.White, 0.7f);
+		Hearth.InkBold(b, Hearth.Truncate(Ctx.Display(other), r.Right - tx - 16, 0.95f), new Vector2(tx, r.Y + 24), Hearth.Quill, 0.95f);
+		Hearth.Tag(b, new Vector2(tx, r.Y + 60), BondName(t.Bond), c, Color.White, 0.7f);
 		int x = r.X + 24, w = r.Width - 48;
-		AisvTheme.BeginClip(b, new Rectangle(r.X, head.Bottom, r.Width, r.Bottom - head.Bottom - 4));
+		Hearth.BeginClip(b, new Rectangle(r.X, head.Bottom, r.Width, r.Bottom - head.Bottom - 4));
 		int y = head.Bottom + 16;
-		foreach (string line in AisvTheme.WrapLines(BondHint(t.Bond), w, 0.78f))
+		foreach (string line in Hearth.WrapLines(BondHint(t.Bond), w, 0.78f))
 		{
-			AisvTheme.DrawText(b, line, new Vector2(x, y), AisvTheme.TextMuted, 0.78f);
-			y += AisvTheme.LineHeight(0.78f);
+			Hearth.Ink(b, line, new Vector2(x, y), Hearth.QuillSoft, 0.78f);
+			y += Hearth.LineHeight(0.78f);
 		}
 		y += 14;
 		Meter(b, x, ref y, w, Tr.Get("web.affinity", "好感"), t.Affinity, new Color(214, 104, 140));
 		Meter(b, x, ref y, w, Tr.Get("web.trust", "信任"), t.Trust, new Color(54, 150, 140));
-		Meter(b, x, ref y, w, Tr.Get("web.tension", "紧张"), t.Tension, AisvTheme.Danger);
+		Meter(b, x, ref y, w, Tr.Get("web.tension", "紧张"), t.Tension, Hearth.Berry);
 		string meta = Tr.Get("web.encounters", "碰过 {{count}} 次面", ("count", t.Encounters));
 		if (t.LastTotalDay > 0)
 		{
 			int ago = Math.Max(0, AppData.Today - t.LastTotalDay);
 			meta += " · " + (ago == 0 ? Tr.Get("web.today", "今天") : ago == 1 ? Tr.Get("web.yesterday", "昨天") : Tr.Get("web.daysAgo", "{{count}} 天前", ("count", ago)));
 		}
-		AisvTheme.DrawText(b, meta, new Vector2(x, y + 2), AisvTheme.TextFaint, 0.68f);
+		Hearth.Ink(b, meta, new Vector2(x, y + 2), Hearth.QuillPale, 0.68f);
 		y += 40;
 		Kit.SectionTitle(b, Tr.Get("web.memories", "一起经历的事"), x, y);
 		y += 36;
 		if (t.Memories.Count == 0)
 		{
-			AisvTheme.DrawText(b, Tr.Get("web.noMemories", "还没有一起经历过什么。"), new Vector2(x, y), AisvTheme.TextFaint, 0.72f);
+			Hearth.Ink(b, Tr.Get("web.noMemories", "还没有一起经历过什么。"), new Vector2(x, y), Hearth.QuillPale, 0.72f);
 		}
 		foreach (PairMemory m in t.Memories)
 		{
 			Color tone = VillageMap.ToneOf(m.Tone) switch
 			{
 				MemoryTone.Warm => new Color(214, 104, 140),
-				MemoryTone.Playful => AisvTheme.Gold,
-				MemoryTone.Tense => AisvTheme.Danger,
-				_ => AisvTheme.TextFaint
+				MemoryTone.Playful => Hearth.Amber,
+				MemoryTone.Tense => Hearth.Berry,
+				_ => Hearth.QuillPale
 			};
-			List<string> lines = AisvTheme.WrapLines(ShellText.Clean(m.Summary), w - 24, 0.72f);
-			AisvTheme.FillRounded(b, new Rectangle(x, y + 2, 4, lines.Count * AisvTheme.LineHeight(0.72f) - 4), tone, 2);
+			List<string> lines = Hearth.WrapLines(ShellText.Clean(m.Summary), w - 24, 0.72f);
+			Hearth.FillRounded(b, new Rectangle(x, y + 2, 4, lines.Count * Hearth.LineHeight(0.72f) - 4), tone, 2);
 			foreach (string line in lines)
 			{
-				AisvTheme.DrawText(b, line, new Vector2(x + 16, y), AisvTheme.Text, 0.72f);
-				y += AisvTheme.LineHeight(0.72f);
+				Hearth.Ink(b, line, new Vector2(x + 16, y), Hearth.Quill, 0.72f);
+				y += Hearth.LineHeight(0.72f);
 			}
 			y += 10;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 	}
 
 	private static void Meter(SpriteBatch b, int x, ref int y, int w, string label, float value, Color color)
 	{
-		AisvTheme.DrawText(b, label, new Vector2(x, y), AisvTheme.Text, 0.72f);
+		Hearth.Ink(b, label, new Vector2(x, y), Hearth.Quill, 0.72f);
 		string pct = (int)Math.Round(value * 100) + "%";
-		AisvTheme.DrawText(b, pct, new Vector2(x + w - AisvTheme.Width(pct, 0.68f), y), AisvTheme.TextMuted, 0.68f);
+		Hearth.Ink(b, pct, new Vector2(x + w - Hearth.Width(pct, 0.68f), y), Hearth.QuillSoft, 0.68f);
 		Rectangle track = new Rectangle(x + 70, y + 9, w - 70 - 60, 12);
-		AisvTheme.FillRounded(b, track, AisvTheme.Divider, 6);
-		AisvTheme.FillRounded(b, new Rectangle(track.X, track.Y, Math.Max(12, (int)(track.Width * value)), track.Height), color, 6);
+		Hearth.FillRounded(b, track, Hearth.Seam, 6);
+		Hearth.FillRounded(b, new Rectangle(track.X, track.Y, Math.Max(12, (int)(track.Width * value)), track.Height), color, 6);
 		y += 36;
 	}
 
@@ -368,14 +408,14 @@ internal sealed class VillageMapPage : ShellPage
 	{
 		Bond.Couple => new Color(214, 84, 130),
 		Bond.Crush => new Color(236, 140, 176),
-		Bond.BestFriends => AisvTheme.AccentDark,
+		Bond.BestFriends => Hearth.LeafDeep,
 		Bond.OddFriends => new Color(146, 100, 200),
 		Bond.Friends => new Color(112, 172, 80),
 		Bond.Acquaintances => new Color(172, 160, 140),
 		Bond.Awkward => new Color(222, 166, 70),
-		Bond.Tense => AisvTheme.Warn,
-		Bond.Rivals => AisvTheme.Danger,
-		_ => AisvTheme.TextFaint
+		Bond.Tense => Hearth.Rust,
+		Bond.Rivals => Hearth.Berry,
+		_ => Hearth.QuillPale
 	};
 
 		private static readonly Dictionary<Bond, (Func<string> Name, Func<string> Hint)> BondWords = new Dictionary<Bond, (Func<string>, Func<string>)>

@@ -111,26 +111,26 @@ internal sealed class YearReviewPage : ShellPage
 		Color theme = ThemeOf(page);
 		int cw = Math.Min(1040, area.Width - 80);
 		Rectangle card = new Rectangle(area.Center.X - cw / 2, area.Y + 18, cw, area.Height - 18 - 84);
-		AisvTheme.DrawShadow(b, card, 18, 6);
-		AisvTheme.Bordered(b, card, AisvTheme.Card, Color.Lerp(theme, AisvTheme.CardBorder, 0.5f), 18);
+		Hearth.CastShadow(b, card, 18, 6);
+		Hearth.Bordered(b, card, Hearth.Slip, Color.Lerp(theme, Hearth.SlipEdge, 0.5f), 18);
 		Rectangle band = new Rectangle(card.X + 2, card.Y + 2, card.Width - 4, 82);
-		AisvTheme.FillRounded(b, band, Color.Lerp(theme, Color.White, 0.82f), 16);
-		AisvTheme.Fill(b, new Rectangle(band.X, band.Bottom - 16, band.Width, 16), Color.Lerp(theme, Color.White, 0.82f));
-		AisvTheme.Fill(b, new Rectangle(band.X, band.Bottom, band.Width, 3), theme);
+		Hearth.FillRounded(b, band, Color.Lerp(theme, Color.White, 0.82f), 16);
+		Hearth.Fill(b, new Rectangle(band.X, band.Bottom - 16, band.Width, 16), Color.Lerp(theme, Color.White, 0.82f));
+		Hearth.Fill(b, new Rectangle(band.X, band.Bottom, band.Width, 3), theme);
 		// 右上角换年份。
 		string yearText = Tr.Get("year.banner", "第 {{year}} 年", ("year", _year));
-		float yw = AisvTheme.Width(yearText, 0.9f);
+		float yw = Hearth.Width(yearText, 0.9f);
 		bool older = _years.Count > 0 && _years[0] < _year, newer = _years.Count > 0 && _years[^1] > _year;
 		Rectangle nextYear = new Rectangle(band.Right - 24 - 40, band.Center.Y - 20, 40, 40);
 		Vector2 yp = new Vector2(nextYear.X - 8 - yw, band.Center.Y - 13);
 		Rectangle prevYear = new Rectangle((int)yp.X - 48, band.Center.Y - 20, 40, 40);
 		Confetti(b, new Rectangle(band.X, band.Y, prevYear.X - band.X - 20, band.Height), theme);
-		AisvTheme.Bold(b, yearText, yp, Color.Lerp(theme, AisvTheme.Text, 0.55f), 0.9f);
+		Hearth.InkBold(b, yearText, yp, Color.Lerp(theme, Hearth.Quill, 0.55f), 0.9f);
 		YearArrow(b, prevYear, true, older, hits, () => ChangeYear(-1));
 		YearArrow(b, nextYear, false, newer, hits, () => ChangeYear(1));
-		AisvTheme.Bold(b, Heading(page), new Vector2(card.X + 40, card.Y + 24), Color.Lerp(theme, AisvTheme.Text, 0.55f), 1.25f);
+		Hearth.InkBold(b, Heading(page), new Vector2(card.X + 40, card.Y + 24), Color.Lerp(theme, Hearth.Quill, 0.55f), 1.25f);
 		Rectangle body = new Rectangle(card.X + 40, band.Bottom + 24, card.Width - 80, card.Bottom - band.Bottom - 40);
-		AisvTheme.BeginClip(b, new Rectangle(card.X, band.Bottom + 4, card.Width, card.Bottom - band.Bottom - 8));
+		Hearth.BeginClip(b, new Rectangle(card.X, band.Bottom + 4, card.Width, card.Bottom - band.Bottom - 8));
 		switch (page)
 		{
 		case YearPage.Intro:
@@ -158,7 +158,7 @@ internal sealed class YearReviewPage : ShellPage
 			Reputation(b, body, theme);
 			break;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		Footer(b, new Rectangle(card.X, card.Bottom + 18, card.Width, 50), theme, hits);
 	}
 
@@ -168,8 +168,8 @@ internal sealed class YearReviewPage : ShellPage
 		{
 			return;
 		}
-		AisvTheme.FillRounded(b, r, AisvTheme.Hover(r) ? Color.White : Color.White * 0.6f, 20);
-		AisvTheme.Chevron(b, new Vector2(r.Center.X + (left ? 2 : -2), r.Center.Y), left, AisvTheme.AccentDark);
+		Hearth.FillRounded(b, r, Hearth.Hover(r) ? Color.White : Color.White * 0.6f, 20);
+		Hearth.Chevron(b, new Vector2(r.Center.X + (left ? 2 : -2), r.Center.Y), left, Hearth.LeafDeep);
 		hits.Add(r, go);
 	}
 
@@ -182,9 +182,9 @@ internal sealed class YearReviewPage : ShellPage
 		for (int i = 0; i < n; i++)
 		{
 			Rectangle d = new Rectangle(dx + i * (dot + gap), r.Center.Y - dot / 2, dot, dot);
-			AisvTheme.FillRounded(b, i == _page ? new Rectangle(d.X - 3, d.Y - 3, dot + 6, dot + 6) : d, i == _page ? theme : AisvTheme.Divider, (i == _page ? dot + 6 : dot) / 2);
+			Hearth.FillRounded(b, i == _page ? new Rectangle(d.X - 3, d.Y - 3, dot + 6, dot + 6) : d, i == _page ? theme : Hearth.Seam, (i == _page ? dot + 6 : dot) / 2);
 			int k = i;
-			hits.Add(AisvTheme.Inflate(d, 6), () =>
+			hits.Add(Hearth.Inflate(d, 6), () =>
 			{
 				_page = k;
 				Game1.playSound("shwip");
@@ -194,11 +194,11 @@ internal sealed class YearReviewPage : ShellPage
 		Rectangle next = new Rectangle(r.Right - 150, r.Y, 150, r.Height);
 		if (_page > 0)
 		{
-			AisvTheme.Button(b, back, Tr.Get("year.back", "上一页"), hover: AisvTheme.Hover(back), scale: 0.85f);
+			Hearth.PressPlate(b, back, Tr.Get("year.back", "上一页"), hover: Hearth.Hover(back), scale: 0.85f);
 			hits.Add(back, () => Flip(-1));
 		}
 		bool last = _page == n - 1;
-		AisvTheme.Button(b, next, last ? Tr.Get("year.again", "从头看") : Tr.Get("year.next", "下一页"), primary: true, hover: AisvTheme.Hover(next), scale: 0.85f);
+		Hearth.PressPlate(b, next, last ? Tr.Get("year.again", "从头看") : Tr.Get("year.next", "下一页"), primary: true, hover: Hearth.Hover(next), scale: 0.85f);
 		hits.Add(next, () =>
 		{
 			if (last)
@@ -216,13 +216,13 @@ internal sealed class YearReviewPage : ShellPage
 	/// <summary>页头右边几片彩纸。</summary>
 	private static void Confetti(SpriteBatch b, Rectangle band, Color theme)
 	{
-		Color[] colors = { theme, AisvTheme.Gold, AisvTheme.Pink, new Color(110, 160, 230) };
+		Color[] colors = { theme, Hearth.Amber, Hearth.Rose, new Color(110, 160, 230) };
 		for (int i = 0; i < 14; i++)
 		{
 			int x = band.Right - 40 - (int)(FarmerReviews.StableHash("c" + i) % 300);
 			int y = band.Y + 14 + (int)(FarmerReviews.StableHash("y" + i) % (uint)(band.Height - 34));
 			int s = 6 + i % 3 * 2;
-			AisvTheme.FillRounded(b, new Rectangle(x, y, s, s), colors[i % colors.Length] * 0.55f, i % 2 == 0 ? s / 2 : 1);
+			Hearth.FillRounded(b, new Rectangle(x, y, s, s), colors[i % colors.Length] * 0.55f, i % 2 == 0 ? s / 2 : 1);
 		}
 	}
 
@@ -232,9 +232,9 @@ internal sealed class YearReviewPage : ShellPage
 		YearPage.Gifts => new Color(214, 104, 140),
 		YearPage.Gossip => new Color(146, 100, 200),
 		YearPage.Arcs => new Color(54, 150, 140),
-		YearPage.Milestones => AisvTheme.Gold,
+		YearPage.Milestones => Hearth.Amber,
 		YearPage.Letters => new Color(222, 128, 60),
-		_ => AisvTheme.Accent
+		_ => Hearth.Leaf
 	};
 
 	private string Heading(YearPage p) => p switch
@@ -264,31 +264,31 @@ internal sealed class YearReviewPage : ShellPage
 		for (int i = 0; i < stats.Length; i++)
 		{
 			Rectangle t = new Rectangle(r.X + i * (tw + gap), r.Y, tw, 150);
-			AisvTheme.FillRounded(b, t, Color.Lerp(stats[i].Tint, Color.White, 0.88f), 14);
-			AisvTheme.FillRounded(b, new Rectangle(t.X, t.Y, 6, t.Height), stats[i].Tint, 3);
+			Hearth.FillRounded(b, t, Color.Lerp(stats[i].Tint, Color.White, 0.88f), 14);
+			Hearth.FillRounded(b, new Rectangle(t.X, t.Y, 6, t.Height), stats[i].Tint, 3);
 			string v = stats[i].Value.ToString();
-			b.DrawString(Game1.dialogueFont, v, new Vector2(t.X + 26, t.Y + 22), Color.Lerp(stats[i].Tint, AisvTheme.Text, 0.35f), 0f, Vector2.Zero, 1.3f, SpriteEffects.None, 1f);
-			AisvTheme.DrawText(b, AisvTheme.Truncate(stats[i].Label, t.Width - 40, 0.78f), new Vector2(t.X + 26, t.Bottom - 44), AisvTheme.TextMuted, 0.78f);
+			b.DrawString(Game1.dialogueFont, v, new Vector2(t.X + 26, t.Y + 22), Color.Lerp(stats[i].Tint, Hearth.Quill, 0.35f), 0f, Vector2.Zero, 1.3f, SpriteEffects.None, 1f);
+			Hearth.Ink(b, Hearth.Truncate(stats[i].Label, t.Width - 40, 0.78f), new Vector2(t.X + 26, t.Bottom - 44), Hearth.QuillSoft, 0.78f);
 		}
 		int y = r.Y + 190;
 		if (s.TalkCount == 0 && s.GiftCount == 0 && s.LetterCount == 0 && s.Arcs.Count == 0)
 		{
-			Paragraph(b, Tr.Get("year.intro.empty", "这一年还没留下什么。多去和村民聊聊、送点东西，过些日子再来翻翻。"), r.X, ref y, r.Width, AisvTheme.TextMuted, 0.85f);
+			Paragraph(b, Tr.Get("year.intro.empty", "这一年还没留下什么。多去和村民聊聊、送点东西，过些日子再来翻翻。"), r.X, ref y, r.Width, Hearth.QuillSoft, 0.85f);
 			return;
 		}
 		if (s.People > 0)
 		{
-			Paragraph(b, Tr.Get("year.intro.people", "这一年你和 {{count}} 位村民说过话。", ("count", s.People)), r.X, ref y, r.Width, AisvTheme.Text, 0.9f);
+			Paragraph(b, Tr.Get("year.intro.people", "这一年你和 {{count}} 位村民说过话。", ("count", s.People)), r.X, ref y, r.Width, Hearth.Quill, 0.9f);
 		}
 		y += 10;
-		Paragraph(b, Tr.Get("year.intro.hint", "往后翻，看看这一年的高光。"), r.X, ref y, r.Width, AisvTheme.TextFaint, 0.75f);
+		Paragraph(b, Tr.Get("year.intro.hint", "往后翻，看看这一年的高光。"), r.X, ref y, r.Width, Hearth.QuillPale, 0.75f);
 	}
 
 	private void Talks(SpriteBatch b, Rectangle r, Color theme)
 	{
 		YearSummary s = _summary!;
 		int y = r.Y;
-		Paragraph(b, Tr.Get("year.talks.total", "这一年一共聊了 {{count}} 次。", ("count", s.TalkCount)), r.X, ref y, r.Width, AisvTheme.TextMuted, 0.76f, center: true);
+		Paragraph(b, Tr.Get("year.talks.total", "这一年一共聊了 {{count}} 次。", ("count", s.TalkCount)), r.X, ref y, r.Width, Hearth.QuillSoft, 0.76f, center: true);
 		// 领奖台：第一名在中间、最高；尺寸跟着可用高度走。
 		int room = r.Bottom - y - 8;
 		int[] order = s.TopTalkers.Count switch { 1 => new[] { 0 }, 2 => new[] { 1, 0 }, _ => new[] { 1, 0, 2 } };
@@ -302,20 +302,20 @@ internal sealed class YearReviewPage : ShellPage
 			int av = (int)Math.Min(rank == 0 ? 112 : 92, room * (rank == 0 ? 0.36f : 0.3f));
 			int cx = x0 + k * colW + colW / 2;
 			Rectangle block = new Rectangle(cx - 86, r.Bottom - stand, 172, stand);
-			AisvTheme.FillRounded(b, block, Color.Lerp(theme, Color.White, rank == 0 ? 0.55f : 0.75f), 10);
+			Hearth.FillRounded(b, block, Color.Lerp(theme, Color.White, rank == 0 ? 0.55f : 0.75f), 10);
 			string place = (rank + 1).ToString();
 			Vector2 ps = Game1.dialogueFont.MeasureString(place);
 			b.DrawString(Game1.dialogueFont, place, new Vector2(cx - ps.X / 2f, block.Y + Math.Max(2, (stand - ps.Y) / 2f)), Color.White, 0f, Vector2.Zero, 1f, SpriteEffects.None, 1f);
 			Rectangle avatar = new Rectangle(cx - av / 2, block.Y - av - 66, av, av);
 			if (rank == 0)
 			{
-				AisvTheme.FillRounded(b, AisvTheme.Inflate(avatar, 5), AisvTheme.Gold, 12);
+				Hearth.FillRounded(b, Hearth.Inflate(avatar, 5), Hearth.Amber, 12);
 			}
 			Kit.Avatar(b, avatar, Ctx, who.Name);
-			string name = AisvTheme.Truncate(Ctx.Display(who.Name), colW - 16, 0.88f);
-			AisvTheme.Bold(b, name, new Vector2(cx - AisvTheme.Width(name, 0.88f) / 2f, avatar.Bottom + 10), AisvTheme.Text, 0.88f);
+			string name = Hearth.Truncate(Ctx.Display(who.Name), colW - 16, 0.88f);
+			Hearth.InkBold(b, name, new Vector2(cx - Hearth.Width(name, 0.88f) / 2f, avatar.Bottom + 10), Hearth.Quill, 0.88f);
 			string count = Tr.Get("year.talks.count", "{{count}} 次", ("count", who.Count));
-			AisvTheme.DrawText(b, count, new Vector2(cx - AisvTheme.Width(count, 0.7f) / 2f, avatar.Bottom + 38), AisvTheme.TextMuted, 0.7f);
+			Hearth.Ink(b, count, new Vector2(cx - Hearth.Width(count, 0.7f) / 2f, avatar.Bottom + 38), Hearth.QuillSoft, 0.7f);
 		}
 	}
 
@@ -325,32 +325,32 @@ internal sealed class YearReviewPage : ShellPage
 		TopGift g = s.TopGift!;
 		int side = Math.Min(170, r.Height - 20);
 		Rectangle box = new Rectangle(r.X, r.Y, side, side);
-		AisvTheme.FillRounded(b, box, Color.Lerp(theme, Color.White, 0.86f), 20);
+		Hearth.FillRounded(b, box, Color.Lerp(theme, Color.White, 0.86f), 20);
 		int gs = side * 2 / 3;
 		GiftBox(b, new Rectangle(box.Center.X - gs / 2, box.Center.Y - gs / 2, gs, gs), theme);
 		int tx = box.Right + 36, w = r.Right - tx;
 		int y = r.Y;
-		AisvTheme.DrawText(b, Tr.Get("year.gifts.most", "送得最多的是"), new Vector2(tx, y), AisvTheme.TextMuted, 0.76f);
+		Hearth.Ink(b, Tr.Get("year.gifts.most", "送得最多的是"), new Vector2(tx, y), Hearth.QuillSoft, 0.76f);
 		y += 28;
-		b.DrawString(Game1.dialogueFont, AisvTheme.Truncate(g.Item, w / 1.1f, 1f), new Vector2(tx, y), Color.Lerp(theme, AisvTheme.Text, 0.5f), 0f, Vector2.Zero, 1.1f, SpriteEffects.None, 1f);
+		b.DrawString(Game1.dialogueFont, Hearth.Truncate(g.Item, w / 1.1f, 1f), new Vector2(tx, y), Color.Lerp(theme, Hearth.Quill, 0.5f), 0f, Vector2.Zero, 1.1f, SpriteEffects.None, 1f);
 		y += 64;
 		string times = g.Count == 1 ? Tr.Get("year.gifts.once", "只送过一回，给了{{name}}。", ("name", Ctx.Display(g.Recipient)))
 			: Tr.Get("year.gifts.times", "一共送了 {{count}} 回，{{name}}收到的最多。", ("count", g.Count), ("name", Ctx.Display(g.Recipient)));
-		Paragraph(b, times, tx, ref y, w, AisvTheme.Text, 0.8f);
+		Paragraph(b, times, tx, ref y, w, Hearth.Quill, 0.8f);
 		y += 14;
 		if (s.TopRecipient != null)
 		{
 			Rectangle av = new Rectangle(tx, y, 44, 44);
 			Kit.Avatar(b, av, Ctx, s.TopRecipient.Name);
-			AisvTheme.DrawText(b, AisvTheme.Truncate(Tr.Get("year.gifts.fan", "收礼最多的人：{{name}}，{{count}} 份。", ("name", Ctx.Display(s.TopRecipient.Name)), ("count", s.TopRecipient.Count)), w - 60, 0.78f), new Vector2(av.Right + 14, y + 10), AisvTheme.Text, 0.78f);
+			Hearth.Ink(b, Hearth.Truncate(Tr.Get("year.gifts.fan", "收礼最多的人：{{name}}，{{count}} 份。", ("name", Ctx.Display(s.TopRecipient.Name)), ("count", s.TopRecipient.Count)), w - 60, 0.78f), new Vector2(av.Right + 14, y + 10), Hearth.Quill, 0.78f);
 			y = av.Bottom + 18;
 		}
 		if (s.GiftCount > 0)
 		{
-			Paragraph(b, Tr.Get("year.gifts.loved", "{{total}} 份礼物里，有 {{loved}} 份正好送到心坎上。", ("total", s.GiftCount), ("loved", s.LovedGifts)), tx, ref y, w, AisvTheme.TextMuted, 0.74f);
+			Paragraph(b, Tr.Get("year.gifts.loved", "{{total}} 份礼物里，有 {{loved}} 份正好送到心坎上。", ("total", s.GiftCount), ("loved", s.LovedGifts)), tx, ref y, w, Hearth.QuillSoft, 0.74f);
 			Rectangle bar = new Rectangle(tx, y + 6, Math.Min(w, 420), 14);
-			AisvTheme.FillRounded(b, bar, AisvTheme.Divider, 7);
-			AisvTheme.FillRounded(b, new Rectangle(bar.X, bar.Y, Math.Max(14, bar.Width * s.LovedGifts / s.GiftCount), bar.Height), theme, 7);
+			Hearth.FillRounded(b, bar, Hearth.Seam, 7);
+			Hearth.FillRounded(b, new Rectangle(bar.X, bar.Y, Math.Max(14, bar.Width * s.LovedGifts / s.GiftCount), bar.Height), theme, 7);
 		}
 	}
 
@@ -358,39 +358,39 @@ internal sealed class YearReviewPage : ShellPage
 	{
 		Rectangle body = new Rectangle(r.X + 8, r.Y + 38, r.Width - 16, r.Height - 40);
 		Rectangle lid = new Rectangle(r.X, r.Y + 22, r.Width, 22);
-		AisvTheme.FillRounded(b, body, theme, 6);
-		AisvTheme.FillRounded(b, lid, Color.Lerp(theme, Color.Black, 0.12f), 6);
-		AisvTheme.Fill(b, new Rectangle(r.Center.X - 7, lid.Y, 14, body.Bottom - lid.Y), AisvTheme.Gold);
-		AisvTheme.FillRounded(b, new Rectangle(r.Center.X - 30, r.Y + 2, 26, 22), AisvTheme.Gold, 11);
-		AisvTheme.FillRounded(b, new Rectangle(r.Center.X + 4, r.Y + 2, 26, 22), AisvTheme.Gold, 11);
+		Hearth.FillRounded(b, body, theme, 6);
+		Hearth.FillRounded(b, lid, Color.Lerp(theme, Color.Black, 0.12f), 6);
+		Hearth.Fill(b, new Rectangle(r.Center.X - 7, lid.Y, 14, body.Bottom - lid.Y), Hearth.Amber);
+		Hearth.FillRounded(b, new Rectangle(r.Center.X - 30, r.Y + 2, 26, 22), Hearth.Amber, 11);
+		Hearth.FillRounded(b, new Rectangle(r.Center.X + 4, r.Y + 2, 26, 22), Hearth.Amber, 11);
 	}
 
 	private void Gossip(SpriteBatch b, Rectangle r, Color theme)
 	{
 		GossipFact g = _summary!.TopGossip!;
-		List<string> lines = AisvTheme.WrapLines(g.Text, r.Width - 120, 0.95f).Take(6).ToList();
-		Rectangle quote = new Rectangle(r.X, r.Y, r.Width, lines.Count * AisvTheme.LineHeight(0.95f) + 60);
-		AisvTheme.FillRounded(b, quote, Color.Lerp(theme, Color.White, 0.88f), 16);
+		List<string> lines = Hearth.WrapLines(g.Text, r.Width - 120, 0.95f).Take(6).ToList();
+		Rectangle quote = new Rectangle(r.X, r.Y, r.Width, lines.Count * Hearth.LineHeight(0.95f) + 60);
+		Hearth.FillRounded(b, quote, Color.Lerp(theme, Color.White, 0.88f), 16);
 		b.DrawString(Game1.dialogueFont, "“", new Vector2(quote.X + 16, quote.Y - 6), theme * 0.6f, 0f, Vector2.Zero, 2f, SpriteEffects.None, 1f);
 		int y = quote.Y + 30;
 		foreach (string line in lines)
 		{
-			AisvTheme.DrawText(b, line, new Vector2(quote.X + 80, y), AisvTheme.Text, 0.95f);
-			y += AisvTheme.LineHeight(0.95f);
+			Hearth.Ink(b, line, new Vector2(quote.X + 80, y), Hearth.Quill, 0.95f);
+			y += Hearth.LineHeight(0.95f);
 		}
 		y = quote.Bottom + 30;
 		if (!string.IsNullOrWhiteSpace(g.Origin))
 		{
 			Rectangle av = new Rectangle(r.X, y, 64, 64);
 			Kit.Avatar(b, av, Ctx, g.Origin);
-			AisvTheme.DrawText(b, Tr.Get("year.gossip.origin", "最早是从{{name}}那儿传出来的。", ("name", Ctx.Display(g.Origin))), new Vector2(av.Right + 16, y + 18), AisvTheme.Text, 0.82f);
+			Hearth.Ink(b, Tr.Get("year.gossip.origin", "最早是从{{name}}那儿传出来的。", ("name", Ctx.Display(g.Origin))), new Vector2(av.Right + 16, y + 18), Hearth.Quill, 0.82f);
 			y = av.Bottom + 24;
 		}
-		AisvTheme.DrawText(b, Tr.Get("year.gossip.spread", "传到了 {{count}} 位村民耳朵里。", ("count", g.Aware)), new Vector2(r.X, y), AisvTheme.TextMuted, 0.8f);
+		Hearth.Ink(b, Tr.Get("year.gossip.spread", "传到了 {{count}} 位村民耳朵里。", ("count", g.Aware)), new Vector2(r.X, y), Hearth.QuillSoft, 0.8f);
 		y += 40;
 		for (int i = 0; i < Math.Min(g.Aware, 40); i++)
 		{
-			AisvTheme.FillRounded(b, new Rectangle(r.X + i % 20 * 26, y + i / 20 * 26, 18, 18), Color.Lerp(theme, Color.White, 0.25f + i % 3 * 0.15f), 9);
+			Hearth.FillRounded(b, new Rectangle(r.X + i % 20 * 26, y + i / 20 * 26, 18, 18), Color.Lerp(theme, Color.White, 0.25f + i % 3 * 0.15f), 9);
 		}
 	}
 
@@ -401,15 +401,15 @@ internal sealed class YearReviewPage : ShellPage
 		foreach (ArcFact a in arcs.Take(YearReview.ListShown))
 		{
 			Rectangle row = new Rectangle(r.X, y, r.Width, 76);
-			AisvTheme.FillRounded(b, row, Color.Lerp(theme, Color.White, 0.9f), 12);
-			AisvTheme.FillRounded(b, new Rectangle(row.X, row.Y, 6, row.Height), theme, 3);
+			Hearth.FillRounded(b, row, Color.Lerp(theme, Color.White, 0.9f), 12);
+			Hearth.FillRounded(b, new Rectangle(row.X, row.Y, 6, row.Height), theme, 3);
 			int ax = row.Right - 16;
 			foreach (string npc in a.Npcs.Where(n => !string.IsNullOrWhiteSpace(n)).Take(4).Reverse())
 			{
 				ax -= 52;
 				Kit.Avatar(b, new Rectangle(ax, row.Y + 14, 48, 48), Ctx, npc);
 			}
-			AisvTheme.Bold(b, AisvTheme.Truncate(a.Title, ax - row.X - 48, 0.9f), new Vector2(row.X + 26, row.Center.Y - 14), AisvTheme.Text, 0.9f);
+			Hearth.InkBold(b, Hearth.Truncate(a.Title, ax - row.X - 48, 0.9f), new Vector2(row.X + 26, row.Center.Y - 14), Hearth.Quill, 0.9f);
 			y = row.Bottom + 12;
 		}
 		More(b, arcs.Count, r.X, y);
@@ -426,19 +426,19 @@ internal sealed class YearReviewPage : ShellPage
 		int lineX = r.X + 30;
 		if (shown > 1)
 		{
-			AisvTheme.Fill(b, new Rectangle(lineX - 1, y + av / 2, 3, (shown - 1) * step), Color.Lerp(theme, Color.White, 0.5f));
+			Hearth.Fill(b, new Rectangle(lineX - 1, y + av / 2, 3, (shown - 1) * step), Color.Lerp(theme, Color.White, 0.5f));
 		}
 		foreach (MilestoneFact m in list.Take(shown))
 		{
 			int cy = y + av / 2;
-			AisvTheme.FillRounded(b, new Rectangle(lineX - 12, cy - 12, 24, 24), theme, 12);
-			AisvTheme.FillRounded(b, new Rectangle(lineX - 5, cy - 5, 10, 10), Color.White, 5);
+			Hearth.FillRounded(b, new Rectangle(lineX - 12, cy - 12, 24, 24), theme, 12);
+			Hearth.FillRounded(b, new Rectangle(lineX - 5, cy - 5, 10, 10), Color.White, 5);
 			Rectangle a = new Rectangle(lineX + 34, y, av, av);
 			Kit.Avatar(b, a, Ctx, m.Npc);
-			AisvTheme.Bold(b, Ctx.Display(m.Npc), new Vector2(a.Right + 16, cy - 26), AisvTheme.Text, 0.82f);
-			AisvTheme.DrawText(b, AisvTheme.Truncate(MilestoneName(m.Type, m.Description), r.Right - a.Right - 160, 0.76f), new Vector2(a.Right + 16, cy + 2), Color.Lerp(theme, AisvTheme.Text, 0.5f), 0.76f);
+			Hearth.InkBold(b, Ctx.Display(m.Npc), new Vector2(a.Right + 16, cy - 26), Hearth.Quill, 0.82f);
+			Hearth.Ink(b, Hearth.Truncate(MilestoneName(m.Type, m.Description), r.Right - a.Right - 160, 0.76f), new Vector2(a.Right + 16, cy + 2), Color.Lerp(theme, Hearth.Quill, 0.5f), 0.76f);
 			string date = DateOf(m.TotalDay);
-			AisvTheme.DrawText(b, date, new Vector2(r.Right - AisvTheme.Width(date, 0.68f), cy - 10), AisvTheme.TextFaint, 0.68f);
+			Hearth.Ink(b, date, new Vector2(r.Right - Hearth.Width(date, 0.68f), cy - 10), Hearth.QuillPale, 0.68f);
 			y += step;
 		}
 		More(b, list.Count, r.X, y - 4);
@@ -448,20 +448,20 @@ internal sealed class YearReviewPage : ShellPage
 	{
 		YearSummary s = _summary!;
 		Rectangle env = new Rectangle(r.X, r.Y + 10, 180, 120);
-		AisvTheme.Bordered(b, env, Color.Lerp(theme, Color.White, 0.85f), theme, 10, 3);
-		AisvTheme.Line(b, new Vector2(env.X + 8, env.Y + 10), new Vector2(env.Center.X, env.Center.Y + 8), theme, 3f);
-		AisvTheme.Line(b, new Vector2(env.Right - 8, env.Y + 10), new Vector2(env.Center.X, env.Center.Y + 8), theme, 3f);
-		AisvTheme.FillRounded(b, new Rectangle(env.Center.X - 14, env.Center.Y - 4, 28, 28), AisvTheme.Badge, 14);
+		Hearth.Bordered(b, env, Color.Lerp(theme, Color.White, 0.85f), theme, 10, 3);
+		Hearth.Line(b, new Vector2(env.X + 8, env.Y + 10), new Vector2(env.Center.X, env.Center.Y + 8), theme, 3f);
+		Hearth.Line(b, new Vector2(env.Right - 8, env.Y + 10), new Vector2(env.Center.X, env.Center.Y + 8), theme, 3f);
+		Hearth.FillRounded(b, new Rectangle(env.Center.X - 14, env.Center.Y - 4, 28, 28), Hearth.Ember, 14);
 		int tx = env.Right + 36;
 		string count = s.LetterCount.ToString();
-		b.DrawString(Game1.dialogueFont, count, new Vector2(tx, r.Y), Color.Lerp(theme, AisvTheme.Text, 0.4f), 0f, Vector2.Zero, 1.6f, SpriteEffects.None, 1f);
-		AisvTheme.DrawText(b, Tr.Get("year.letters.count", "封信寄到了农场"), new Vector2(tx + Game1.dialogueFont.MeasureString(count).X * 1.6f + 14, r.Y + 40), AisvTheme.TextMuted, 0.85f);
+		b.DrawString(Game1.dialogueFont, count, new Vector2(tx, r.Y), Color.Lerp(theme, Hearth.Quill, 0.4f), 0f, Vector2.Zero, 1.6f, SpriteEffects.None, 1f);
+		Hearth.Ink(b, Tr.Get("year.letters.count", "封信寄到了农场"), new Vector2(tx + Game1.dialogueFont.MeasureString(count).X * 1.6f + 14, r.Y + 40), Hearth.QuillSoft, 0.85f);
 		if (s.TopSender != null)
 		{
 			int y = r.Y + 92;
 			Rectangle av = new Rectangle(tx, y, 56, 56);
 			Kit.Avatar(b, av, Ctx, s.TopSender.Name);
-			AisvTheme.DrawText(b, Tr.Get("year.letters.top", "写得最勤的是{{name}}，{{count}} 封。", ("name", Ctx.Display(s.TopSender.Name)), ("count", s.TopSender.Count)), new Vector2(av.Right + 16, y + 16), AisvTheme.Text, 0.82f);
+			Hearth.Ink(b, Tr.Get("year.letters.top", "写得最勤的是{{name}}，{{count}} 封。", ("name", Ctx.Display(s.TopSender.Name)), ("count", s.TopSender.Count)), new Vector2(av.Right + 16, y + 16), Hearth.Quill, 0.82f);
 		}
 	}
 
@@ -471,15 +471,15 @@ internal sealed class YearReviewPage : ShellPage
 		// 左边称号徽章，右边四项声望。
 		int bw = Math.Min(340, r.Width * 2 / 5);
 		Rectangle badge = new Rectangle(r.X, r.Y, bw, Math.Min(r.Height - 30, 230));
-		AisvTheme.Bordered(b, badge, AisvTheme.GoldSoft, AisvTheme.Gold, 16, 3);
+		Hearth.Bordered(b, badge, Hearth.AmberPale, Hearth.Amber, 16, 3);
 		Rectangle medal = new Rectangle(badge.Center.X - 40, badge.Y + 22, 80, 80);
-		AisvTheme.FillRounded(b, medal, AisvTheme.Gold, 40);
-		AisvTheme.FillRounded(b, AisvTheme.Inflate(medal, -10), new Color(255, 226, 120), 30);
+		Hearth.FillRounded(b, medal, Hearth.Amber, 40);
+		Hearth.FillRounded(b, Hearth.Inflate(medal, -10), new Color(255, 226, 120), 30);
 		AppIcons.Reviews.Draw(b, medal.Center.X - 16, medal.Center.Y - 16, 2);
 		string title = TitleName(s.Title);
-		AisvTheme.Bold(b, title, new Vector2(badge.Center.X - AisvTheme.Width(title, 1.05f) / 2f, medal.Bottom + 14), AisvTheme.Text, 1.05f);
+		Hearth.InkBold(b, title, new Vector2(badge.Center.X - Hearth.Width(title, 1.05f) / 2f, medal.Bottom + 14), Hearth.Quill, 1.05f);
 		int ty = medal.Bottom + 56;
-		Paragraph(b, TitleText(s.Title), badge.X + 20, ref ty, badge.Width - 40, AisvTheme.TextMuted, 0.72f, center: true);
+		Paragraph(b, TitleText(s.Title), badge.X + 20, ref ty, badge.Width - 40, Hearth.QuillSoft, 0.72f, center: true);
 		int x = badge.Right + 40, w = r.Right - x;
 		(string Label, float Score, Color Tint)[] bars =
 		{
@@ -491,32 +491,32 @@ internal sealed class YearReviewPage : ShellPage
 		int y = r.Y + 6;
 		foreach ((string label, float score, Color tint) in bars)
 		{
-			AisvTheme.DrawText(b, label, new Vector2(x, y), AisvTheme.Text, 0.8f);
+			Hearth.Ink(b, label, new Vector2(x, y), Hearth.Quill, 0.8f);
 			string tier = TierWord(YearReview.Tier(score));
-			AisvTheme.DrawText(b, tier, new Vector2(x + w - AisvTheme.Width(tier, 0.72f), y + 2), AisvTheme.TextMuted, 0.72f);
+			Hearth.Ink(b, tier, new Vector2(x + w - Hearth.Width(tier, 0.72f), y + 2), Hearth.QuillSoft, 0.72f);
 			Rectangle track = new Rectangle(x, y + 32, w, 14);
-			AisvTheme.FillRounded(b, track, AisvTheme.Divider, 7);
-			AisvTheme.FillRounded(b, new Rectangle(track.X, track.Y, Math.Max(14, (int)(track.Width * score / 100f)), track.Height), tint, 7);
+			Hearth.FillRounded(b, track, Hearth.Seam, 7);
+			Hearth.FillRounded(b, new Rectangle(track.X, track.Y, Math.Max(14, (int)(track.Width * score / 100f)), track.Height), tint, 7);
 			y += 58;
 		}
-		AisvTheme.DrawText(b, Tr.Get("year.rep.note", "按这一年的聊天和送礼算出来的。"), new Vector2(x, y + 2), AisvTheme.TextFaint, 0.66f);
+		Hearth.Ink(b, Tr.Get("year.rep.note", "按这一年的聊天和送礼算出来的。"), new Vector2(x, y + 2), Hearth.QuillPale, 0.66f);
 	}
 
 	private static void More(SpriteBatch b, int count, int x, int y)
 	{
 		if (count > YearReview.ListShown)
 		{
-			AisvTheme.DrawText(b, Tr.Get("year.more", "还有 {{count}} 个没列出来。", ("count", count - YearReview.ListShown)), new Vector2(x, y + 4), AisvTheme.TextFaint, 0.72f);
+			Hearth.Ink(b, Tr.Get("year.more", "还有 {{count}} 个没列出来。", ("count", count - YearReview.ListShown)), new Vector2(x, y + 4), Hearth.QuillPale, 0.72f);
 		}
 	}
 
 	private static void Paragraph(SpriteBatch b, string text, int x, ref int y, int w, Color color, float scale, bool center = false)
 	{
-		foreach (string line in AisvTheme.WrapLines(text, w, scale))
+		foreach (string line in Hearth.WrapLines(text, w, scale))
 		{
-			float lx = center ? x + (w - AisvTheme.Width(line, scale)) / 2f : x;
-			AisvTheme.DrawText(b, line, new Vector2(lx, y), color, scale);
-			y += AisvTheme.LineHeight(scale);
+			float lx = center ? x + (w - Hearth.Width(line, scale)) / 2f : x;
+			Hearth.Ink(b, line, new Vector2(lx, y), color, scale);
+			y += Hearth.LineHeight(scale);
 		}
 	}
 

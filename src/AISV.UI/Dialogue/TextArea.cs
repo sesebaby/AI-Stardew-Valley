@@ -108,31 +108,31 @@ public sealed class TextArea : IKeyboardSubscriber
 
 	public void Draw(SpriteBatch b)
 	{
-		AisvTheme.Field(b, Bounds, Selected && !Locked);
+		Hearth.Field(b, Bounds, Selected && !Locked);
 		Rectangle inner = new Rectangle(Bounds.X + 14, Bounds.Y + 10, Bounds.Width - 28, Bounds.Height - 20);
-		int lineHeight = AisvTheme.LineHeight();
+		int lineHeight = Hearth.LineHeight();
 		if (_text.Length == 0)
 		{
-			b.DrawString(Game1.smallFont, AisvTheme.Wrap(Placeholder, inner.Width), new Vector2(inner.X, inner.Y), AisvTheme.TextFaint);
+			b.DrawString(Game1.smallFont, Hearth.Wrap(Placeholder, inner.Width), new Vector2(inner.X, inner.Y), Hearth.QuillPale);
 			if (Selected && !Locked && Caret())
 			{
-				AisvTheme.Fill(b, new Rectangle(inner.X, inner.Y + 4, 2, lineHeight - 8), AisvTheme.Text);
+				Hearth.Fill(b, new Rectangle(inner.X, inner.Y + 4, 2, lineHeight - 8), Hearth.Quill);
 			}
 			return;
 		}
-		string[] lines = AisvTheme.Wrap(Masked ? new string('*', _text.Length) : _text, inner.Width).Split('\n');
+		string[] lines = Hearth.Wrap(Masked ? new string('*', _text.Length) : _text, inner.Width).Split('\n');
 		int visible = Math.Max(1, inner.Height / lineHeight);
 		int first = Math.Max(0, lines.Length - visible);
 		for (int i = first; i < lines.Length; i++)
 		{
-			b.DrawString(Game1.smallFont, lines[i], new Vector2(inner.X, inner.Y + (i - first) * lineHeight), Locked ? AisvTheme.TextMuted : AisvTheme.Text);
+			b.DrawString(Game1.smallFont, lines[i], new Vector2(inner.X, inner.Y + (i - first) * lineHeight), Locked ? Hearth.QuillSoft : Hearth.Quill);
 		}
 		if (Selected && !Locked && Caret())
 		{
 			string last = lines[^1];
 			int x = inner.X + (int)Game1.smallFont.MeasureString(last).X + 1;
 			int y = inner.Y + (lines.Length - 1 - first) * lineHeight;
-			AisvTheme.Fill(b, new Rectangle(Math.Min(x, inner.Right - 2), y + 4, 2, lineHeight - 8), AisvTheme.Text);
+			Hearth.Fill(b, new Rectangle(Math.Min(x, inner.Right - 2), y + 4, 2, lineHeight - 8), Hearth.Quill);
 		}
 	}
 

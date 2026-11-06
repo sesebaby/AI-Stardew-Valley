@@ -58,12 +58,12 @@ internal sealed class PromoPage : ShellPage
 	{
 		_view = area;
 		ServerContent content = Content?.Content ?? ServerContent.Empty;
-		AisvTheme.BeginClip(b, area);
+		Hearth.BeginClip(b, area);
 		const int pad = 28;
 		int x = area.X + pad, w = area.Width - pad * 2;
 		int y = area.Y + 18 - _scroll.Offset;
-		AisvTheme.DrawText(b, Tr.Get("promo.sub", "mod 作者的消息和推荐"), new Vector2(x + 6, y), AisvTheme.TextMuted, 0.8f);
-		y += AisvTheme.LineHeight(0.8f) + 18;
+		Hearth.Ink(b, Tr.Get("promo.sub", "mod 作者的消息和推荐"), new Vector2(x + 6, y), Hearth.QuillSoft, 0.8f);
+		y += Hearth.LineHeight(0.8f) + 18;
 		if (content.Announcement.Length > 0)
 		{
 			y = Announcement(b, ShellText.Clean(content.Announcement), x, y, w) + 16;
@@ -71,16 +71,16 @@ internal sealed class PromoPage : ShellPage
 		if (content.Promo.Count == 0)
 		{
 			Rectangle r = new Rectangle(x, y, w, 110);
-			AisvTheme.DrawCard(b, r);
+			Hearth.CardSlip(b, r);
 			string empty = Content?.Available == true ? Tr.Get("promo.empty", "暂时没有推荐，过几天再来看看。") : Tr.Get("promo.noServer", "这个版本没有内置服务器，没有推荐内容。");
-			AisvTheme.TextCentered(b, empty, r, AisvTheme.TextFaint, 0.85f);
+			Hearth.InkMiddle(b, empty, r, Hearth.QuillPale, 0.85f);
 			y = r.Bottom + 16;
 		}
 		foreach (PromoItem item in content.Promo)
 		{
 			y = Item(b, item, x, y, w, area, hits) + 16;
 		}
-		AisvTheme.EndClip(b);
+		Hearth.EndClip(b);
 		_scroll.Finish(b, area, y, 12);
 		if (_confirm != null)
 		{
@@ -96,16 +96,16 @@ internal sealed class PromoPage : ShellPage
 	public static int Announcement(SpriteBatch b, string text, int x, int y, int w)
 	{
 		int textW = w - 96;
-		List<string> lines = AisvTheme.WrapLines(text, textW, 0.8f);
-		int h = Math.Max(58, lines.Count * AisvTheme.LineHeight(0.8f) + 28);
+		List<string> lines = Hearth.WrapLines(text, textW, 0.8f);
+		int h = Math.Max(58, lines.Count * Hearth.LineHeight(0.8f) + 28);
 		Rectangle r = new Rectangle(x, y, w, h);
-		AisvTheme.Bordered(b, r, AisvTheme.GoldSoft, AisvTheme.Gold, 12);
-		AisvTheme.Glyph(b, new Rectangle(x + 14, y + (h - 38) / 2, 38, 38), AisvTheme.Gold, "告");
+		Hearth.Bordered(b, r, Hearth.AmberPale, Hearth.Amber, 12);
+		Hearth.Glyph(b, new Rectangle(x + 14, y + (h - 38) / 2, 38, 38), Hearth.Amber, "告");
 		int ty = y + 14;
 		foreach (string line in lines)
 		{
-			AisvTheme.DrawText(b, line, new Vector2(x + 66, ty), AisvTheme.Text, 0.8f);
-			ty += AisvTheme.LineHeight(0.8f);
+			Hearth.Ink(b, line, new Vector2(x + 66, ty), Hearth.Quill, 0.8f);
+			ty += Hearth.LineHeight(0.8f);
 		}
 		return r.Bottom;
 	}
@@ -125,13 +125,13 @@ internal sealed class PromoPage : ShellPage
 		}
 		int textX = side ? x + 20 + imgW + 24 : x + 20;
 		int textW = side ? w - (textX - x) - 20 : w - 40;
-		int titleH = AisvTheme.LineHeight(1f);
-		List<string> body = AisvTheme.WrapLines(ShellText.Clean(item.Body), textW, 0.82f);
+		int titleH = Hearth.LineHeight(1f);
+		List<string> body = Hearth.WrapLines(ShellText.Clean(item.Body), textW, 0.82f);
 		bool link = item.LinkUrl.Length > 0;
-		int textBlock = titleH + 8 + body.Count * AisvTheme.LineHeight(0.82f) + (link ? 20 + 52 : 0);
+		int textBlock = titleH + 8 + body.Count * Hearth.LineHeight(0.82f) + (link ? 20 + 52 : 0);
 		int h = side ? Math.Max(imgH, textBlock) + 40 : (tex != null ? imgH + 16 : 0) + textBlock + 40;
 		Rectangle card = new Rectangle(x, y, w, h);
-		AisvTheme.DrawCard(b, card);
+		Hearth.CardSlip(b, card);
 		int ty = y + 20;
 		if (tex != null)
 		{
@@ -142,19 +142,19 @@ internal sealed class PromoPage : ShellPage
 				ty = img.Bottom + 16;
 			}
 		}
-		AisvTheme.Bold(b, AisvTheme.Truncate(ShellText.Clean(item.Title), textW), new Vector2(textX, ty), AisvTheme.Text);
+		Hearth.InkBold(b, Hearth.Truncate(ShellText.Clean(item.Title), textW), new Vector2(textX, ty), Hearth.Quill);
 		ty += titleH + 8;
 		foreach (string line in body)
 		{
-			AisvTheme.DrawText(b, line, new Vector2(textX, ty), AisvTheme.Text, 0.82f);
-			ty += AisvTheme.LineHeight(0.82f);
+			Hearth.Ink(b, line, new Vector2(textX, ty), Hearth.Quill, 0.82f);
+			ty += Hearth.LineHeight(0.82f);
 		}
 		if (link)
 		{
 			string label = item.LinkText.Length > 0 ? item.LinkText : Tr.Get("promo.go", "去看看");
-			int bw = Math.Min(textW, (int)AisvTheme.Width(label, 0.85f) + 64);
+			int bw = Math.Min(textW, (int)Hearth.Width(label, 0.85f) + 64);
 			Rectangle btn = new Rectangle(textX, ty + 20, Math.Max(160, bw), 52);
-			AisvTheme.Button(b, btn, label, primary: true, hover: AisvTheme.Hover(btn, clip), scale: 0.85f);
+			Hearth.PressPlate(b, btn, label, primary: true, hover: Hearth.Hover(btn, clip), scale: 0.85f);
 			if (_confirm == null)
 			{
 				hits.Add(btn, () =>

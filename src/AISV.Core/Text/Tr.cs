@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace AISV.Core.Text;
 
 /// <summary>
-/// 给玩家看的文字。代码里写中文原文当默认值，i18n 文件里有同名键就用文件里的（游戏层在启动时接上 SMAPI 的翻译）。
+/// 给玩家看的文字。代码里写中文原文，i18n 里 zh.json 是同样的中文，default.json 是英文（SMAPI 的英文环境只读它），其他语言各一个文件。
 /// 写法：Tr.Get(键, 中文原文)；带参数时原文里写 {{name}}，再传 ("name", 值)。
 /// </summary>
 public static class Tr
