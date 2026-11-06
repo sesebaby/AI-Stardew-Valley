@@ -90,6 +90,8 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 
 	private int _noticeUntil;
 
+	private int _sizePercent;
+
 	public ShellMenu(ShellContext ctx, Tab? tab = null, SocialTab? social = null, WorldTab? world = null)
 	{
 		_ctx = ctx;
@@ -170,7 +172,8 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 		yPositionOnScreen = 0;
 		width = vw;
 		height = vh;
-		int w = Math.Min(vw - 48, 1440), h = Math.Min(vh - 48, 940);
+		_sizePercent = _ctx.Config().ShellSizePercent;
+		int w = Math.Min(vw - 48, 1440 * _sizePercent / 100), h = Math.Min(vh - 48, 940 * _sizePercent / 100);
 		_outer = new Rectangle((vw - w) / 2, (vh - h) / 2, w, h);
 		_page = AisvTheme.Inflate(_outer, -AisvTheme.WindowBorder);
 		_tabRects.Clear();
@@ -254,6 +257,10 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 	public override void update(GameTime time)
 	{
 		base.update(time);
+		if (_ctx.Config().ShellSizePercent != _sizePercent)
+		{
+			Layout();
+		}
 		Page.Tick();
 	}
 

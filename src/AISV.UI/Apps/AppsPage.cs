@@ -15,7 +15,7 @@ namespace AISV.UI.Apps;
 /// <summary>应用：七个读 AI 数据的小应用排成图标格子，每个下面一行实时的摘要。</summary>
 internal sealed class AppsPage : ShellPage
 {
-	private sealed record App(string Id, PixelGlyph Icon, Color Tint, string Name, Func<string> Summary, Action Open);
+	internal sealed record App(string Id, PixelGlyph Icon, Color Tint, string Name, Func<string> Summary, Action Open);
 
 	private readonly Scroller _scroll = new Scroller();
 
@@ -49,6 +49,14 @@ internal sealed class AppsPage : ShellPage
 		};
 	}
 
+	public IReadOnlyList<App> All => _apps;
+
+	private List<App> Visible()
+	{
+		var config = Ctx.Config();
+		return _apps.Where(a => !AppShelf.IsHidden(config, a.Id)).ToList();
+	}
+
 	/// <summary>调试用：按名字打开一个应用。</summary>
 	public bool OpenById(string id)
 	{
@@ -60,13 +68,17 @@ internal sealed class AppsPage : ShellPage
 	/// <summary>摘要要读不少存档数据，半分钟最多刷新一次。</summary>
 	public override void Reload()
 	{
-		if ((DateTime.UtcNow - _refreshed).TotalSeconds < 30)
+		bool stale = (DateTime.UtcNow - _refreshed).TotalSeconds >= 30;
+		if (stale)
 		{
-			return;
+			_refreshed = DateTime.UtcNow;
 		}
-		_refreshed = DateTime.UtcNow;
-		foreach (App app in _apps)
+		foreach (App app in Visible())
 		{
+			if (!stale && _summaries.ContainsKey(app.Id))
+			{
+				continue;
+			}
 			try
 			{
 				_summaries[app.Id] = app.Summary();
@@ -91,17 +103,23 @@ internal sealed class AppsPage : ShellPage
 		AisvTheme.BeginClip(b, area);
 		int y = area.Y + 24 - _scroll.Offset;
 		AisvTheme.Bold(b, Tr.Get("apps.title", "应用"), new Vector2(x, y), AisvTheme.Text, 1.25f);
+		string manageLabel = Tr.Get("apps.manage", "管理应用");
+		int mw = (int)AisvTheme.Width(manageLabel, 0.76f) + 36;
+		Rectangle manage = new Rectangle(x + w - mw, y, mw, 42);
+		AisvTheme.Button(b, manage, manageLabel, hover: AisvTheme.Hover(manage, area), scale: 0.76f);
+		hits.Add(manage, () => Host.Push(new AppShelfPage(Ctx)), area);
 		AisvTheme.DrawText(b, Tr.Get("apps.sub", "从别的角度看看山谷：心情、日程、星象、八卦、关系、口碑和这一年。"), new Vector2(x + 2, y + 46), AisvTheme.TextMuted, 0.78f);
 		y += 96;
 		int cols = w >= 1180 ? 3 : w >= 720 ? 2 : 1;
 		const int gap = 22, h = 150;
 		int tw = (w - gap * (cols - 1)) / cols;
-		for (int i = 0; i < _apps.Count; i++)
+		List<App> apps = Visible();
+		for (int i = 0; i < apps.Count; i++)
 		{
 			Rectangle r = new Rectangle(x + i % cols * (tw + gap), y + i / cols * (h + gap), tw, h);
 			if (r.Bottom >= area.Y && r.Y <= area.Bottom)
 			{
-				App app = _apps[i];
+				App app = apps[i];
 				Tile(b, r, app, AisvTheme.Hover(r, area));
 				hits.Add(r, () =>
 				{
@@ -110,7 +128,7 @@ internal sealed class AppsPage : ShellPage
 				}, area);
 			}
 		}
-		int bottom = y + (_apps.Count + cols - 1) / cols * (h + gap) + 8;
+		int bottom = y + (apps.Count + cols - 1) / cols * (h + gap) + 8;
 		AisvTheme.EndClip(b);
 		_scroll.Finish(b, area, bottom, 12);
 	}

@@ -154,6 +154,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private OfferDesk _offers = null!;
 
+	public override object? GetApi() => _social == null ? null : new AiStardewValleyApi(_social.Gossip);
+
 	public override void Entry(IModHelper helper)
 	{
 		StepTimer timer = new StepTimer("AI星露谷 启动");

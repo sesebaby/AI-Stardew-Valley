@@ -470,6 +470,12 @@ public sealed class ModConfig
 
 	public List<string> ModVillagerPicks { get; set; } = new List<string>();
 
+	/// <summary>应用页不显示的应用。</summary>
+	public List<string> HiddenApps { get; set; } = new List<string>();
+
+	/// <summary>界面窗口的最大尺寸（70～150%）。文字大小跟着游戏的界面缩放。</summary>
+	public int ShellSizePercent { get; set; } = 100;
+
 	public Compat.NpcModActivationMode ModVillagerScope { get; set; } = Compat.NpcModActivationMode.AllNpcMods;
 
 	/// <summary>玩家自己不想让 AI 驱动的村民（内部名，逗号或换行分隔）。</summary>
@@ -568,6 +574,8 @@ public sealed class ModConfig
 		MailGiftBanned ??= new List<string>();
 		ModVillagerPicks = CleanIds(ModVillagerPicks);
 		ModVillagerExtras = CleanIds(ModVillagerExtras);
+		HiddenApps = CleanIds(HiddenApps);
+		ShellSizePercent = System.Math.Clamp(ShellSizePercent, 70, 150);
 		return this;
 	}
 

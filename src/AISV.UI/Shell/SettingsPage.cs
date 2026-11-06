@@ -9,6 +9,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using StardewValley;
+using StardewValley.Menus;
 
 namespace AISV.UI.Shell;
 
@@ -35,15 +36,17 @@ internal sealed class SettingsPage : ShellPage
 
 	private static readonly int[] TalkMinutes = AISV.Core.Dialogue.TalkTime.Choices;
 
-	private static readonly int[] DailyLimits = { 3, 5, 8, 10, 15 };
+	private static readonly int[] WindowSizes = { 70, 80, 90, 100, 110, 125, 150 };
 
-	private static readonly int[] ItemRequestChances = { 0, 5, 10, 20, 35, 50 };
+	private static readonly int[] DailyLimits = { 3, 5, 6, 8, 10, 15 };
 
-	private static readonly int[] WeeklyTexts = { 0, 1, 3, 5, 7, 10 };
+	private static readonly int[] ItemRequestChances = { 0, 5, 6, 10, 20, 35, 50 };
+
+	private static readonly int[] WeeklyTexts = { 0, 1, 3, 4, 5, 7, 10 };
 
 	private static readonly int[] ArcLimits = { 1, 2, 3, 4, 5 };
 
-	private static readonly int[] PostDays = { 1, 2, 3, 5, 7, 14 };
+	private static readonly int[] PostDays = { 1, 2, 3, 4, 5, 7, 14 };
 
 	private static readonly int[] FizzleSeasons = { 1, 2, 3, 4, 8 };
 
@@ -53,11 +56,13 @@ internal sealed class SettingsPage : ShellPage
 
 	private static readonly int[] OutingHearts = { 0, 2, 3, 4, 6, 8 };
 
-	private static readonly int[] OutingCooldowns = { 0, 1, 3, 7, 14 };
+	private static readonly int[] OutingCooldowns = { 0, 1, 2, 3, 7, 14 };
 
-	private static readonly int[] OutingFriendship = { 0, 5, 10, 20, 30, 50 };
+	private static readonly int[] OutingFriendship = { 0, 5, 10, 12, 20, 30, 50 };
 
-	private static readonly int[] OfferChances = { 0, 5, 10, 20, 30 };
+	private static readonly int[] OfferChances = { 0, 5, 10, 12, 20, 30 };
+
+	private static readonly int[] ModRumorLimits = { 5, 12, 25, 50, 100 };
 
 	private static readonly int[] ScenesPerDay = { 0, 1, 2, 3, 4, 5 };
 
@@ -96,14 +101,24 @@ internal sealed class SettingsPage : ShellPage
 
 	private readonly List<Category> _categories;
 
+	private readonly TextBox _search = new TextBox(null, null, Game1.smallFont, AisvTheme.Text) { textLimit = 20, limitWidth = false };
+
 	private int _current;
 
 	private Rectangle _detail;
+
+	private string _lastQuery = "";
+
+	private int _resetArmedUntil;
 
 	public SettingsPage(ShellContext ctx) : base(ctx)
 	{
 		_categories = Build();
 	}
+
+	public override bool CapturesKeys => _search.Selected;
+
+	private string Query => (_search.Text ?? "").Trim();
 
 	private static List<Category> Build()
 	{
@@ -123,6 +138,11 @@ internal sealed class SettingsPage : ShellPage
 					new ChoiceRow(Tr.Get("shell.settings.talkMinutes", "聊天花的时间"), Tr.Get("shell.settings.talkMinutesNote", "当面聊一轮、群聊说一句，钟走几分钟（只在单人游戏里；聊完关掉对话框再走，最晚到 25:50）"),
 						TalkMinutes.Select(m => m == 0 ? Tr.Get("shell.settings.talkFree", "不花时间") : Tr.Get("shell.settings.minutes", "{{n}} 分钟", ("n", m))).ToArray(),
 						c => Nearest(TalkMinutes, c.MinutesPerReply), (c, i) => c.MinutesPerReply = TalkMinutes[i])
+				}),
+				(Tr.Get("shell.settings.uiGroup", "界面"), new List<Row>
+				{
+					new ChoiceRow(Tr.Get("shell.settings.windowSize", "窗口大小"), Tr.Get("shell.settings.windowSizeNote", "调整这个界面的窗口；文字大小跟着游戏的界面缩放"), WindowSizes.Select(n => n + "%").ToArray(), c => Nearest(WindowSizes, c.ShellSizePercent), (c, i) => c.ShellSizePercent = WindowSizes[i]),
+					new LinkRow(Tr.Get("apps.manage.title", "显示哪些应用"), Tr.Get("shell.settings.appsNote", "把用不上的应用从应用页收起来"), ctx => new AISV.UI.Apps.AppShelfPage(ctx))
 				}),
 				(Tr.Get("shell.settings.profiles", "设定"), new List<Row>
 				{
@@ -190,7 +210,9 @@ internal sealed class SettingsPage : ShellPage
 					new ToggleRow(Tr.Get("shell.settings.gossip", "八卦和日记"), Tr.Get("shell.settings.gossipNote", "晚上把今天的事整理成八卦，顺便写日记"), c => c.RumorsOn, (c, v) => c.RumorsOn = v),
 					new ChoiceRow(Tr.Get("shell.settings.focus", "八卦说谁"), Tr.Get("shell.settings.focusNote", "镇上的人更爱聊你，还是聊他们自己"), focus, c => Math.Max(0, Array.IndexOf(focusKeys, GossipFocus.Normalize(c.RumorSubject))), (c, i) => c.RumorSubject = focusKeys[i]),
 					new ToggleRow(Tr.Get("shell.settings.socialGossip", "村民的事也传八卦"), Tr.Get("shell.settings.socialGossipNote", "村民之间的小事也会传开"), c => c.MeetupsBecomeRumors, (c, v) => c.MeetupsBecomeRumors = v),
-					new ToggleRow(Tr.Get("options.gazette", "镇上的报纸"), Tr.Get("shell.settings.weeklyNewsNote", "每月 7、14、21、28 日晚上出一期《鹈鹕镇周报》，第二天早上送到信箱"), c => c.GazetteOn, (c, v) => c.GazetteOn = v)
+					new ToggleRow(Tr.Get("options.gazette", "镇上的报纸"), Tr.Get("shell.settings.weeklyNewsNote", "每月 7、14、21、28 日晚上出一期《鹈鹕镇周报》，第二天早上送到信箱"), c => c.GazetteOn, (c, v) => c.GazetteOn = v),
+					new ToggleRow(Tr.Get("shell.settings.modRumors", "接受其他 mod 的八卦"), Tr.Get("shell.settings.modRumorsNote", "其他 mod 可以交来今天发生的事，晚上一起整理"), c => c.RumorsFromMods, (c, v) => c.RumorsFromMods = v),
+					new ChoiceRow(Tr.Get("shell.settings.modRumorsDaily", "每天最多收几条"), Tr.Get("shell.settings.modRumorsDailyNote", "所有 mod 加起来的数量"), ModRumorLimits.Select(n => n.ToString()).ToArray(), c => Nearest(ModRumorLimits, c.ModRumorsDaily), (c, i) => c.ModRumorsDaily = ModRumorLimits[i]) { Shown = c => c.RumorsFromMods }
 				}),
 				(Tr.Get("shell.settings.lettersGroup", "信件"), new List<Row>
 				{
@@ -298,7 +320,27 @@ internal sealed class SettingsPage : ShellPage
 
 	public override void Scroll(int direction) => _scroll.Wheel(direction);
 
-	public override bool KeyPress(Keys key) => _scroll.PageKeys(key, _detail.Height - 80);
+	public override bool KeyPress(Keys key)
+	{
+		if (_search.Selected)
+		{
+			if (key == Keys.Escape)
+			{
+				if (Query.Length > 0)
+				{
+					_search.Text = "";
+				}
+				else
+				{
+					_search.Selected = false;
+				}
+			}
+			return true;
+		}
+		return _scroll.PageKeys(key, _detail.Height - 80);
+	}
+
+	public override void Closed() => _search.Selected = false;
 
 	public override void Draw(SpriteBatch b, Rectangle area, Hits hits)
 	{
@@ -312,11 +354,18 @@ internal sealed class SettingsPage : ShellPage
 	{
 		AisvTheme.Fill(b, nav, AisvTheme.Card);
 		AisvTheme.VLine(b, nav.Right - 2, nav.Y, nav.Height, AisvTheme.Divider);
-		int y = nav.Y + 16;
+		string q = Query;
+		Rectangle box = new Rectangle(nav.X + 8, nav.Y + 14, nav.Width - 20, 44);
+		AisvTheme.Field(b, box, _search.Selected);
+		AisvTheme.Magnifier(b, new Vector2(box.X + 20, box.Center.Y));
+		Vector2 tp = new Vector2(box.X + 40, box.Center.Y - AisvTheme.LineHeight(0.8f) / 2);
+		AisvTheme.DrawText(b, q.Length == 0 && !_search.Selected ? Tr.Get("shell.settings.search", "搜索设置") : AisvTheme.Truncate(q, box.Width - 52, 0.8f), tp, q.Length == 0 ? AisvTheme.TextFaint : AisvTheme.Text, 0.8f);
+		hits.Add(box, () => _search.Selected = true);
+		int y = box.Bottom + 12;
 		for (int i = 0; i < _categories.Count; i++)
 		{
 			Rectangle r = new Rectangle(nav.X + 8, y, nav.Width - 20, 56);
-			bool sel = i == _current;
+			bool sel = q.Length == 0 && i == _current;
 			if (sel || AisvTheme.Hover(r))
 			{
 				AisvTheme.FillRounded(b, r, sel ? AisvTheme.SelectedRow : AisvTheme.PageDeep, 10);
@@ -330,7 +379,11 @@ internal sealed class SettingsPage : ShellPage
 			int index = i;
 			hits.Add(r, () =>
 			{
-				if (_current != index)
+				bool searching = Query.Length > 0;
+				_search.Text = "";
+				_search.Selected = false;
+				_resetArmedUntil = 0;
+				if (_current != index || searching)
 				{
 					Game1.playSound("smallSelect");
 					_current = index;
@@ -341,15 +394,45 @@ internal sealed class SettingsPage : ShellPage
 		}
 	}
 
+	/// <summary>搜索结果按原来的分类和分组排；同一个开关在两处出现时只留第一处。</summary>
+	private Category Results(string query, ModConfig config)
+	{
+		List<(string, List<Row>)> groups = new List<(string, List<Row>)>();
+		HashSet<(string, string)> seen = new HashSet<(string, string)>();
+		foreach (Category cat in _categories)
+		{
+			foreach ((string group, List<Row> rows) in cat.Groups)
+			{
+				List<Row> found = rows.Where(r => (r.Shown?.Invoke(config) ?? true) && SettingsSearch.Matches(query, r.Label, r.Note, group, cat.Title) && seen.Add((r.Label, r.Note))).ToList();
+				if (found.Count > 0)
+				{
+					groups.Add((cat.Title == group ? group : cat.Title + " · " + group, found));
+				}
+			}
+		}
+		int count = groups.Sum(g => g.Item2.Count);
+		return new Category(Tr.Get("shell.settings.searchTitle", "搜索结果"), count > 0 ? Tr.Get("shell.settings.searchFound", "找到 {{n}} 项。", ("n", count)) : Tr.Get("shell.settings.searchNone", "没有找到，换个词试试。"), groups);
+	}
+
 	private void DrawDetail(SpriteBatch b, Hits hits)
 	{
-		Category cat = _categories[_current];
 		ModConfig config = Ctx.Config();
+		string q = Query;
+		if (q != _lastQuery)
+		{
+			_lastQuery = q;
+			_scroll.Reset();
+		}
+		Category cat = q.Length > 0 ? Results(q, config) : _categories[_current];
 		AisvTheme.BeginClip(b, _detail);
 		int w = Math.Min(_detail.Width - 64, 820);
 		int x = _detail.X + (_detail.Width - w) / 2;
 		int y = _detail.Y + 22 - _scroll.Offset;
 		AisvTheme.Bold(b, cat.Title, new Vector2(x, y), AisvTheme.Text, 1.15f);
+		if (q.Length == 0 && cat.Groups.Any(g => g.Rows.Any(r => r is ToggleRow or ChoiceRow)))
+		{
+			DrawResetButton(b, cat, x + w, y - 4, hits);
+		}
 		y += AisvTheme.LineHeight(1.15f) + 4;
 		AisvTheme.DrawText(b, cat.Description, new Vector2(x, y), AisvTheme.TextMuted, 0.78f);
 		y += 44;
@@ -418,7 +501,11 @@ internal sealed class SettingsPage : ShellPage
 		case LinkRow link:
 		{
 			AisvTheme.Chevron(b, new Vector2(r.Right - 30, r.Center.Y), left: false, AisvTheme.AccentDark);
-			hits.Add(r, () => Host.Push(link.Page(Ctx)), _detail);
+			hits.Add(r, () =>
+			{
+				_search.Selected = false;
+				Host.Push(link.Page(Ctx));
+			}, _detail);
 			break;
 		}
 		case InfoRow info:
@@ -429,6 +516,49 @@ internal sealed class SettingsPage : ShellPage
 			break;
 		}
 		}
+	}
+
+	/// <summary>点一次变成“再点一次确认”，几秒内再点才恢复。</summary>
+	private void DrawResetButton(SpriteBatch b, Category cat, int right, int y, Hits hits)
+	{
+		bool armed = Game1.ticks < _resetArmedUntil;
+		string label = armed ? Tr.Get("shell.settings.resetConfirm", "再点一次确认") : Tr.Get("shell.settings.reset", "恢复本页默认");
+		int bw = (int)AisvTheme.Width(label, 0.76f) + 36;
+		Rectangle btn = new Rectangle(right - bw, y, bw, 42);
+		AisvTheme.Button(b, btn, label, primary: armed, hover: AisvTheme.Hover(btn, _detail), scale: 0.76f);
+		hits.Add(btn, () =>
+		{
+			if (!armed)
+			{
+				Game1.playSound("smallSelect");
+				_resetArmedUntil = Game1.ticks + 300;
+				return;
+			}
+			_resetArmedUntil = 0;
+			Reset(cat);
+		}, _detail);
+	}
+
+	/// <summary>只恢复这一页的开关和选项，包括现在没显示出来的；账号、连接这些链接进去的页面不动。</summary>
+	private void Reset(Category cat)
+	{
+		ModConfig defaults = new ModConfig();
+		Change(c =>
+		{
+			foreach (Row row in cat.Groups.SelectMany(g => g.Rows))
+			{
+				switch (row)
+				{
+				case ToggleRow t:
+					t.Set(c, t.Get(defaults));
+					break;
+				case ChoiceRow ch:
+					ch.Set(c, ch.Get(defaults));
+					break;
+				}
+			}
+		});
+		Host.Notice(Tr.Get("shell.settings.resetDone", "这一页已恢复默认"));
 	}
 
 	private void Change(Action<ModConfig> edit)
