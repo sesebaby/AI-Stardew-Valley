@@ -34,6 +34,11 @@ public sealed class ShellContext
 
 	public AISV.Core.Ai.ServerAccount? Account { get; set; }
 
+	public AISV.Core.Ai.AiService? Ai { get; set; }
+
+	/// <summary>这个版本带不带内置服务器。</summary>
+	public Func<bool> HasServer { get; set; } = () => false;
+
 	/// <summary>现在是不是连 AI星露谷服务器（否则是玩家自己的网关）。</summary>
 	public Func<bool> UsesServer { get; set; } = () => false;
 

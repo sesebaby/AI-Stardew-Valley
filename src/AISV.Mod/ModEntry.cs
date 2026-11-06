@@ -212,6 +212,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_profilePrompt = new ProfilePrompt(_shell);
 			_shell.Account = _account;
 			_shell.UsesServer = () => _ai.UsesServer;
+			_shell.Ai = _ai;
+			_shell.HasServer = () => _connection.IsAvailable;
 			_accountPrompt = new AccountPrompt(_shell);
 			materials.Social = _social;
 			_conversations.Talked += _social.OnTalked;

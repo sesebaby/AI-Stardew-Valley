@@ -181,7 +181,7 @@ tests/AISV.Core.Tests/  单元测试
 1. 安装 [SMAPI 4.0+](https://smapi.io/)。
 2. 将发布包解压到游戏的 `Mods` 文件夹（包里已含 The Stardew Squad）。[Content Patcher](https://www.nexusmods.com/stardewvalley/mods/1915) 是前置，需要另外安装，包里不带；没装时 AI 功能和 Squad 主体照常运行，但 Squad 的坐姿贴图和海莉、哈维的同伴内容包不会加载。
 3. 启动游戏。发布版首次需要 AI 时在游戏内注册或登录账号；也可以跳过登录，村民会先说游戏原来的台词。
-4. 想使用自己的 AI 服务时，在设置里选择自己的网关，填入 API 地址与密钥（OpenAI 兼容接口，本地模型也可以）。
+4. 想使用自己的 AI 服务时，到 设置 > 常用 > AI 连接 选择自己的网关，填入 API 地址与密钥（OpenAI 兼容接口，本地模型也可以），可以当场测试连接。
 
 > 2.0 目前仍处于 alpha 开发阶段，接口、配置和存档结构可能继续调整。
 
