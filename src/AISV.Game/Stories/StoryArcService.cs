@@ -334,7 +334,7 @@ public sealed class StoryArcService
 		if (ready)
 		{
 			_log.Info($"小剧场「{arc.Title}」可以收尾了。");
-			Game1.addHUDMessage(new HUDMessage(Tr.Get("arcs.ready", "「{{title}}」可以收尾了，去 AI 外壳的社交 → 小剧场看看。", ("title", arc.Title)), HUDMessage.newQuest_type));
+			Game1.addHUDMessage(new HUDMessage(Tr.Get("arcs.ready", "「{{title}}」可以收尾了，去 AI 外壳的社交 > 小剧场看看。", ("title", arc.Title)), HUDMessage.newQuest_type));
 		}
 	}
 

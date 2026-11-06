@@ -579,7 +579,7 @@ internal sealed class CommissionsPage : ShellPage
 		ErrandService? service = Ctx.Errands;
 		if (service == null || !service.Enabled)
 		{
-			Kit.Empty(b, feed, Tr.Get("commissionsPage.errandsOff", "给村民发委托没开。"), Tr.Get("commissionsPage.errandsOffHint", "在设置 → 世界里打开。"));
+			Kit.Empty(b, feed, Tr.Get("commissionsPage.errandsOff", "给村民发委托没开。"), Tr.Get("commissionsPage.errandsOffHint", "在设置 > 世界里打开。"));
 			return;
 		}
 		if (_mine.Count == 0)

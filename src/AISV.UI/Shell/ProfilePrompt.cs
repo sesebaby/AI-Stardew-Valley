@@ -38,7 +38,7 @@ public sealed class ProfilePrompt
 		{
 			string key = _ctx.Config().KeyAboutMe?.Trim() ?? "";
 			string text = key.Length > 0 ? Tr.Get("profile.remind", "还没写我的设定，按 {{key}} 介绍一下自己吧", ("key", key))
-				: Tr.Get("profile.remindMenu", "还没写我的设定，在 设置 → 设定 → 我的设定 里介绍一下自己吧");
+				: Tr.Get("profile.remindMenu", "还没写我的设定，在 设置 > 设定 > 我的设定 里介绍一下自己吧");
 			Game1.addHUDMessage(new HUDMessage(text) { noIcon = true, timeLeft = 6000 });
 		}
 	}

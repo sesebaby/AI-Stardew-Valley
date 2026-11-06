@@ -115,6 +115,7 @@ internal sealed class SettingsPage : ShellPage
 			{
 				(Tr.Get("shell.settings.ai", "AI"), new List<Row>
 				{
+					new LinkRow(Tr.Get("shell.settings.account", "账号"), Tr.Get("shell.settings.accountNote", "注册、登录、改密码，看今天还能用多少"), ctx => new AccountPage(ctx)),
 					new ToggleRow(Tr.Get("shell.settings.aiFeatures", "AI 功能"), Tr.Get("shell.settings.aiFeaturesNote", "关掉后村民用游戏原来的台词，晚上也不整理八卦和日记"), c => c.AiOn, (c, v) => c.AiOn = v),
 					new ChoiceRow(Tr.Get("shell.settings.talkMinutes", "聊天花的时间"), Tr.Get("shell.settings.talkMinutesNote", "当面聊一轮、群聊说一句，钟走几分钟（只在单人游戏里；聊完关掉对话框再走，最晚到 25:50）"),
 						TalkMinutes.Select(m => m == 0 ? Tr.Get("shell.settings.talkFree", "不花时间") : Tr.Get("shell.settings.minutes", "{{n}} 分钟", ("n", m))).ToArray(),

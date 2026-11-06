@@ -159,7 +159,7 @@ public static class GmcmSettings
 		api.AddNumberOption(manifest, () => get().JobsPostedDaily, v => get().JobsPostedDaily = v, () => Tr.Get("config.commissionsPerDay", "每天新委托条数"),
 			() => Tr.Get("config.commissionsPerDay.tip", "每天早上贴几条新委托。板上没人接的最多 4 条。"), min: 0, max: 4);
 		api.AddBoolOption(manifest, () => get().ErrandsOn, v => get().ErrandsOn = v, () => Tr.Get("config.errands", "给村民发委托"),
-			() => Tr.Get("config.errands.tip", "在世界 → 委托的\"我发的委托\"里出钱托村民找东西、代买、做菜或转送。报酬先交出去，没办成全额退回。"));
+			() => Tr.Get("config.errands.tip", "在世界 > 委托的\"我发的委托\"里出钱托村民找东西、代买、做菜或转送。报酬先交出去，没办成全额退回。"));
 		api.AddBoolOption(manifest, () => get().PursesOn, v => get().PursesOn = v, () => Tr.Get("config.ledger", "村民账本"),
 			() => Tr.Get("config.ledger.tip", "村民有自己的钱、随身物品和家当：领工资、逛店、付生活费、被偷，都会记账。可以向村民借钱，到期不还他们各有各的反应。"));
 		api.AddBoolOption(manifest, () => get().ShoppingRemarks, v => get().ShoppingRemarks = v, () => Tr.Get("config.ledgerBubbles", "村民买东西时头顶说一句"),

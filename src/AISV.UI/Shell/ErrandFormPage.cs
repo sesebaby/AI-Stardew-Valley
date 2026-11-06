@@ -169,7 +169,7 @@ internal sealed class ErrandFormPage : ShellPage
 		_tip = null;
 		if (Service == null || !Service.Enabled)
 		{
-			Kit.Empty(b, area, Tr.Get("errandForm.off", "给村民发委托没开。"), Tr.Get("errandForm.offHint", "在设置 → 世界里打开。"));
+			Kit.Empty(b, area, Tr.Get("errandForm.off", "给村民发委托没开。"), Tr.Get("errandForm.offHint", "在设置 > 世界里打开。"));
 			return;
 		}
 		RefreshItems();

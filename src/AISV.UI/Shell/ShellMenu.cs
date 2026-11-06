@@ -539,6 +539,12 @@ public sealed class ShellMenu : IClickableMenu, IShellHost
 		((IShellHost)this).Push(new ProfilePage(_ctx, welcome));
 	}
 
+	public void OpenAccount(bool prompted = false)
+	{
+		Open(Tab.Settings);
+		((IShellHost)this).Push(new AccountPage(_ctx, prompted));
+	}
+
 	/// <summary>打开一位村民的家当；loan 为真时直接到借钱。</summary>
 	public void OpenLedger(string npc, bool loan = false)
 	{

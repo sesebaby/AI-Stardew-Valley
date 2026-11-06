@@ -83,8 +83,6 @@ public sealed partial class ConversationController
 
 	private CancellationTokenSource? _replyCts;
 
-	private bool _loginNoticeShown;
-
 	// 换天、回标题时加一，晚到的后台结果据此丢掉。
 	private int _epoch;
 
@@ -232,7 +230,11 @@ public sealed partial class ConversationController
 			}
 			if (_ai.IsDialogueUnavailable())
 			{
-				if (allowVanilla)
+				if (_account?.LoginRequested == true)
+				{
+					return false;
+				}
+				if (allowVanilla || _ai.UsesServer)
 				{
 					return null;
 				}
@@ -1304,7 +1306,6 @@ public sealed partial class ConversationController
 		_counter = null;
 		_generating = false;
 		_executingVanilla = false;
-		_loginNoticeShown = false;
 		ResetReplyState();
 		GenerationStatus.Reset();
 		MainThread.Clear();
@@ -1325,12 +1326,6 @@ public sealed partial class ConversationController
 				_ => n.TextKey
 			};
 			Chat(text, color);
-		}
-		if (_ai.UsesServer && !_loginNoticeShown && _account?.LoginRequested == true)
-		{
-			_loginNoticeShown = true;
-			_account.ConsumeLoginRequest();
-			Chat(Tr.Get("status.loginNeeded", "还没登录 AI星露谷 账号：在 SMAPI 控制台输入 aisv_login 用户名 密码 登录后，村民就会用 AI 说话。"), new Color(255, 165, 0));
 		}
 	}
 

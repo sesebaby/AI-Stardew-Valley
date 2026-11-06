@@ -31,6 +31,9 @@ public sealed class TextArea : IKeyboardSubscriber
 	/// <summary>单行：不换行，贴进来的换行变成空格。</summary>
 	public bool SingleLine { get; set; }
 
+	/// <summary>显示成星号（密码）。</summary>
+	public bool Masked { get; set; }
+
 	public string Text
 	{
 		get => _text;
@@ -117,7 +120,7 @@ public sealed class TextArea : IKeyboardSubscriber
 			}
 			return;
 		}
-		string[] lines = AisvTheme.Wrap(_text, inner.Width).Split('\n');
+		string[] lines = AisvTheme.Wrap(Masked ? new string('*', _text.Length) : _text, inner.Width).Split('\n');
 		int visible = Math.Max(1, inner.Height / lineHeight);
 		int first = Math.Max(0, lines.Length - visible);
 		for (int i = first; i < lines.Length; i++)

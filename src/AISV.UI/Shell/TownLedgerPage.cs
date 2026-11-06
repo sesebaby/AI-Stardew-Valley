@@ -36,7 +36,7 @@ internal sealed class TownLedgerPage : ShellPage
 		_view = new Rectangle(area.X, header.Bottom, area.Width, area.Bottom - header.Bottom);
 		if (Service is not LedgerService service || !service.Enabled)
 		{
-			Kit.Empty(b, _view, Tr.Get("townLedger.off", "村民账本没开。"), Tr.Get("townLedger.offHint", "在设置 → 世界里打开。"));
+			Kit.Empty(b, _view, Tr.Get("townLedger.off", "村民账本没开。"), Tr.Get("townLedger.offHint", "在设置 > 世界里打开。"));
 			return;
 		}
 		IReadOnlyList<NpcWallet> wallets = service.Wallets();

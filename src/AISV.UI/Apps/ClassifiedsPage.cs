@@ -57,7 +57,7 @@ internal sealed class ClassifiedsPage : ShellPage
 		Rectangle inner = new Rectangle(board.X + 20, board.Y + 18, board.Width - 40, board.Height - 36);
 		if (Ctx.Ledger is not { Enabled: true })
 		{
-			Kit.Empty(b, new Rectangle(inner.X, inner.Y + inner.Height / 3, inner.Width, 80), Tr.Get("townLedger.off", "村民账本没开。"), Tr.Get("townLedger.offHint", "在设置 → 世界里打开。"));
+			Kit.Empty(b, new Rectangle(inner.X, inner.Y + inner.Height / 3, inner.Width, 80), Tr.Get("townLedger.off", "村民账本没开。"), Tr.Get("townLedger.offHint", "在设置 > 世界里打开。"));
 			return;
 		}
 		if (_ads.Count == 0)

@@ -106,6 +106,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private ProfilePrompt _profilePrompt = null!;
 
+	private AccountPrompt _accountPrompt = null!;
+
 	private ThiefWatcher _thief = null!;
 
 	private ResidentsService _residents = null!;
@@ -208,6 +210,9 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_social = new SocialSystem(() => _config, store, _ai, _templates, PromptLanguage, log, relationships, _npcs, _log);
 			_shell = new ShellContext(_social, _npcs, relationships, log, () => _config, SaveConfig) { Store = store };
 			_profilePrompt = new ProfilePrompt(_shell);
+			_shell.Account = _account;
+			_shell.UsesServer = () => _ai.UsesServer;
+			_accountPrompt = new AccountPrompt(_shell);
 			materials.Social = _social;
 			_conversations.Talked += _social.OnTalked;
 			_talkClock = new TalkClock(() => _config);
@@ -524,7 +529,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 					_conversations.SayNative(npc, reply.Line);
 					if (reply.Decision == AISV.Core.World.Errands.ErrandDecision.Counter)
 					{
-						StardewValley.Game1.addHUDMessage(new StardewValley.HUDMessage(Tr.Get("errand.counterHint", "{{name}}还了价，到世界 → 委托 → 我发的里答复。", ("name", _npcs.Names.Display(npc.Name))), 2));
+						StardewValley.Game1.addHUDMessage(new StardewValley.HUDMessage(Tr.Get("errand.counterHint", "{{name}}还了价，到世界 > 委托 > 我发的里答复。", ("name", _npcs.Names.Display(npc.Name))), 2));
 					}
 					return true;
 				});
@@ -572,6 +577,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			helper.Events.GameLoop.UpdateTicked += _conversations.OnUpdateTicked;
 			helper.Events.GameLoop.UpdateTicked += (_, _) => _talkClock.OnUpdateTicked();
 			helper.Events.GameLoop.UpdateTicked += (_, _) => _profilePrompt.OnUpdateTicked();
+			helper.Events.GameLoop.UpdateTicked += (_, _) => _accountPrompt.OnUpdateTicked();
 			helper.Events.GameLoop.UpdateTicked += (_, _) => Notices.Flush();
 			helper.Events.GameLoop.UpdateTicked += (_, e) =>
 			{
