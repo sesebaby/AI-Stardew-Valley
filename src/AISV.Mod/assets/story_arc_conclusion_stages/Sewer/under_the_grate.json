@@ -1,0 +1,89 @@
+{
+  "key": "aisv.stage.sewer.under_the_grate",
+  "name": "铁栅下面",
+  "venue": "Sewer",
+  "moods": [
+    "confession",
+    "revelation",
+    "quiet"
+  ],
+  "only_for": [
+    "shadow",
+    "outsider",
+    "promise",
+    "secret",
+    "trust",
+    "peace",
+    "hiding"
+  ],
+  "not_for": [
+    "community",
+    "celebration"
+  ],
+  "fewest_voices": 1,
+  "most_voices": 3,
+  "tune": "Upper_Ambient",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "underground",
+    "base": "3e4a44",
+    "second": "1c2420",
+    "ground": "38403a",
+    "accent": "8fc06a",
+    "trim": "b8c8b0"
+  },
+  "blocking": {
+    "lens": {
+      "x": 30,
+      "y": 17
+    },
+    "hero": {
+      "x": 30,
+      "y": 19,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 30,
+        "y": 17,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_2",
+        "x": 29,
+        "y": 17,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_3",
+        "x": 32,
+        "y": 17,
+        "dir": "left"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    }
+  ]
+}

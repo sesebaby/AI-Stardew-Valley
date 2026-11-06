@@ -1,0 +1,114 @@
+{
+  "key": "aisv.stage.beach.low_tide",
+  "name": "退潮的沙滩",
+  "venue": "Beach",
+  "moods": [
+    "confession",
+    "farewell",
+    "reconciliation",
+    "celebration"
+  ],
+  "only_for": [
+    "romance",
+    "confession",
+    "sea",
+    "writing",
+    "friendship",
+    "farewell",
+    "hope",
+    "reunion"
+  ],
+  "not_for": [],
+  "fewest_voices": 1,
+  "most_voices": 5,
+  "tune": "ocean",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "shore_light",
+    "base": "6fb3c8",
+    "second": "3e6f8e",
+    "ground": "d9c48a",
+    "accent": "f2a65e",
+    "trim": "fbeec4"
+  },
+  "blocking": {
+    "lens": {
+      "x": 43,
+      "y": 24
+    },
+    "hero": {
+      "x": 43,
+      "y": 22,
+      "dir": "down"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 43,
+        "y": 24,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_2",
+        "x": 44,
+        "y": 24,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_3",
+        "x": 42,
+        "y": 24,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_4",
+        "x": 45,
+        "y": 24,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_5",
+        "x": 44,
+        "y": 22,
+        "dir": "left"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_4",
+      "x": 0.7,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_5",
+      "x": 0.6,
+      "y": 0.34,
+      "size": 0.92,
+      "dir": "left"
+    }
+  ]
+}

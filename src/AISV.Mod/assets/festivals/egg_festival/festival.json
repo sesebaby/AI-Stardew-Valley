@@ -1,0 +1,19 @@
+{
+  "id": "egg_festival",
+  "name": "复活节",
+  "priority": 0,
+  "detection": {
+    "season": "spring",
+    "day": 13,
+    "matchAnyDate": false,
+    "locations": [
+      "Town",
+      "Temp"
+    ]
+  },
+  "gossip": {
+    "summary": "今年的复活节，广场上又是一场寻蛋比赛，孩子们把草地翻了个遍。",
+    "chat": "大家还在说今年的彩蛋藏得有多刁钻。",
+    "promptDays": 2
+  }
+}

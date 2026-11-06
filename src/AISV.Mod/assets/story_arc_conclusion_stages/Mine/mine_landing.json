@@ -1,0 +1,89 @@
+{
+  "key": "aisv.stage.mine.mine_landing",
+  "name": "矿洞口的平台",
+  "venue": "Mine",
+  "moods": [
+    "conflict",
+    "revelation",
+    "quiet"
+  ],
+  "only_for": [
+    "dwarf",
+    "mining",
+    "old_feud",
+    "challenge",
+    "danger",
+    "mystery",
+    "adventure"
+  ],
+  "not_for": [
+    "romance",
+    "celebration"
+  ],
+  "fewest_voices": 1,
+  "most_voices": 3,
+  "tune": "Cavern",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "cave_dark",
+    "base": "4c4238",
+    "second": "241e1a",
+    "ground": "40362c",
+    "accent": "c8a040",
+    "trim": "a8a090"
+  },
+  "blocking": {
+    "lens": {
+      "x": 43,
+      "y": 7
+    },
+    "hero": {
+      "x": 43,
+      "y": 9,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 43,
+        "y": 7,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_2",
+        "x": 42,
+        "y": 7,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_3",
+        "x": 44,
+        "y": 7,
+        "dir": "left"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    }
+  ]
+}

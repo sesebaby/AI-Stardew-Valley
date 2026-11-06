@@ -1,0 +1,20 @@
+{
+  "templateId": "cozy/farmhouse_morning_tea",
+  "sceneType": "cozy",
+  "title": "农舍里的早茶",
+  "location": "FarmHouse",
+  "timeWindow": {
+    "min": 800,
+    "max": 1400
+  },
+  "itemHints": [
+    "Green Tea",
+    "Maple Bar",
+    "Pancakes",
+    "Brown Egg",
+    "Sweet Pea"
+  ],
+  "blockedForChildCodedNpcs": false,
+  "llmLineInstructions": "早上来农舍串门，屋里安静。村民道谢的语气像在自己家一样放松，可以说说这样的早晨让人心情好。",
+  "scriptTemplate": "continue/5 9/farmer 4 9 1 {{NPC}} 6 9 3/skippable/AisvItemRequestSceneComplete {{FAVOR_ID}}/pause 500/playSound doorClose/emote {{NPC}} 16/speak {{NPC}} \"{{NPC_LINE_1}}\"/pause 400/jump {{NPC}}/pause 300/speak {{NPC}} \"{{NPC_LINE_2}}\"/emote {{NPC}} 32/pause 500/end"
+}

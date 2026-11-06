@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <!-- Core 是 net6.0（和游戏一致），测试在 net8.0 上跑。 -->
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AISV.Core.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageReference Include="xunit" Version="2.7.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/AISV.Core/AISV.Core.csproj" />
+  </ItemGroup>
+</Project>

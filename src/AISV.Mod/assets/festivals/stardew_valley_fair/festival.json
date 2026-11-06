@@ -1,0 +1,19 @@
+{
+  "id": "stardew_valley_fair",
+  "name": "星露谷展览会",
+  "priority": 0,
+  "detection": {
+    "season": "fall",
+    "day": 16,
+    "matchAnyDate": false,
+    "locations": [
+      "Town",
+      "Temp"
+    ]
+  },
+  "gossip": {
+    "summary": "秋天的星露谷展览会把广场塞得满满当当，展台、游戏摊和外地游客到处都是。",
+    "chat": "展览会上谁的展台最出彩，大家各有说法。",
+    "promptDays": 2
+  }
+}

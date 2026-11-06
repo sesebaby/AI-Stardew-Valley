@@ -1,0 +1,20 @@
+{
+  "templateId": "funny/general_store_mixup",
+  "sceneType": "funny",
+  "title": "杂货店里拿错袋子",
+  "location": "SeedShop",
+  "timeWindow": {
+    "min": 900,
+    "max": 1700
+  },
+  "itemHints": [
+    "Field Snack",
+    "Potato",
+    "Spring Onion",
+    "Brown Egg",
+    "Radish"
+  ],
+  "blockedForChildCodedNpcs": false,
+  "llmLineInstructions": "在杂货店闹了个小乌龙，最后靠农夫带来的东西解决了。轻松好笑，笑的是这件事，不是笑农夫。",
+  "scriptTemplate": "playful/10 22/farmer 9 22 1 {{NPC}} 11 22 3/skippable/AisvItemRequestSceneComplete {{FAVOR_ID}}/pause 400/emote {{NPC}} 8/pause 300/shake {{NPC}} 600/speak {{NPC}} \"{{NPC_LINE_1}}\"/emote farmer 16/pause 300/jump {{NPC}}/speak {{NPC}} \"{{NPC_LINE_2}}\"/emote {{NPC}} 32/pause 500/end"
+}

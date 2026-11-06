@@ -1,0 +1,10 @@
+{
+    "Name": "AIStardewValley",
+    "Author": "远古牛哥",
+    "Version": "2.0.0-alpha.1",
+    "Description": "AI星露谷 2.0（远古牛哥）：AI 村民对话、记忆、八卦、信件、群聊与小镇生活。基于个人兴趣爱好的作品，不谋求任何商业利益。行为参考 AliveNpcs（Lucas Gatica），整合 The Stardew Squad（ThaliaFawnheart）。",
+    "UniqueID": "AIStardewValley.Core",
+    "EntryDll": "AIStardewValley.dll",
+    "MinimumApiVersion": "4.0.0",
+    "UpdateKeys": [ "Nexus:41031" ]
+}

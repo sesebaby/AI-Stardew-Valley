@@ -1,0 +1,975 @@
+{
+  "types": {
+    "bomb": {
+      "severity": 6, "fadeDays": 1.5, "reachTiles": -1, "minCertainty": 2,
+      "senses": { "throughWalls": true, "wakesSleepers": true, "heardFloor": 0.5 },
+      "meters": { "confront": { "weight": 0.9 } },
+      "rules": [
+        { "name": "kent_startled", "when": { "witness": ["Kent"] }, "set": { "confront": 2.5 } },
+        { "name": "kids_cheer", "when": { "witness": ["Vincent", "Jas", "Abigail"] }, "set": { "confront": 0, "humor": 1.5 } },
+        { "name": "caught_in_blast", "when": { "role": ["target"] }, "set": { "confront": 1.2 } }
+      ],
+      "wording": {
+        "byTier": {
+          "5": "就在你眼皮底下，{actor}炸了{count?一响|足足 # 响}",
+          "4": "你亲眼见{actor}那边炸开了{count?一下|，连着 # 下}",
+          "3": "隔着老远听见{count?一声闷响| # 声闷响}，八成又是{actor}",
+          "2": "不知哪儿{count?轰了一下|轰了 # 下}，你猜是{actor}干的",
+          "1": "地皮好像抖了一下，也说不好是不是{actor}"
+        },
+        "recalled": "{actor}在{location}放炮，{count?炸了一响|炸了 # 响}"
+      },
+      "callout": {
+        "odds": 0.7, "emote": "exclamation", "minCertainty": 2, "dailyCap": 2,
+        "byBucket": {
+          "default": ["什么动静！", "耳朵嗡嗡的……", "又炸？"],
+          "friend": ["{farmer}，你又在炸什么？", "悠着点，房子都晃了。"],
+          "spouse": ["亲爱的，手还在吧？"],
+          "child": ["哇！再来一个！", "好响好响！"]
+        }
+      }
+    },
+    "night_walk": {
+      "severity": 3.5, "fadeDays": 5, "reachTiles": 14, "minCertainty": 2,
+      "meters": { "humor": { "weight": 1.2 } },
+      "rules": [
+        { "name": "partner_jealous", "when": { "playerPartner": true, "payload": { "partner": "false" } }, "set": { "humor": 0, "confront": 3.5 } }
+      ],
+      "wording": {
+        "clear": "{actor}和{target}大半夜还走在一块儿，肩膀都快挨上了",
+        "partial": "夜里{actor}身边跟着个人，像是{target}",
+        "faint": "夜里跟谁并排走着",
+        "recalled": "{actor}深夜和{target}结伴走过{location}"
+      }
+    },
+    "follow_npc": {
+      "severity": 5, "fadeDays": 4, "reachTiles": 10, "minCertainty": 3,
+      "meters": { "confront": { "weight": 1 } },
+      "wording": {
+        "clear": "{actor}跟在{target}屁股后头，走哪儿跟哪儿",
+        "partial": "{actor}老跟在{target}后面转",
+        "faint": "跟在谁后面走",
+        "recalled": "{actor}死跟着{target}不放"
+      }
+    },
+    "tool_hit": {
+      "severity": 8, "fadeDays": 10, "reachTiles": 16, "minCertainty": 3,
+      "meters": { "confront": { "weight": 1.2 } },
+      "rules": [
+        { "name": "kin_furious", "when": { "role": ["relative"] }, "set": { "confront": 1.6 } },
+        { "name": "got_hit", "when": { "role": ["target"] }, "set": { "confront": 2.2 } },
+        { "name": "hit_by_weapon", "when": { "role": ["target"], "payload": { "weapon": "true" } }, "set": { "confront": 3 } }
+      ],
+      "wording": {
+        "clear": "{actor}抡起{p:tool}，结结实实砸在{target}身上",
+        "partial": "{actor}拿着家伙抡到了{target}",
+        "faint": "抡着东西砸中了人",
+        "recalled": "{actor}动手拿{p:tool}打了{target}"
+      }
+    },
+    "water_npc": {
+      "severity": 4.5, "fadeDays": 3, "reachTiles": 12, "minCertainty": 2,
+      "meters": {
+        "humor": { "weight": 1.2, "roles": ["bystander", "relative"] },
+        "confront": { "weight": 1.6, "roles": ["target"] }
+      },
+      "rules": [
+        { "name": "rain_anyway", "when": { "role": ["target"], "weather": ["rain", "storm"] }, "multiply": { "confront": 0.4 } },
+        { "name": "kid_splashed", "when": { "role": ["target"], "witness": ["Vincent", "Jas"] }, "set": { "confront": 0, "humor": 2 } },
+        { "name": "partner_splashed", "when": { "role": ["target"], "playerPartner": true }, "set": { "confront": 0, "humor": 2.2 } }
+      ],
+      "wording": {
+        "clear": "{actor}提起水壶，兜头往{target}身上浇",
+        "partial": "{actor}拿水壶往{target}那边泼水",
+        "faint": "拿水壶冲着人泼",
+        "recalled": "{actor}用水壶把{target}浇成了落汤鸡"
+      },
+      "callout": {
+        "emote": "x", "minCertainty": 2, "dailyCap": 4, "approachTier": 2, "roles": ["target"],
+        "byBucket": {
+          "default": ["喂，浇错地方了吧。", "这边不是庄稼。"],
+          "friend": ["{farmer}！我衣服都透了！", "你存心的吧？"],
+          "partner": ["等着，我一会儿泼回来。"],
+          "spouse": ["回家你洗衣服。", "{farmer}，今晚你睡地板。"],
+          "child": ["好凉！再浇一下！"]
+        }
+      }
+    },
+    "tool_near_miss": {
+      "severity": 3, "fadeDays": 1, "reachTiles": 10, "minCertainty": 2,
+      "meters": {
+        "confront": { "weight": 0.6, "roles": ["bystander", "relative"] }
+      },
+      "rules": [
+        { "name": "nearly_hit", "when": { "role": ["target"] }, "set": { "confront": 1.8 } },
+        { "name": "nearly_cut", "when": { "role": ["target"], "payload": { "weapon": "true" } }, "set": { "confront": 2.4 } }
+      ],
+      "wording": {
+        "clear": "{actor}挥着{p:tool}，差一点就碰到{target}",
+        "partial": "{actor}挥东西的时候离{target}挺近",
+        "faint": "在人跟前挥东西",
+        "recalled": "{actor}的{p:tool}险些招呼到{target}"
+      },
+      "callout": {
+        "emote": "exclamation", "minCertainty": 3, "dailyCap": 2, "roles": ["target"],
+        "byBucket": {
+          "default": ["看着点！", "哎！别往这边挥！"],
+          "friend": ["{farmer}，长点眼睛。"],
+          "child": ["吓我一跳！"]
+        }
+      }
+    },
+    "slingshot_hit": {
+      "severity": 7, "fadeDays": 8, "reachTiles": 20, "minCertainty": 3,
+      "meters": { "confront": { "weight": 1.2 } },
+      "rules": [
+        { "name": "shot_in_body", "when": { "role": ["target"] }, "set": { "confront": 2.4 } }
+      ],
+      "wording": {
+        "clear": "{actor}拉开弹弓，一下打在{target}身上",
+        "partial": "{actor}的弹丸好像打中了{target}",
+        "faint": "拿弹弓打中了人",
+        "recalled": "{actor}拿弹弓打过{target}"
+      }
+    },
+    "slingshot_near_miss": {
+      "severity": 3.5, "fadeDays": 2, "reachTiles": 20, "minCertainty": 2,
+      "meters": { "confront": { "weight": 0.5, "roles": ["bystander", "relative"] } },
+      "rules": [
+        { "name": "whizzed_past", "when": { "role": ["target"] }, "set": { "confront": 1.6 } }
+      ],
+      "wording": {
+        "clear": "{actor}的弹丸贴着{target}飞了过去",
+        "partial": "有颗弹丸从{target}身边擦过，是{actor}打的",
+        "faint": "打弹弓，弹丸飞得老偏",
+        "recalled": "{actor}打弹弓差点伤到{target}"
+      },
+      "callout": {
+        "emote": "angry", "minCertainty": 3, "dailyCap": 2, "roles": ["target"],
+        "byBucket": {
+          "default": ["谁在打弹弓！", "嗖的一下，吓死人。"],
+          "friend": ["{farmer}，别拿我当靶子。"]
+        }
+      }
+    },
+    "room": {
+      "severity": 5, "fadeDays": 6, "reachTiles": 8,
+      "meters": { "confront": { "weight": 1.5 } },
+      "rules": [
+        { "name": "room_close_friend", "when": { "role": ["target"], "minHearts": 8 }, "set": { "confront": 0, "tenderness": 0.8 },
+          "callout": { "emote": "blush", "minCertainty": 2, "byBucket": { "default": ["屋里乱，别笑话。", "进来吧，随便坐。"] } } },
+        { "name": "room_partner", "when": { "role": ["target"], "playerPartner": true }, "set": { "confront": 0, "love": 0.8 } }
+      ],
+      "wording": {
+        "clear": "{actor}钻进了{owners}卧室[，一待就是 {p:stayMinutes} 分钟]",
+        "partial": "{actor}进了{owners}卧室",
+        "faint": "往卧室里走",
+        "recalled": "{actor}进过{owners}卧室[，待了 {p:stayMinutes} 分钟]"
+      }
+    },
+    "sleep_outside": {
+      "severity": 5, "fadeDays": 5, "reachTiles": 14, "minCertainty": 2,
+      "splitOn": "p:reason",
+      "forms": {
+        "2am": {
+          "clear": "{actor}熬到后半夜，一头栽在{location}睡死过去",
+          "recalled": "{actor}半夜两点倒在{location}，人事不省"
+        }
+      },
+      "wording": {
+        "clear": "{actor}累到撑不住，直挺挺倒在了地上",
+        "partial": "{actor}倒在地上不动了",
+        "faint": "倒在了地上",
+        "recalled": "{actor}在{location}累倒过一回"
+      },
+      "callout": {
+        "emote": "sad", "odds": 0.8, "minCertainty": 2,
+        "byBucket": {
+          "default": ["喂，那人没事吧？", "得有人去看看。"],
+          "friend": ["{farmer}！醒醒！"],
+          "spouse": ["你又不要命了……"],
+          "child": ["他怎么睡在地上呀？"]
+        }
+      }
+    },
+    "trash": {
+      "severity": 3, "fadeDays": 3, "reachTiles": 9,
+      "meters": { "confront": { "weight": 0.9 } },
+      "rules": [
+        { "name": "own_bin", "when": { "role": ["target"] }, "set": { "confront": 1.8 } },
+        { "name": "linus_gets_it", "when": { "witness": ["Linus"] }, "set": { "confront": 0, "humor": 2 } }
+      ],
+      "wording": {
+        "clear": "{actor}弯腰在[{owners}|路边的]垃圾桶里扒拉",
+        "partial": "{actor}在垃圾桶旁边鼓捣",
+        "faint": "翻垃圾桶",
+        "recalled": "{actor}扒过[{owners}|路边的]垃圾桶"
+      },
+      "callout": {
+        "emote": "question", "odds": 0.6, "minCertainty": 3,
+        "byBucket": {
+          "default": ["那里头可没好东西。", "这是饿成什么样了？"],
+          "friend": ["{farmer}，缺吃的跟我说。"],
+          "child": ["我妈说不能翻那个。"]
+        }
+      }
+    },
+    "gift": {
+      "severity": 3.5, "fadeDays": 7, "reachTiles": 10,
+      "meters": { "tenderness": { "weight": 1, "roles": ["target"] } },
+      "derived": {
+        "tasteTail": {
+          "from": "p:taste",
+          "map": {
+            "loved": "，正中下怀",
+            "liked": "，收得挺高兴",
+            "disliked": "，收下时脸上挂不太住",
+            "hated": "，当场就黑了脸"
+          },
+          "default": ""
+        }
+      },
+      "rules": [
+        { "name": "gift_adored", "when": { "role": ["target"], "payload": { "taste": "loved" } }, "set": { "tenderness": 2.2 } },
+        { "name": "gift_awkward", "when": { "role": ["target"], "payload": { "taste": "disliked" } }, "set": { "tenderness": 0 } },
+        { "name": "gift_insult", "when": { "role": ["target"], "payload": { "taste": "hated" } }, "set": { "tenderness": 0, "confront": 1.6 } },
+        { "name": "gift_to_someone_else", "when": { "role": ["bystander", "relative"], "playerPartner": true }, "set": { "confront": 1.5 } }
+      ],
+      "wording": {
+        "clear": "{actor}把{p:item}递给{target}{tasteTail}",
+        "partial": "{actor}把个什么东西递到{target}手里",
+        "faint": "递了样东西给{target}",
+        "recalled": "{actor}送过{target}{p:item}{tasteTail}"
+      },
+      "callout": {
+        "emote": "note", "odds": 0.5, "minCertainty": 3, "dailyCap": 2, "roles": ["bystander", "relative"],
+        "byBucket": {
+          "default": ["哟，送东西呢。", "{target}今天有福了。"],
+          "friend": ["{farmer}，下回也想着我。"],
+          "child": ["我也想要！"]
+        }
+      }
+    },
+    "room_locked": {
+      "severity": 2.5, "fadeDays": 2, "reachTiles": 6,
+      "meters": { "confront": { "weight": 1.4 } },
+      "rules": [
+        { "name": "locked_friend", "when": { "role": ["target"], "minHearts": 8 }, "set": { "confront": 0.3 } }
+      ],
+      "wording": {
+        "clear": "{actor}去拧{owners}卧室的门把手，没拧开[，这已经是第 {attempt?|#} 回了]",
+        "partial": "{actor}在{owners}卧室门口试着推门",
+        "faint": "在卧室门口推门",
+        "recalled": "{actor}试过开{owners}卧室的门，没开成"
+      },
+      "callout": {
+        "emote": "question", "minCertainty": 2, "dailyCap": 2, "roles": ["target"],
+        "byBucket": {
+          "default": ["那屋锁着呢。", "你推我的门干什么？"],
+          "friend": ["{farmer}，找我喊一声就行。"]
+        }
+      }
+    },
+    "talk": {
+      "severity": 1, "fadeDays": 1, "reachTiles": 6,
+      "splitOn": "secretMode",
+      "forms": {
+        "secret": {
+          "clear": "{actor}和{target}压着嗓子说悄悄话{p:turns?|，好一阵都没散}",
+          "partial": "{actor}和{target}凑得很近，不知道说什么",
+          "faint": "和谁在角落里低声说话",
+          "recalled": "{actor}和{target}说过一阵悄悄话"
+        },
+        "open": {
+          "clear": "{actor}和{target}站着聊天[，说到“{p:topic}”]{p:turns?|，聊了好一阵}",
+          "partial": "{actor}和{target}在说话",
+          "faint": "和谁在说话",
+          "recalled": "{actor}找{target}聊过天[，说的是“{p:topic}”]"
+        }
+      },
+      "wording": {
+        "clear": "{actor}和{target}在聊天",
+        "recalled": "{actor}和{target}聊过天"
+      }
+    },
+    "phone_text": {
+      "severity": 1.5, "fadeDays": 1, "reachTiles": 5, "minCertainty": 2,
+      "meters": { "humor": { "weight": 1.5 } },
+      "wording": {
+        "clear": "{actor}就站在{target}边上不开口，低头敲着{p:device}发消息[，{nearPhrase}]",
+        "partial": "{actor}挨着{target}，一直盯着{p:device}",
+        "faint": "盯着屏幕敲字",
+        "recalled": "{actor}明明就在{target}身边，还非要发消息"
+      },
+      "callout": {
+        "emote": "pause", "odds": 0.5, "minCertainty": 3, "dailyCap": 1,
+        "byBucket": {
+          "default": ["人就在跟前，张嘴说呀。", "这俩人真有意思。"],
+          "child": ["你们在玩什么？"]
+        }
+      }
+    },
+    "room_unlocked": {
+      "severity": 3, "fadeDays": 4, "reachTiles": 8,
+      "meters": { "confront": { "weight": 0.7 } },
+      "rules": [
+        { "name": "door_welcome", "when": { "role": ["target"], "minHearts": 6 }, "set": { "confront": 0, "tenderness": 0.8 },
+          "callout": { "emote": "blush", "minCertainty": 2, "byBucket": { "default": ["你总算进来看看了。", "钥匙没白给你。"] } } }
+      ],
+      "wording": {
+        "clear": "{actor}头一回推开{owners}卧室的门，进去了",
+        "partial": "{actor}打开了{owners}卧室的门",
+        "faint": "推开了一扇卧室门",
+        "recalled": "{actor}第一次进了{owners}卧室"
+      }
+    },
+    "purchase": {
+      "severity": 1, "fadeDays": 1, "reachTiles": 8,
+      "wording": {
+        "clear": "{actor}[从{target}那儿]买走了{p:items}",
+        "partial": "{actor}在柜台前结了账",
+        "faint": "在柜台前掏钱",
+        "recalled": "{actor}[从{target}那儿]买过{p:items}"
+      },
+      "callout": {
+        "emote": "happy", "odds": 0.7, "minCertainty": 3, "dailyCap": 2, "roles": ["vendor"],
+        "byBucket": {
+          "default": ["拿好，慢走。", "{item}，您收好。"],
+          "friend": ["{farmer}，下回再来照顾生意。"]
+        }
+      }
+    },
+    "consume": {
+      "severity": 1.5, "fadeDays": 1, "reachTiles": 7,
+      "meters": { "humor": { "weight": 2, "requiresPayload": "alcohol" } },
+      "splitOn": "p:kind",
+      "forms": {
+        "alcohol": {
+          "clear": "{actor}端起{p:item}就往嘴里灌{seen?|，今天这都第 # 回了}",
+          "partial": "{actor}手里拿着杯酒在喝",
+          "faint": "仰头喝酒",
+          "recalled": "{actor}喝了{p:item}"
+        },
+        "drink": {
+          "clear": "{actor}拿起{p:item}喝了几口",
+          "partial": "{actor}在喝东西",
+          "faint": "仰头喝东西",
+          "recalled": "{actor}喝了{p:item}"
+        }
+      },
+      "wording": {
+        "clear": "{actor}掏出{p:item}吃了起来",
+        "partial": "{actor}在吃东西",
+        "faint": "嚼着什么",
+        "recalled": "{actor}吃了{p:item}"
+      },
+      "rules": [
+        { "name": "drink_near_kids", "when": { "payload": { "kind": "alcohol" }, "nearbyAge": { "age": "child", "tiles": 6 } }, "set": { "humor": 0, "confront": 6 } },
+        { "name": "doctor_worried", "when": { "witness": ["Harvey"], "payload": { "kind": "alcohol" } }, "set": { "humor": 0, "tenderness": 2.5 } },
+        { "name": "pam_cheers", "when": { "witness": ["Pam", "Shane"], "payload": { "kind": "alcohol" } }, "set": { "confront": 0, "humor": 2.5 } },
+        { "name": "gus_sobers_you", "when": { "witness": ["Gus"], "payload": { "kind": "alcohol" } }, "set": { "confront": 0, "humor": 3 },
+          "reward": { "item": "(O)395", "countByTier": [1, 1, 2] } },
+        { "name": "drink_chatter", "when": { "payload": { "kind": "alcohol" } },
+          "callout": { "emote": "note", "odds": 0.5, "minCertainty": 3, "dailyCap": 2, "byBucket": {
+            "default": ["这才几点就喝上了。", "酒量不错嘛。"],
+            "friend": ["少喝点，{farmer}。"],
+            "child": ["那个闻起来好怪。"]
+          } } }
+      ],
+      "callout": {
+        "emote": "note", "odds": 0.25, "minCertainty": 3, "dailyCap": 1,
+        "byBucket": {
+          "default": ["吃得挺香。", "那个{item}闻着不错。"],
+          "friend": ["{farmer}，也不分我一口？"],
+          "child": ["我也饿了。"]
+        }
+      }
+    },
+    "place": {
+      "severity": 1, "fadeDays": 1, "reachTiles": 10,
+      "splitOn": "p:action",
+      "forms": {
+        "enter": {
+          "clear": "{actor}推门进了{place}",
+          "partial": "{actor}往{place}里去了",
+          "faint": "进了哪栋屋子",
+          "recalled": "{actor}去了{place}"
+        },
+        "leave": {
+          "clear": "{actor}从{place}走了出来",
+          "partial": "{actor}刚离开{place}",
+          "faint": "从哪栋屋子出来",
+          "recalled": "{actor}从{place}出来过"
+        }
+      },
+      "wording": {
+        "clear": "{actor}在{place}进进出出",
+        "recalled": "{actor}到过{place}"
+      }
+    },
+    "map": {
+      "severity": 0.5, "fadeDays": 0.5, "reachTiles": 10,
+      "wording": {
+        "clear": "{actor}刚从{p:fromDisplay}过来，又奔{p:toDisplay}去了",
+        "partial": "{actor}往{p:toDisplay}那边走了",
+        "faint": "匆匆走过",
+        "recalled": "{actor}从{p:fromDisplay}走到{p:toDisplay}"
+      }
+    },
+    "dating_proposal": {
+      "severity": 8, "fadeDays": 30, "reachTiles": 14, "minCertainty": 2,
+      "meters": {},
+      "splitOn": "p:result",
+      "forms": {
+        "accepted": {
+          "clear": "{actor}捧出花束向{target}表白，{target}点头了",
+          "partial": "{actor}和{target}站在一起，好像刚定了什么",
+          "faint": "拿着花束跟人说话",
+          "recalled": "{actor}向{target}表白，成了"
+        },
+        "rejected": {
+          "clear": "{actor}捧着花束向{target}表白，{target}摇了头",
+          "partial": "{actor}对着{target}说了什么，气氛一下僵了",
+          "faint": "拿着花束站着发愣",
+          "recalled": "{actor}向{target}表白，碰了一鼻子灰"
+        }
+      },
+      "wording": {
+        "clear": "{actor}捧着花束向{target}表白",
+        "recalled": "{actor}向{target}表白过"
+      },
+      "rules": [
+        { "name": "date_said_yes", "when": { "role": ["target"], "payload": { "result": "accepted" } }, "set": { "love": 2 }, "silent": true },
+        { "name": "date_said_no", "when": { "role": ["target"], "payload": { "result": "rejected" } }, "silent": true },
+        { "name": "date_betrayed", "when": { "role": ["bystander", "relative"], "playerPartner": true }, "set": { "confront": 3 } },
+        { "name": "date_cheers", "when": { "role": ["bystander", "relative"], "playerPartner": false, "payload": { "result": "accepted" } }, "set": { "tenderness": 1, "humor": 0.8 } },
+        { "name": "date_gawk", "when": { "role": ["bystander", "relative"], "playerPartner": false, "payload": { "result": "rejected" } }, "set": { "humor": 1 } }
+      ]
+    },
+    "marriage_proposal": {
+      "severity": 10, "fadeDays": 60, "reachTiles": 20, "minCertainty": 2,
+      "meters": {},
+      "splitOn": "p:result",
+      "forms": {
+        "accepted": {
+          "clear": "{actor}拿出美人鱼吊坠向{target}求婚，{target}答应了",
+          "partial": "{actor}向{target}求婚了，看样子是答应了",
+          "faint": "拿着吊坠跟人说话",
+          "recalled": "{actor}向{target}求婚，{target}答应了"
+        },
+        "rejected": {
+          "clear": "{actor}拿出吊坠向{target}求婚，没等到那句“好”",
+          "partial": "{actor}向{target}求婚，好像没成",
+          "faint": "拿着吊坠愣在原地",
+          "recalled": "{actor}向{target}求婚被拒了"
+        }
+      },
+      "wording": {
+        "clear": "{actor}拿出吊坠向{target}求婚",
+        "recalled": "{actor}向{target}求过婚"
+      },
+      "rules": [
+        { "name": "wed_said_yes", "when": { "role": ["target"], "payload": { "result": "accepted" } }, "set": { "love": 2.5 }, "silent": true },
+        { "name": "wed_said_no", "when": { "role": ["target"], "payload": { "result": "rejected" } }, "silent": true },
+        { "name": "wed_betrayed", "when": { "role": ["bystander", "relative"], "playerPartner": true }, "set": { "confront": 3 } },
+        { "name": "wed_cheers", "when": { "role": ["bystander", "relative"], "playerPartner": false, "payload": { "result": "accepted" } }, "set": { "tenderness": 1 } },
+        { "name": "wed_gawk", "when": { "role": ["bystander", "relative"], "playerPartner": false, "payload": { "result": "rejected" } }, "set": { "humor": 0.8 } }
+      ]
+    },
+    "fishing": {
+      "severity": 1, "fadeDays": 2, "reachTiles": 12, "minCertainty": 2,
+      "wording": {
+        "clear": "{actor}站在水边甩竿钓鱼",
+        "partial": "{actor}好像在钓鱼",
+        "faint": "蹲在水边",
+        "recalled": "{actor}在{location}钓过鱼"
+      }
+    },
+    "npc_move": {
+      "severity": 0.5, "fadeDays": 0.5, "reachTiles": 15,
+      "wording": {
+        "clear": "{actor}进了{p:placeDisplay}",
+        "partial": "{actor}好像来了{p:placeDisplay}",
+        "faint": "走进了屋",
+        "recalled": "{actor}来过{p:placeDisplay}"
+      }
+    },
+    "stare": {
+      "severity": 2, "fadeDays": 1, "reachTiles": 6, "minCertainty": 2,
+      "meters": { "humor": { "weight": 0.8, "roles": ["bystander", "relative"] } },
+      "rules": [
+        { "name": "stared_stranger", "when": { "role": ["target"], "maxHearts": 3 }, "set": { "confront": 1.5 } },
+        { "name": "stared_partner", "when": { "role": ["target"], "playerPartner": true }, "set": { "confront": 0, "love": 1.5 } }
+      ],
+      "wording": {
+        "clear": "{actor}站着不动，眼睛直勾勾盯着{target}",
+        "partial": "{actor}老往{target}那边看",
+        "faint": "杵在那儿盯着谁看",
+        "recalled": "{actor}盯着{target}看了半天"
+      },
+      "callout": {
+        "emote": "question", "minCertainty": 3, "dailyCap": 2, "roles": ["target"],
+        "byBucket": {
+          "default": ["我脸上有东西？", "看够了吗？"],
+          "partner": ["再看我要害羞了。"],
+          "spouse": ["还没看腻？"],
+          "child": ["你为什么一直看我？"]
+        }
+      }
+    },
+    "block_path": {
+      "severity": 2.5, "fadeDays": 1.5, "reachTiles": 7, "minCertainty": 2,
+      "meters": {
+        "confront": { "weight": 1.6, "roles": ["target"] },
+        "humor": { "weight": 0.6, "roles": ["bystander", "relative"] }
+      },
+      "rules": [
+        { "name": "blocked_partner", "when": { "role": ["target"], "playerPartner": true }, "set": { "confront": 0, "humor": 1.5 } }
+      ],
+      "wording": {
+        "clear": "{actor}堵在{target}前面，就是不挪窝",
+        "partial": "{actor}挡了{target}的道",
+        "faint": "挡在路中间",
+        "recalled": "{actor}拦过{target}的路"
+      },
+      "callout": {
+        "emote": "angry", "minCertainty": 2, "dailyCap": 2, "roles": ["target"],
+        "byBucket": {
+          "default": ["劳驾，让一让。", "路这么宽，非站这儿？"],
+          "friend": ["{farmer}，你挡着我了。"],
+          "spouse": ["别闹，我赶时间。"],
+          "child": ["我过不去啦！"]
+        }
+      }
+    },
+    "kiss": {
+      "severity": 4, "fadeDays": 6, "reachTiles": 12, "minCertainty": 2,
+      "meters": { "humor": { "weight": 0.8 } },
+      "rules": [
+        { "name": "kiss_family_warm", "when": { "role": ["relative"] }, "set": { "humor": 0, "tenderness": 1 } },
+        { "name": "kiss_kid_yuck", "when": { "witness": ["Vincent", "Jas"] }, "set": { "tenderness": 0, "humor": 1.5 } },
+        { "name": "kiss_other_partner", "when": { "playerPartner": true }, "set": { "humor": 0, "tenderness": 0, "confront": 2.5 } }
+      ],
+      "wording": {
+        "clear": "{actor}当着大伙儿的面亲了{target}",
+        "partial": "{actor}和{target}凑到一块儿，像是亲了一下",
+        "faint": "亲了谁一下",
+        "recalled": "{actor}在{location}当众亲过{target}"
+      },
+      "callout": {
+        "emote": "blush", "odds": 0.6, "minCertainty": 3, "dailyCap": 2,
+        "byBucket": {
+          "default": ["哎哟，大白天的。", "我什么都没看见。"],
+          "child": ["咦——！"]
+        }
+      }
+    },
+    "swim": {
+      "severity": 2, "fadeDays": 2, "reachTiles": 14, "minCertainty": 2,
+      "meters": { "humor": { "weight": 0.6 } },
+      "rules": [
+        { "name": "bathhouse_normal", "when": { "location": ["BathHouse_Pool"] }, "set": { "humor": 0 } }
+      ],
+      "wording": {
+        "clear": "{actor}泡在{location}的水里扑腾",
+        "partial": "{actor}在水里，看着是在游泳",
+        "faint": "在水里晃",
+        "recalled": "{actor}在{location}游过泳"
+      },
+      "callout": {
+        "emote": "note", "odds": 0.5, "minCertainty": 3, "dailyCap": 1,
+        "byBucket": {
+          "default": ["水凉不凉？", "挺会享受。"],
+          "child": ["我也想下水！"]
+        }
+      }
+    },
+    "argue": {
+      "severity": 5, "fadeDays": 5, "reachTiles": 12, "minCertainty": 2,
+      "meters": { "confront": { "weight": 0.6 } },
+      "rules": [
+        { "name": "kin_takes_side", "when": { "role": ["relative"] }, "set": { "confront": 1.4 } },
+        { "name": "foul_mouth", "when": { "payload": { "insult": "true" } }, "multiply": { "confront": 1.5 } }
+      ],
+      "wording": {
+        "clear": "{actor}和{target}当街吵起来了[，嚷着“{p:said}”]",
+        "partial": "{actor}和{target}说话声越来越大，像在吵",
+        "faint": "和人争得脸红脖子粗",
+        "recalled": "{actor}和{target}当众吵过一架"
+      }
+    },
+    "flirt": {
+      "severity": 5.5, "fadeDays": 8, "reachTiles": 8, "minCertainty": 2,
+      "meters": { "humor": { "weight": 0.7, "roles": ["bystander", "relative"] } },
+      "rules": [
+        { "name": "flirt_betrayal", "when": { "role": ["target"] }, "set": { "confront": 2.4 } }
+      ],
+      "wording": {
+        "clear": "{actor}当着{n:partner}的面，跟{target}眉来眼去",
+        "partial": "{actor}和{target}有说有笑，靠得有点太近",
+        "faint": "和人挨得很近说笑",
+        "recalled": "{actor}当着{n:partner}的面撩{target}"
+      }
+    },
+    "sit": {
+      "severity": 2, "fadeDays": 2, "reachTiles": 7, "minCertainty": 2,
+      "meters": { "confront": { "weight": 1, "roles": ["target", "relative"] } },
+      "rules": [
+        { "name": "sit_welcome", "when": { "role": ["target"], "minHearts": 6 }, "set": { "confront": 0, "tenderness": 0.5 },
+          "callout": { "emote": "happy", "minCertainty": 2, "byBucket": { "default": ["坐吧，别客气。", "要不要喝点什么？"] } } }
+      ],
+      "wording": {
+        "clear": "{actor}在{place}一屁股坐上了{p:seat}",
+        "partial": "{actor}在{place}坐下了",
+        "faint": "坐了下来",
+        "recalled": "{actor}跑到{place}，往{p:seat}上一坐"
+      },
+      "callout": {
+        "emote": "question", "minCertainty": 3, "dailyCap": 2, "roles": ["target"],
+        "byBucket": { "default": ["我请你坐了吗？", "你倒不见外。"] }
+      }
+    },
+    "use_appliance": {
+      "severity": 1.5, "fadeDays": 2, "reachTiles": 7, "minCertainty": 2,
+      "meters": { "confront": { "weight": 0.9, "roles": ["target", "relative"] } },
+      "splitOn": "p:kind",
+      "forms": {
+        "tv": {
+          "clear": "{actor}在{place}摁开电视，看得挺来劲",
+          "partial": "{actor}在{place}摆弄电视",
+          "faint": "摆弄电视",
+          "recalled": "{actor}跑到{place}看电视"
+        },
+        "fireplace": {
+          "clear": "{actor}在{place}拨弄起了壁炉",
+          "partial": "{actor}蹲在{place}的壁炉前",
+          "faint": "蹲在壁炉前",
+          "recalled": "{actor}动过{place}的壁炉"
+        },
+        "lamp": {
+          "clear": "{actor}在{place}把灯{p:state}",
+          "partial": "{actor}碰了{place}的灯",
+          "faint": "伸手碰灯",
+          "recalled": "{actor}动过{place}的灯"
+        }
+      },
+      "wording": {
+        "clear": "{actor}在{place}动了别人的东西",
+        "recalled": "{actor}动过{place}的东西"
+      },
+      "rules": [
+        { "name": "appliance_ok", "when": { "role": ["target"], "minHearts": 6 }, "set": { "confront": 0 } }
+      ],
+      "callout": {
+        "emote": "pause", "odds": 0.6, "minCertainty": 3, "dailyCap": 2, "roles": ["target"],
+        "byBucket": { "default": ["这是我家，你知道吧？", "别乱碰。"], "friend": ["想用就说一声。"] }
+      }
+    },
+    "snoop": {
+      "severity": 6, "fadeDays": 10, "reachTiles": 9, "minCertainty": 2,
+      "meters": { "confront": { "weight": 0.8 } },
+      "splitOn": "p:kind",
+      "forms": {
+        "dresser": {
+          "clear": "{actor}拉开{place}的柜子，一层层往外翻",
+          "partial": "{actor}在{place}的柜子跟前翻动",
+          "faint": "在翻柜子",
+          "recalled": "{actor}翻过{owners}柜子"
+        },
+        "letter": {
+          "clear": "{actor}拿起{place}的信就读",
+          "partial": "{actor}在{place}拿着封信看",
+          "faint": "捧着封信在看",
+          "recalled": "{actor}偷看过{owners}信"
+        },
+        "note": {
+          "clear": "{actor}凑近去读{place}放着的东西",
+          "partial": "{actor}在{place}东看西看",
+          "faint": "凑近了看什么东西",
+          "recalled": "{actor}偷看过{owners}私人东西"
+        }
+      },
+      "wording": {
+        "clear": "{actor}在{place}东翻西看",
+        "recalled": "{actor}在{place}乱翻过"
+      },
+      "rules": [
+        { "name": "snoop_kin", "when": { "role": ["relative"] }, "set": { "confront": 1.4 } },
+        { "name": "snoop_owner", "when": { "role": ["target"] }, "set": { "confront": 2.2 } },
+        { "name": "snoop_to_my_face", "when": { "role": ["target"], "payload": { "ownerPresent": "true" } }, "multiply": { "confront": 1.3 } }
+      ]
+    },
+    "pickpocket": {
+      "severity": 9, "fadeDays": 21, "reachTiles": 7, "minCertainty": 2,
+      "meters": {
+        "confront": { "weight": 1.2, "roles": ["bystander"] }
+      },
+      "splitOn": "p:caught",
+      "forms": {
+        "true": {
+          "clear": "{actor}刚把手探向{targetPossessive}兜，手腕就被逮住了",
+          "partial": "{actor}的手往{targetPossessive}兜边凑，被按住了",
+          "faint": "伸手摸人家口袋，被逮住了",
+          "recalled": "{actor}摸{targetPossessive}兜，被逮了个现行"
+        },
+        "false": {
+          "clear": "{actor}悄悄把手伸进{targetPossessive}兜[，摸走了{p:loot}]",
+          "partial": "{actor}贴着{target}站，手不太老实",
+          "faint": "贴着人站，手不太老实",
+          "recalled": "{actor}从{targetPossessive}兜里顺走过[{p:loot}|东西]"
+        }
+      },
+      "wording": {
+        "clear": "{actor}对{target}的口袋动了手",
+        "recalled": "{actor}想摸{targetPossessive}兜"
+      },
+      "rules": [
+        { "name": "pick_kin", "when": { "role": ["relative"] }, "set": { "confront": 1.8 } },
+        { "name": "pick_victim", "when": { "role": ["target"] }, "set": { "confront": 2.4 } },
+        { "name": "pick_caught_red", "when": { "role": ["target"], "payload": { "caught": "true" } }, "set": { "confront": 3 } }
+      ]
+    },
+    "burglary": {
+      "severity": 10, "fadeDays": 28, "reachTiles": 9, "minCertainty": 2,
+      "senses": { "wakesSleepers": true },
+      "meters": { "confront": { "weight": 1.5 } },
+      "splitOn": "p:caught",
+      "forms": {
+        "true": {
+          "clear": "{actor}在{ownersPlain}家翻箱倒柜，被{target}撞破了",
+          "partial": "{actor}在{ownersPlain}家里鬼鬼祟祟，被{target}发现了",
+          "faint": "在别人家翻东西，被人发现了",
+          "recalled": "{actor}摸进{ownersPlain}家行窃，被{target}撞破"
+        },
+        "false": {
+          "clear": "{actor}趁没人摸进{ownersPlain}家[，拿走了{p:loot}]",
+          "partial": "{actor}从{ownersPlain}家溜了出来",
+          "faint": "从别人家溜了出来",
+          "recalled": "{actor}摸进{ownersPlain}家偷过[{p:loot}|东西]"
+        }
+      },
+      "wording": {
+        "clear": "{actor}在别人家里翻东西",
+        "recalled": "{actor}进别人家偷过东西"
+      },
+      "rules": [
+        { "name": "burgled_kin", "when": { "role": ["relative"] }, "set": { "confront": 2 } },
+        { "name": "burgled_owner", "when": { "role": ["target"] }, "set": { "confront": 3 } }
+      ]
+    }
+  },
+  "meters": {
+    "confront": {
+      "steps": [12, 26, 45], "fadeHours": 4, "emote": "angry", "delivery": "walkUp",
+      "rank": 3, "minCertainty": 3, "dailyCap": 2, "grudgeLeft": 0.25,
+      "label": "火气",
+      "heading": "【这口气咽不下去】",
+      "intro": "你朝{farmer}走了过去，就为今天这几件事：",
+      "openingWalkUp": "{farmer}正好走到你面前，你想起今天这几件事：",
+      "flavors": ["有点窝火", "憋着一肚子气", "气得手都在抖"],
+      "sendoff": "你现在{tone}。开口先把事情点明，照你平时吵架的路数来，别客套，也别一上来就原谅。"
+    },
+    "humor": {
+      "steps": [7, 15, 28], "fadeHours": 1.5, "emote": "note", "delivery": "walkUp",
+      "rank": 0.8, "minCertainty": 3, "dailyCap": 2, "grudgeLeft": 0,
+      "label": "好笑",
+      "heading": "【实在忍不住要说两句】",
+      "intro": "你笑着凑到{farmer}跟前，因为刚才看到了这些：",
+      "openingWalkUp": "{farmer}过来了，你正想拿这些事逗逗对方：",
+      "flavors": ["觉得有点好笑", "憋不住笑", "笑得快喘不上气"],
+      "sendoff": "你现在{tone}。打趣一句就好，别上纲上线，别说教。"
+    },
+    "tenderness": {
+      "steps": [6, 14, 30], "fadeHours": 6, "emote": "happy", "delivery": "walkUp",
+      "rank": 1.4, "minCertainty": 3, "dailyCap": 2, "grudgeLeft": 0.1,
+      "label": "暖意",
+      "heading": "【心里一暖】",
+      "intro": "你走向{farmer}，心里还惦记着这些：",
+      "openingWalkUp": "{farmer}来了，你正惦记着这些：",
+      "flavors": ["心里有点暖", "挺感动", "感动得说不太出话"],
+      "sendoff": "你现在{tone}。用你自己的说话习惯讲出来，不必肉麻。"
+    },
+    "love": {
+      "steps": [10, 22, 40], "fadeHours": 10, "emote": "heart", "delivery": "walkUp",
+      "rank": 2, "minCertainty": 4, "dailyCap": 2, "grudgeLeft": 0.3,
+      "label": "心动",
+      "heading": "【心跳快了几拍】",
+      "intro": "你没忍住朝{farmer}走去，脑子里转着这些：",
+      "openingWalkUp": "{farmer}就在眼前，你脑子里还转着这些：",
+      "flavors": ["有点心动", "心怦怦跳", "满脑子都是对方"],
+      "sendoff": "你现在{tone}。按你们现在的关系说，害羞也好直说也好，都得像你。"
+    }
+  },
+  "reactions": {
+    "default": {
+      "title": "{farmer}刚干的事被你看见了",
+      "guide": [
+        "就事论事，提到你实际看到的那一点。",
+        "说得短，像随口搭话，别总结。"
+      ]
+    },
+    "bomb": {
+      "title": "{farmer}弄出的爆炸",
+      "guide": [
+        "第一反应是被吓到或被吵到，然后才是追问。",
+        "按你的脾气选一种：",
+        " 胆小的吓一跳，大胆的觉得刺激，爱操心的念叨安全。",
+        "别把炸弹说成坏事铁证，星露谷挖矿本来就用它。"
+      ]
+    },
+    "consume": {
+      "title": "{farmer}当着你的面吃喝",
+      "guide": [
+        "提一下对方手里的东西和时间，{season}这时节有话说也可以。",
+        "对喝酒的看法按你自己的经历来。"
+      ]
+    },
+    "dating_proposal": {
+      "title": "{farmer}当众表白",
+      "guide": [
+        "你只是旁观的人，别替当事人回答。",
+        "看结果说话：成了就起哄或祝福，没成就替对方尴尬。",
+        "要是{farmer}正和你在一起，这话就该换成质问。"
+      ]
+    },
+    "marriage_proposal": {
+      "title": "{farmer}向人求婚",
+      "guide": [
+        "这在镇上是大事，你的语气要跟得上。",
+        "别替当事人作答，只说你看到后的感觉。",
+        "要是你和{farmer}本来就有那层关系，这一下是被背叛。"
+      ]
+    },
+    "follow_npc": {
+      "title": "{farmer}一路跟着你",
+      "guide": [
+        "转过身当面问对方到底想干什么。",
+        "别客气，也别解释你为什么不舒服。"
+      ]
+    },
+    "gift": {
+      "title": "{farmer}送了东西",
+      "guide": [
+        "收礼的是你，就说东西合不合心意；不是你，就说你看到后怎么想。",
+        "提到东西的名字，别含糊成“礼物”。",
+        "不要答应回礼。"
+      ]
+    },
+    "hurt": {
+      "title": "{farmer}看着状态很差",
+      "guide": [
+        "先问对方怎么弄成这样。",
+        "关心的分寸照你们的交情定。"
+      ]
+    },
+    "phone_text": {
+      "title": "{farmer}站你旁边还发消息",
+      "guide": [
+        "觉得荒唐也好，好笑也好，直说。",
+        "可以学他们低头打字的样子。"
+      ]
+    },
+    "room_locked": {
+      "title": "{farmer}想开卧室的门",
+      "guide": [
+        "问清楚对方找谁、要干什么。",
+        "推过不止一回的话，语气得更硬。"
+      ]
+    },
+    "room": {
+      "title": "{farmer}进了卧室",
+      "guide": [
+        "这是私人地方，你介不介意看你们的交情。",
+        "待得越久越该问一句在里头干了什么。"
+      ]
+    },
+    "room_unlocked": {
+      "title": "{farmer}第一次进卧室",
+      "guide": [
+        "门是对方有资格进才开的，语气可以别扭但别当贼防。",
+        "可以指一指屋里的东西。"
+      ]
+    },
+    "slingshot_hit": {
+      "title": "{farmer}拿弹弓打人",
+      "guide": [
+        "挨打的人先喊疼，再问为什么。",
+        "别当成玩笑放过去。"
+      ]
+    },
+    "slingshot_near_miss": {
+      "title": "{farmer}的弹弓差点伤人",
+      "guide": [
+        "责怪对方不看方向。",
+        "说得短，这只是吓了一跳。"
+      ]
+    },
+    "tool_hit": {
+      "title": "{farmer}动手打了人",
+      "guide": [
+        "这不是小事，语气要严肃。",
+        "受伤的人可以说要去找哈维；旁观的人可以护着挨打的。"
+      ]
+    },
+    "tool_near_miss": {
+      "title": "{farmer}的家伙差点打到人",
+      "guide": [
+        "叫对方看着点。",
+        "还没真打到，别说得像出了大事。"
+      ]
+    },
+    "trash": {
+      "title": "{farmer}翻了垃圾桶",
+      "guide": [
+        "是你家的桶就护着点，不是就当笑话看。",
+        "可以问对方是不是缺吃的。"
+      ]
+    },
+    "water_npc": {
+      "title": "{farmer}拿水壶浇人",
+      "guide": [
+        "身上湿了要提一句，衣服、头发都行。",
+        "你怎么接看你们多熟：",
+        " 熟的闹回去，不熟的要说法。",
+        "下雨天说这种事更好笑。"
+      ]
+    },
+    "pickpocket": {
+      "title": "{farmer}摸人口袋",
+      "guide": [
+        "被抓到了就要对方当场交出来，或者说要告诉刘易斯。",
+        "没抓到的话，旁观者可以压低声音点破。",
+        "按你实际看到多少来说，别猜丢了什么。"
+      ]
+    },
+    "burglary": {
+      "title": "{farmer}闯进别人家偷东西",
+      "guide": [
+        "撞破的人第一反应是赶人。",
+        "说清楚下次你会怎么做。",
+        "你认得是谁，别当陌生人讲。"
+      ]
+    },
+    "snoop": {
+      "title": "{farmer}翻人家私人东西",
+      "guide": [
+        "直接问对方在找什么。",
+        "东西是你的就更难容忍。"
+      ]
+    },
+    "argue": {
+      "title": "{farmer}在外面和人吵架",
+      "guide": [
+        "你只是听见的人，可以劝，也可以站队。",
+        "别重复吵架内容，只说你怎么看。"
+      ]
+    },
+    "flirt": {
+      "title": "{farmer}当众和别人调情",
+      "guide": [
+        "你要是被撇在一边的那个，就别装作没看见。",
+        "外人的话，点到为止。"
+      ]
+    }
+  }
+}

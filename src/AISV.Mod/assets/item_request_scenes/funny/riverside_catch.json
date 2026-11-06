@@ -1,0 +1,20 @@
+{
+  "templateId": "funny/riverside_catch",
+  "sceneType": "funny",
+  "title": "河边捞了一把海藻",
+  "location": "Forest",
+  "timeWindow": {
+    "min": 900,
+    "max": 1800
+  },
+  "itemHints": [
+    "Seaweed",
+    "Field Snack",
+    "Dandelion",
+    "Maple Bar",
+    "Radish"
+  ],
+  "blockedForChildCodedNpcs": false,
+  "llmLineInstructions": "在森林河边，计划出了点岔子，好在农夫带的东西派上了用场。轻松好笑，不刻薄。",
+  "scriptTemplate": "continue/91 20/farmer 90 20 1 {{NPC}} 92 20 3/skippable/AisvItemRequestSceneComplete {{FAVOR_ID}}/pause 500/faceDirection {{NPC}} 2/pause 400/emote {{NPC}} 28/faceDirection {{NPC}} 3/speak {{NPC}} \"{{NPC_LINE_1}}\"/pause 300/emote {{NPC}} 16/jump {{NPC}}/speak {{NPC}} \"{{NPC_LINE_2}}\"/emote farmer 32/pause 500/end"
+}

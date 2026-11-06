@@ -1,0 +1,102 @@
+{
+  "key": "aisv.stage.railroad.waiting_for_the_train",
+  "name": "等一趟火车",
+  "venue": "Railroad",
+  "moods": [
+    "farewell",
+    "revelation",
+    "quiet"
+  ],
+  "only_for": [
+    "farewell",
+    "leaving",
+    "expulsion",
+    "expulsion_return",
+    "return",
+    "runaway",
+    "dreams",
+    "reunion"
+  ],
+  "not_for": [
+    "comedy"
+  ],
+  "fewest_voices": 1,
+  "most_voices": 4,
+  "tune": "wavy",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "railway_dusk",
+    "base": "8a7560",
+    "second": "4a3f38",
+    "ground": "6b6058",
+    "accent": "e08a4c",
+    "trim": "d8c8a8"
+  },
+  "blocking": {
+    "lens": {
+      "x": 32,
+      "y": 47
+    },
+    "hero": {
+      "x": 32,
+      "y": 49,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 32,
+        "y": 47,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_2",
+        "x": 30,
+        "y": 47,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_3",
+        "x": 33,
+        "y": 47,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_4",
+        "x": 32,
+        "y": 46,
+        "dir": "down"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_4",
+      "x": 0.5,
+      "y": 0.43,
+      "size": 0.97,
+      "dir": "down"
+    }
+  ]
+}

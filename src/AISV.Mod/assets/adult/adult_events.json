@@ -1,0 +1,947 @@
+{
+  "note": "只有识别信息：包、事件 ID、地点、演员和另一半。没有任何事件或对话原文。",
+  "packs": [
+    {
+      "id": "Pseudodiego.LAtardewValley",
+      "folder": "poly-leah-abigail",
+      "dialogueNpcs": [
+        "Abigail",
+        "Caroline",
+        "Elliott",
+        "Leah"
+      ],
+      "events": [
+        {
+          "id": "19931",
+          "location": "Custom_ForestWest",
+          "actors": [
+            "Abigail"
+          ],
+          "partners": [
+            "Abigail"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "5",
+          "location": "Farm",
+          "actors": [
+            "Abigail"
+          ],
+          "partners": [
+            "Abigail"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "1237",
+          "location": "FarmHouse",
+          "actors": [
+            "Leah"
+          ],
+          "partners": [
+            "Leah"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "54",
+          "location": "Forest",
+          "actors": [
+            "Leah",
+            "LeahEx"
+          ],
+          "partners": [
+            "Leah"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "19930",
+          "location": "Forest",
+          "actors": [
+            "Abigail",
+            "Leah"
+          ],
+          "partners": [
+            "Abigail"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "45382947",
+          "location": "Forest",
+          "actors": [
+            "Abigail",
+            "Leah"
+          ],
+          "partners": [
+            "Abigail",
+            "Leah"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "50",
+          "location": "LeahHouse",
+          "actors": [
+            "Abigail",
+            "Leah"
+          ],
+          "partners": [
+            "Leah"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "51",
+          "location": "LeahHouse",
+          "actors": [
+            "Leah"
+          ],
+          "partners": [
+            "Leah"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "901756",
+          "location": "Mine",
+          "actors": [
+            "Abigail"
+          ],
+          "partners": [
+            "Abigail"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "2",
+          "location": "Mountain",
+          "actors": [
+            "Abigail"
+          ],
+          "partners": [
+            "Abigail"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "19932",
+          "location": "Saloon",
+          "actors": [
+            "Abigail"
+          ],
+          "partners": [
+            "Abigail"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "1",
+          "location": "SeedShop",
+          "actors": [
+            "Abigail"
+          ],
+          "partners": [
+            "Abigail"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "3",
+          "location": "SeedShop",
+          "actors": [
+            "Abigail",
+            "Leah"
+          ],
+          "partners": [
+            "Abigail"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "4",
+          "location": "Town",
+          "actors": [
+            "Abigail",
+            "Pierre"
+          ],
+          "partners": [
+            "Abigail"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "53",
+          "location": "Town",
+          "actors": [
+            "Abigail",
+            "Demetrius",
+            "Leah",
+            "Lewis",
+            "Olivia",
+            "Penny"
+          ],
+          "partners": [
+            "Leah"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "342528293",
+          "location": "Town",
+          "actors": [
+            "Abigail",
+            "Leah"
+          ],
+          "partners": [
+            "Abigail",
+            "Leah"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        }
+      ]
+    },
+    {
+      "id": "ApryllForever.CPPolyamorySweet",
+      "folder": "polyamorysweet-cp",
+      "dialogueNpcs": [
+        "MermaidLantana"
+      ],
+      "events": []
+    },
+    {
+      "id": "Trashracc.VG",
+      "folder": "valley-girls",
+      "dialogueNpcs": [],
+      "events": [
+        {
+          "id": "10536",
+          "location": "Beach",
+          "actors": [
+            "Alex",
+            "Haley",
+            "HaleyExtra",
+            "HaleyExtra2",
+            "HaleyNude"
+          ],
+          "partners": [
+            "Haley"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10538",
+          "location": "Beach",
+          "actors": [
+            "Alex",
+            "Haley",
+            "HaleyExtra",
+            "HaleyExtra2"
+          ],
+          "partners": [
+            "Haley"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10540",
+          "location": "Beach",
+          "actors": [
+            "Alex",
+            "Haley",
+            "HaleyNude"
+          ],
+          "partners": [
+            "Haley"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10542",
+          "location": "Beach",
+          "actors": [
+            "Alex",
+            "Haley"
+          ],
+          "partners": [
+            "Haley"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10550",
+          "location": "FarmHouse",
+          "actors": [
+            "Abigail",
+            "AbigailExtra"
+          ],
+          "partners": [
+            "Abigail"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10551",
+          "location": "FarmHouse",
+          "actors": [
+            "Emily",
+            "EmilyExtra"
+          ],
+          "partners": [
+            "Emily"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10552",
+          "location": "FarmHouse",
+          "actors": [
+            "Haley",
+            "HaleyExtra"
+          ],
+          "partners": [
+            "Haley"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10553",
+          "location": "FarmHouse",
+          "actors": [
+            "Leah",
+            "LeahExtra"
+          ],
+          "partners": [
+            "Leah"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10554",
+          "location": "FarmHouse",
+          "actors": [
+            "Maru",
+            "MaruExtra"
+          ],
+          "partners": [
+            "Maru"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10555",
+          "location": "FarmHouse",
+          "actors": [
+            "Penny",
+            "PennyExtra"
+          ],
+          "partners": [
+            "Penny"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10556",
+          "location": "FarmHouse",
+          "actors": [
+            "Abigail",
+            "AbigailExtra"
+          ],
+          "partners": [
+            "Abigail"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10557",
+          "location": "FarmHouse",
+          "actors": [
+            "Emily",
+            "EmilyExtra"
+          ],
+          "partners": [
+            "Emily"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10558",
+          "location": "FarmHouse",
+          "actors": [
+            "Haley",
+            "HaleyExtra"
+          ],
+          "partners": [
+            "Haley"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10559",
+          "location": "FarmHouse",
+          "actors": [
+            "Leah",
+            "LeahExtra"
+          ],
+          "partners": [
+            "Leah"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10560",
+          "location": "FarmHouse",
+          "actors": [
+            "Maru",
+            "MaruExtra"
+          ],
+          "partners": [
+            "Maru"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10561",
+          "location": "FarmHouse",
+          "actors": [
+            "Penny",
+            "PennyExtra"
+          ],
+          "partners": [
+            "Penny"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10535",
+          "location": "Saloon",
+          "actors": [
+            "Abigail",
+            "AbigailExtra",
+            "AbigailExtra2",
+            "AbigailNude",
+            "Sam",
+            "Sebastian"
+          ],
+          "partners": [
+            "Abigail"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10537",
+          "location": "Saloon",
+          "actors": [
+            "Abigail",
+            "AbigailExtra",
+            "AbigailExtra2",
+            "Sam",
+            "Sebastian"
+          ],
+          "partners": [
+            "Abigail"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10539",
+          "location": "Saloon",
+          "actors": [
+            "Abigail",
+            "AbigailExtra2",
+            "AbigailNude",
+            "Sam",
+            "Sebastian"
+          ],
+          "partners": [
+            "Abigail"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "10541",
+          "location": "Saloon",
+          "actors": [
+            "Abigail",
+            "AbigailExtra2",
+            "Sam",
+            "Sebastian"
+          ],
+          "partners": [
+            "Abigail"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        }
+      ]
+    },
+    {
+      "id": "Pseudodiego.XtardewValley",
+      "folder": "xtardew",
+      "dialogueNpcs": [
+        "Abigail",
+        "Claire",
+        "Emily",
+        "Haley",
+        "Leah",
+        "Lewis",
+        "Olivia",
+        "Penny",
+        "Robin",
+        "Sophia",
+        "Wizard"
+      ],
+      "events": [
+        {
+          "id": "7395540",
+          "location": "ArchaeologyHouse",
+          "actors": [
+            "Penny"
+          ],
+          "partners": [
+            "Penny"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "38",
+          "location": "BathHouse_Pool",
+          "actors": [
+            "Penny"
+          ],
+          "partners": [
+            "Penny"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "4000004",
+          "location": "Custom_JenkinsHouse",
+          "actors": [
+            "Olivia"
+          ],
+          "partners": [
+            "Olivia"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "8982805",
+          "location": "Custom_JenkinsHouse",
+          "actors": [
+            "Olivia",
+            "Olivia3"
+          ],
+          "partners": [
+            "Olivia"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "17732",
+          "location": "Custom_SophiaHouse",
+          "actors": [
+            "Sophia"
+          ],
+          "partners": [
+            "Sophia"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "17733",
+          "location": "Farm",
+          "actors": [
+            "Sophia"
+          ],
+          "partners": [
+            "Sophia"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "17741",
+          "location": "Farm",
+          "actors": [
+            "Sophia"
+          ],
+          "partners": [
+            "Sophia"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "992559",
+          "location": "Farm",
+          "actors": [
+            "Emily"
+          ],
+          "partners": [
+            "Emily"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "3917600",
+          "location": "Farm",
+          "actors": [
+            "Emily"
+          ],
+          "partners": [
+            "Emily"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "3917601",
+          "location": "FarmHouse",
+          "actors": [
+            "Emily"
+          ],
+          "partners": [
+            "Emily"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "17734",
+          "location": "Forest",
+          "actors": [
+            "Caroline",
+            "Sophia"
+          ],
+          "partners": [
+            "Sophia"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "181928",
+          "location": "Forest",
+          "actors": [
+            "Penny"
+          ],
+          "partners": [
+            "Penny"
+          ],
+          "hasChildren": true,
+          "replacesVanilla": true
+        },
+        {
+          "id": "15",
+          "location": "HaleyHouse",
+          "actors": [
+            "Haley",
+            "HaleyPolaroid",
+            "Haleytenh"
+          ],
+          "partners": [
+            "Haley"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "150938",
+          "location": "HaleyHouse",
+          "actors": [
+            "Emily"
+          ],
+          "partners": [
+            "Emily"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "917409",
+          "location": "HaleyHouse",
+          "actors": [
+            "Emily"
+          ],
+          "partners": [
+            "Emily"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "2123243",
+          "location": "ManorHouse",
+          "actors": [
+            "Abigail",
+            "Clint",
+            "ClothesTherapyCharacters",
+            "Emily",
+            "Lewis",
+            "Robin",
+            "Shane"
+          ],
+          "partners": [
+            "Emily"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "5183338",
+          "location": "Mountain",
+          "actors": [
+            "Maru",
+            "Marusucc"
+          ],
+          "partners": [
+            "Maru"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "2123344",
+          "location": "Saloon",
+          "actors": [
+            "Emily",
+            "Gus"
+          ],
+          "partners": [
+            "Emily"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "94",
+          "location": "SamHouse",
+          "actors": [
+            "Jodi",
+            "Sam"
+          ],
+          "partners": [],
+          "hasChildren": true,
+          "replacesVanilla": false
+        },
+        {
+          "id": "67",
+          "location": "SandyHouse",
+          "actors": [
+            "Sandy"
+          ],
+          "partners": [
+            "Sandy"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "6",
+          "location": "ScienceHouse",
+          "actors": [
+            "Caroline",
+            "Demetrius",
+            "Maru",
+            "Maru1",
+            "Robin"
+          ],
+          "partners": [
+            "Maru"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "8372076",
+          "location": "ScienceHouse",
+          "actors": [
+            "Demetrius",
+            "Maru",
+            "MaruEvent1",
+            "Robin"
+          ],
+          "partners": [
+            "Maru"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "2123343",
+          "location": "Woods",
+          "actors": [
+            "Bear",
+            "Emily",
+            "EmilyTent"
+          ],
+          "partners": [
+            "Emily"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": true
+        },
+        {
+          "id": "3219876",
+          "location": "busstop",
+          "actors": [
+            "Claire",
+            "ClaireProp1",
+            "ClaireProp2"
+          ],
+          "partners": [
+            "Claire"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "1000038",
+          "location": "desert",
+          "actors": [
+            "Sandy"
+          ],
+          "partners": [
+            "Sandy"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "8675611",
+          "location": "farmhouse",
+          "actors": [
+            "Haley",
+            "HaleyBJ"
+          ],
+          "partners": [
+            "Haley"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "23817391",
+          "location": "farmhouse",
+          "actors": [
+            "Haley",
+            "HaleyBJ"
+          ],
+          "partners": [
+            "Haley"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "8982820",
+          "location": "railroad",
+          "actors": [
+            "GenericNPC1",
+            "GenericNPC2",
+            "GenericNPC3",
+            "GenericNPC4",
+            "GenericNPC5",
+            "GenericNPC6",
+            "GenericNPC7",
+            "GenericNPC8",
+            "GrampletonTaxi",
+            "GrampletonTrain",
+            "MarlonFay",
+            "Olivia",
+            "Olivia4",
+            "Susan",
+            "Taxi1",
+            "Taxi2",
+            "Taxi3",
+            "Taxi4"
+          ],
+          "partners": [
+            "Olivia"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "1000008",
+          "location": "saloon",
+          "actors": [
+            "Emily",
+            "Gus"
+          ],
+          "partners": [
+            "Emily"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "1000018",
+          "location": "town",
+          "actors": [
+            "Jodi"
+          ],
+          "partners": [
+            "Jodi"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        },
+        {
+          "id": "1000030",
+          "location": "town",
+          "actors": [],
+          "partners": [
+            "Sandy"
+          ],
+          "hasChildren": false,
+          "replacesVanilla": false
+        }
+      ]
+    }
+  ]
+}

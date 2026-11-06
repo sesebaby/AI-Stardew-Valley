@@ -1,0 +1,130 @@
+{
+  "key": "aisv.stage.saloon.last_call_bar",
+  "name": "打烊前的吧台",
+  "venue": "Saloon",
+  "moods": [
+    "reconciliation",
+    "conflict",
+    "community",
+    "celebration"
+  ],
+  "only_for": [
+    "apology",
+    "debt",
+    "drinking",
+    "addiction",
+    "friendship",
+    "trust",
+    "reconciliation",
+    "gossip",
+    "conflict",
+    "band",
+    "unrequited_love"
+  ],
+  "not_for": [],
+  "fewest_voices": 1,
+  "most_voices": 6,
+  "tune": "Saloon1",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "warm_interior",
+    "base": "6b3f2a",
+    "second": "3a2118",
+    "ground": "5a3b26",
+    "accent": "e8a64c",
+    "trim": "f2d48f"
+  },
+  "blocking": {
+    "lens": {
+      "x": 16,
+      "y": 20
+    },
+    "hero": {
+      "x": 16,
+      "y": 22,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 16,
+        "y": 20,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_2",
+        "x": 17,
+        "y": 20,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_3",
+        "x": 15,
+        "y": 21,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_4",
+        "x": 18,
+        "y": 20,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_5",
+        "x": 14,
+        "y": 20,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_6",
+        "x": 18,
+        "y": 22,
+        "dir": "left"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_4",
+      "x": 0.7,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_5",
+      "x": 0.3,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_6",
+      "x": 0.7,
+      "y": 0.7,
+      "size": 1.12,
+      "dir": "left"
+    }
+  ]
+}

@@ -1,0 +1,639 @@
+{
+  "version": 1,
+  "npcs": {
+    "Abigail": [
+      {
+        "place": "Town",
+        "pull": 4,
+        "kind": "haunt",
+        "why": "半夜爱到墓地转悠，比待在店里自在"
+      },
+      {
+        "place": "SeedShop",
+        "pull": 3,
+        "kind": "home",
+        "why": "家在店楼上，再不情愿也得回来"
+      }
+    ],
+    "Sam": [
+      {
+        "place": "Saloon",
+        "pull": 4,
+        "kind": "habit",
+        "why": "下了班就去打台球，乐队的事也在那儿吵"
+      },
+      {
+        "place": "SamHouse",
+        "pull": 4,
+        "kind": "home",
+        "why": "家里要照看弟弟，吉他也放在房间"
+      }
+    ],
+    "Sebastian": [
+      {
+        "place": "ScienceHouse",
+        "pull": 3,
+        "kind": "home",
+        "why": "地下室是他的地盘，却总觉得这个家没他的位置"
+      },
+      {
+        "place": "Railroad",
+        "pull": 3,
+        "kind": "haunt",
+        "why": "常来看火车，盘算哪天坐上去"
+      }
+    ],
+    "Haley": [
+      {
+        "place": "HaleyHouse",
+        "pull": 5,
+        "kind": "home",
+        "why": "姐妹俩看的家，衣服和相机都在这儿"
+      },
+      {
+        "place": "Beach",
+        "pull": 3,
+        "kind": "habit",
+        "why": "好天气带相机去拍照"
+      }
+    ],
+    "Emily": [
+      {
+        "place": "Saloon",
+        "pull": 5,
+        "kind": "work",
+        "why": "天天在这儿端盘子，镇上的心事听得最多"
+      },
+      {
+        "place": "HaleyHouse",
+        "pull": 4,
+        "kind": "home",
+        "why": "满屋布料和水晶，是她静心的地方"
+      }
+    ],
+    "Alex": [
+      {
+        "place": "JoshHouse",
+        "pull": 5,
+        "kind": "home",
+        "why": "和爷爷奶奶住，放不下的事都在这屋里"
+      },
+      {
+        "place": "Town",
+        "pull": 3,
+        "kind": "habit",
+        "why": "在外头练传球，想让人看见"
+      }
+    ],
+    "Maru": [
+      {
+        "place": "Hospital",
+        "pull": 4,
+        "kind": "work",
+        "why": "在诊所当护士，手头总有正事"
+      },
+      {
+        "place": "ScienceHouse",
+        "pull": 4,
+        "kind": "home",
+        "why": "机器人和望远镜都在家里"
+      }
+    ],
+    "Penny": [
+      {
+        "place": "ArchaeologyHouse",
+        "pull": 5,
+        "kind": "work",
+        "why": "给孩子们上课的长桌，是她最有底气的地方"
+      },
+      {
+        "place": "Trailer",
+        "pull": 3,
+        "kind": "home",
+        "why": "住在这儿，有些话只在这儿说得出口"
+      }
+    ],
+    "Leah": [
+      {
+        "place": "Forest",
+        "pull": 5,
+        "kind": "home",
+        "why": "小屋就在林边，采集和作画都离不开"
+      },
+      {
+        "place": "Saloon",
+        "pull": 2,
+        "kind": "habit",
+        "why": "偶尔进城喝一杯，跟人说说话"
+      }
+    ],
+    "Elliott": [
+      {
+        "place": "Beach",
+        "pull": 5,
+        "kind": "home",
+        "why": "小木屋面朝大海，写不下去就出门走走"
+      },
+      {
+        "place": "ArchaeologyHouse",
+        "pull": 3,
+        "kind": "habit",
+        "why": "来这儿翻书找灵感"
+      }
+    ],
+    "Shane": [
+      {
+        "place": "AnimalShop",
+        "pull": 4,
+        "kind": "home",
+        "why": "鸡和贾斯都在牧场，真心话只肯在这儿露一点"
+      },
+      {
+        "place": "Saloon",
+        "pull": 4,
+        "kind": "habit",
+        "why": "下班后的那杯酒，他很少落下"
+      }
+    ],
+    "Harvey": [
+      {
+        "place": "Hospital",
+        "pull": 5,
+        "kind": "work",
+        "why": "住在楼上，几乎不离开诊所"
+      },
+      {
+        "place": "Saloon",
+        "pull": 2,
+        "kind": "habit",
+        "why": "难得出门，也是挑人少的时候来坐坐"
+      }
+    ],
+    "Caroline": [
+      {
+        "place": "SeedShop",
+        "pull": 5,
+        "kind": "home",
+        "why": "后院的茶园和店里的家务都归她"
+      },
+      {
+        "place": "Town",
+        "pull": 3,
+        "kind": "habit",
+        "why": "常在街上和乔迪聊孩子"
+      }
+    ],
+    "Pierre": [
+      {
+        "place": "SeedShop",
+        "pull": 5,
+        "kind": "home",
+        "why": "一辈子的心血都在货架上"
+      },
+      {
+        "place": "Saloon",
+        "pull": 2,
+        "kind": "habit",
+        "why": "偶尔去喝一杯，顺便打听生意"
+      }
+    ],
+    "Gus": [
+      {
+        "place": "Saloon",
+        "pull": 5,
+        "kind": "home",
+        "why": "酒吧是他的家，也是全镇的饭桌"
+      },
+      {
+        "place": "SeedShop",
+        "pull": 1,
+        "kind": "habit",
+        "why": "缺东西时过来进货"
+      }
+    ],
+    "Lewis": [
+      {
+        "place": "Town",
+        "pull": 5,
+        "kind": "home",
+        "why": "住在镇中心，出了事第一个被人找上门"
+      },
+      {
+        "place": "AnimalShop",
+        "pull": 2,
+        "kind": "interior",
+        "why": "总有借口往牧场跑，只是不想让人看见"
+      }
+    ],
+    "Robin": [
+      {
+        "place": "ScienceHouse",
+        "pull": 5,
+        "kind": "home",
+        "why": "店和家是同一栋，全家的事都得她拿主意"
+      },
+      {
+        "place": "Mountain",
+        "pull": 3,
+        "kind": "work",
+        "why": "量地、伐木，山上哪儿都跑"
+      }
+    ],
+    "Demetrius": [
+      {
+        "place": "Mountain",
+        "pull": 4,
+        "kind": "work",
+        "why": "山谷的样本都从这里采"
+      },
+      {
+        "place": "ScienceHouse",
+        "pull": 4,
+        "kind": "home",
+        "why": "实验室就在家里"
+      }
+    ],
+    "Linus": [
+      {
+        "place": "Mountain",
+        "pull": 5,
+        "kind": "home",
+        "why": "帐篷在这儿，是他自己选的日子"
+      },
+      {
+        "place": "Forest",
+        "pull": 3,
+        "kind": "habit",
+        "why": "四处采集，林子里的路他都熟"
+      }
+    ],
+    "Willy": [
+      {
+        "place": "Beach",
+        "pull": 5,
+        "kind": "work",
+        "why": "一辈子守着码头和海"
+      },
+      {
+        "place": "Saloon",
+        "pull": 3,
+        "kind": "habit",
+        "why": "收船后来喝一杯，讲讲海上的事"
+      }
+    ],
+    "Clint": [
+      {
+        "place": "Blacksmith",
+        "pull": 5,
+        "kind": "home",
+        "why": "除了炉子，他不知道还能跟什么打交道"
+      },
+      {
+        "place": "Saloon",
+        "pull": 4,
+        "kind": "habit",
+        "why": "来喝酒，其实是想多看艾米丽一眼"
+      }
+    ],
+    "Marnie": [
+      {
+        "place": "AnimalShop",
+        "pull": 5,
+        "kind": "home",
+        "why": "牧场和一家老小都靠她张罗"
+      },
+      {
+        "place": "Saloon",
+        "pull": 2,
+        "kind": "habit",
+        "why": "忙完了偶尔来吃顿现成的"
+      }
+    ],
+    "Jodi": [
+      {
+        "place": "SamHouse",
+        "pull": 5,
+        "kind": "home",
+        "why": "一个人撑着这个家，大半天都在屋里"
+      },
+      {
+        "place": "SeedShop",
+        "pull": 3,
+        "kind": "habit",
+        "why": "常来买菜买种子，顺便说几句话"
+      }
+    ],
+    "Kent": [
+      {
+        "place": "SamHouse",
+        "pull": 4,
+        "kind": "home",
+        "why": "回家以后最想重新融进去的地方"
+      },
+      {
+        "place": "Town",
+        "pull": 2,
+        "kind": "habit",
+        "why": "睡不好时出门走走，躲开太响的动静"
+      }
+    ],
+    "Vincent": [
+      {
+        "place": "Town",
+        "pull": 4,
+        "kind": "habit",
+        "why": "放了学就在外头疯跑、抓虫子"
+      },
+      {
+        "place": "SamHouse",
+        "pull": 3,
+        "kind": "home",
+        "why": "家在这儿，哥哥也在这儿"
+      }
+    ],
+    "Jas": [
+      {
+        "place": "AnimalShop",
+        "pull": 4,
+        "kind": "home",
+        "why": "玛妮和谢恩都在牧场，这里最让她安心"
+      },
+      {
+        "place": "ArchaeologyHouse",
+        "pull": 3,
+        "kind": "habit",
+        "why": "跟潘妮上课，也和文森特坐一块"
+      }
+    ],
+    "Leo": [
+      {
+        "place": "Mountain",
+        "pull": 3,
+        "kind": "home",
+        "why": "搬来以后住在山上，离人不远不近"
+      },
+      {
+        "place": "Beach",
+        "pull": 3,
+        "kind": "habit",
+        "why": "看见海才想起岛上的日子"
+      }
+    ],
+    "Evelyn": [
+      {
+        "place": "JoshHouse",
+        "pull": 5,
+        "kind": "home",
+        "why": "烤饼干、替老伴打圆场，都在这屋里"
+      },
+      {
+        "place": "Town",
+        "pull": 4,
+        "kind": "work",
+        "why": "镇上的花坛都是她在料理"
+      }
+    ],
+    "George": [
+      {
+        "place": "JoshHouse",
+        "pull": 5,
+        "kind": "home",
+        "why": "守着电视和轮椅，不大出门"
+      },
+      {
+        "place": "Town",
+        "pull": 1,
+        "kind": "habit",
+        "why": "难得让人推出来晒晒太阳"
+      }
+    ],
+    "Pam": [
+      {
+        "place": "Saloon",
+        "pull": 5,
+        "kind": "habit",
+        "why": "吧台那个位子几乎是她的"
+      },
+      {
+        "place": "Trailer",
+        "pull": 3,
+        "kind": "home",
+        "why": "不想让人看见的那一面都关在这儿"
+      }
+    ],
+    "Sandy": [
+      {
+        "place": "SandyHouse",
+        "pull": 5,
+        "kind": "home",
+        "why": "沙漠里一个人守店，盼着有人来"
+      }
+    ],
+    "Qi": [
+      {
+        "place": "Mine",
+        "pull": 2,
+        "kind": "habit",
+        "why": "他出的考题总绕不开矿洞"
+      }
+    ],
+    "Krobus": [
+      {
+        "place": "Sewer",
+        "pull": 5,
+        "kind": "home",
+        "why": "下水道是他唯一能放心待的地方"
+      }
+    ],
+    "Dwarf": [
+      {
+        "place": "Mine",
+        "pull": 5,
+        "kind": "home",
+        "why": "矿洞是他的地盘，外人得先敲门"
+      }
+    ],
+    "Wizard": [
+      {
+        "place": "WizardHouse",
+        "pull": 5,
+        "kind": "home",
+        "why": "塔里藏着他不愿对人说的东西"
+      },
+      {
+        "place": "Forest",
+        "pull": 2,
+        "kind": "habit",
+        "why": "塔外的林子里偶尔能碰上他"
+      }
+    ],
+    "Sophia": [
+      {
+        "place": "ArchaeologyHouse",
+        "pull": 3,
+        "kind": "habit",
+        "why": "喜欢看书，这里人少又安静"
+      },
+      {
+        "place": "Town",
+        "pull": 2,
+        "kind": "habit",
+        "why": "不得不进城时，办完事就走"
+      }
+    ],
+    "Victor": [
+      {
+        "place": "ArchaeologyHouse",
+        "pull": 3,
+        "kind": "habit",
+        "why": "爱读书，常来这儿想事情"
+      },
+      {
+        "place": "Saloon",
+        "pull": 2,
+        "kind": "habit",
+        "why": "想找人聊聊时才来"
+      }
+    ],
+    "Olivia": [
+      {
+        "place": "Saloon",
+        "pull": 3,
+        "kind": "habit",
+        "why": "喜欢在热闹的地方和人打交道"
+      },
+      {
+        "place": "Town",
+        "pull": 3,
+        "kind": "habit",
+        "why": "进城办事干脆利落，见人就招呼"
+      }
+    ],
+    "Andy": [
+      {
+        "place": "Forest",
+        "pull": 4,
+        "kind": "home",
+        "why": "农场在林边，整天都在干活"
+      },
+      {
+        "place": "Saloon",
+        "pull": 2,
+        "kind": "habit",
+        "why": "活干完了才来喝一杯"
+      }
+    ],
+    "Susan": [
+      {
+        "place": "AnimalShop",
+        "pull": 3,
+        "kind": "habit",
+        "why": "养牲口的人，常来买饲料、说行情"
+      },
+      {
+        "place": "Forest",
+        "pull": 2,
+        "kind": "habit",
+        "why": "习惯自己一个人在林子边走动"
+      }
+    ],
+    "Claire": [
+      {
+        "place": "JojaMart",
+        "pull": 5,
+        "kind": "work",
+        "why": "每天都站在收银台后头"
+      },
+      {
+        "place": "Saloon",
+        "pull": 2,
+        "kind": "habit",
+        "why": "下班来放松，有时还哼两句"
+      }
+    ],
+    "Martin": [
+      {
+        "place": "JojaMart",
+        "pull": 5,
+        "kind": "work",
+        "why": "在这儿打工，什么活都抢着干"
+      },
+      {
+        "place": "Town",
+        "pull": 3,
+        "kind": "habit",
+        "why": "下了班到处转，想多认识人"
+      }
+    ],
+    "Lance": [
+      {
+        "place": "Railroad",
+        "pull": 3,
+        "kind": "habit",
+        "why": "来来去去都打这儿过"
+      },
+      {
+        "place": "Saloon",
+        "pull": 3,
+        "kind": "habit",
+        "why": "探险回来先找个地方歇脚"
+      }
+    ],
+    "Morris": [
+      {
+        "place": "JojaMart",
+        "pull": 5,
+        "kind": "work",
+        "why": "超市是他的舞台，哪儿都不如这儿自在"
+      },
+      {
+        "place": "Town",
+        "pull": 2,
+        "kind": "public",
+        "why": "上街时不忘替公司说几句好话"
+      }
+    ],
+    "Scarlett": [
+      {
+        "place": "Town",
+        "pull": 4,
+        "kind": "public",
+        "why": "走到哪儿都热闹，街上最常见到她"
+      },
+      {
+        "place": "Saloon",
+        "pull": 3,
+        "kind": "habit",
+        "why": "晚上爱来这儿凑热闹"
+      }
+    ],
+    "Morgan": [
+      {
+        "place": "WizardHouse",
+        "pull": 4,
+        "kind": "home",
+        "why": "跟着法师学魔法，整天泡在塔里"
+      },
+      {
+        "place": "Forest",
+        "pull": 3,
+        "kind": "habit",
+        "why": "一有空就跑去林子里疯玩"
+      }
+    ],
+    "Apples": [
+      {
+        "place": "Forest",
+        "pull": 3,
+        "kind": "haunt",
+        "why": "总在林子深处冒出来"
+      },
+      {
+        "place": "WizardHouse",
+        "pull": 2,
+        "kind": "habit",
+        "why": "对魔法气味特别好奇"
+      }
+    ]
+  }
+}

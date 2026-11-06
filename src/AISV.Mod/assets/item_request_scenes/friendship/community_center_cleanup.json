@@ -1,0 +1,20 @@
+{
+  "templateId": "friendship/community_center_cleanup",
+  "sceneType": "friendship",
+  "title": "社区中心大扫除",
+  "location": "CommunityCenter",
+  "timeWindow": {
+    "min": 900,
+    "max": 1700
+  },
+  "itemHints": [
+    "Hardwood",
+    "Coal",
+    "Clay",
+    "Sweet Pea",
+    "Potato"
+  ],
+  "blockedForChildCodedNpcs": false,
+  "llmLineInstructions": "一起收拾社区中心，有点灰头土脸但干劲十足。村民像搭档一样道谢，说说这地方慢慢变好的感觉。",
+  "scriptTemplate": "continue/32 15/farmer 31 15 1 {{NPC}} 33 15 3/skippable/AisvItemRequestSceneComplete {{FAVOR_ID}}/pause 500/emote {{NPC}} 16/speak {{NPC}} \"{{NPC_LINE_1}}\"/pause 300/faceDirection {{NPC}} 0/pause 600/faceDirection {{NPC}} 3/emote {{NPC}} 32/speak {{NPC}} \"{{NPC_LINE_2}}\"/pause 500/end"
+}

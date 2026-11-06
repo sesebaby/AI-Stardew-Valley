@@ -1,0 +1,33 @@
+一段小镇故事走到了尾声，要演最后一场戏。你来写这场戏的台词和它留下来的东西。
+
+故事：「{{STORY_NAME}}」
+{{STORY_PREMISE}}
+牵扯到的人：{{STORY_CAST}}
+演出的地点：{{STAGE_PLACE}}
+{{FARMER_CHOICE}}
+农夫（{{FARMER_NAME}}）一路上做的事：
+{{GOALS_AND_HOW}}
+
+这些人的性子：
+{{ALL_NATURES}}
+
+他们对农夫的感觉：
+{{ALL_FEELINGS}}
+
+农夫这个人：
+{{ABOUT_FARMER}}
+
+镇上所有人的名字，照这个写：
+{{EVERYONE}}
+
+这场戏观众看的是人物之间的结果，所以别写总结陈词，让人物说出只有这个时候才会说的话。农夫在场，但他一句台词也没有，别人可以对他说话，也可以感谢或埋怨他。用八到十四句，主要由牵扯到的人说，至多再有几位旁人插话；每句都短，一屏读得完。每个人说话要像他自己。结果要和农夫的做法与他选的收尾方向对得上。
+
+孩子，或者被写得像孩子的人，不出现在感情戏里。没有露骨内容。不要在这里写出和前面的经过对不上的新秘密。
+
+用{{SPEAK_IN}}写。只交一个 JSON 对象：
+{
+  "scene_lines": [ { "who": "说话人名字", "says": "一句台词，不写动作", "feeling": "neutral、happy、sad、angry、love、surprised 之一" } ],
+  "how_it_ended": "一两句话，说明这事最后怎么样了。这句话以后就是镇上的共同记忆",
+  "afterwords": { "牵扯到的人的名字": "这事过去后的几天，他再碰见农夫时说的第一句话" },
+  "themes": ["英文小写标签，用来说这个故事是关于什么的，比如 reconciliation、secret、rivalry、family、romance、farewell。全镇都知道的加 town，只有当事人知道的加 private。原本已婚的人真的在戏里分开了才加 relationship_breakup"]
+}

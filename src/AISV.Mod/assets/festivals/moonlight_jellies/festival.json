@@ -1,0 +1,19 @@
+{
+  "id": "moonlight_jellies",
+  "name": "月光水母之舞",
+  "priority": 0,
+  "detection": {
+    "season": "summer",
+    "day": 28,
+    "matchAnyDate": false,
+    "locations": [
+      "Beach",
+      "Temp"
+    ]
+  },
+  "gossip": {
+    "summary": "夏天的最后一夜，大家守在码头边，等着发光的水母从山谷外的海面路过。",
+    "chat": "那晚码头上的烛光和水母，还有人念念不忘。",
+    "promptDays": 2
+  }
+}

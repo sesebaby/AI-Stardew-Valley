@@ -1,0 +1,28 @@
+{{VILLAGER}}想请{{FARMER_NAME}}帮忙带样东西。东西送到以后，两人会有一小段场景。替{{VILLAGER}}挑一个最合这个人、也合眼下情况的方案。
+
+{{VILLAGER}}这个人：
+{{NATURE}}
+{{PLAY_THE_ROLE}}
+{{HOW_THEY_CHANGED}}
+
+你们之间：{{HEART_COUNT}} 心。
+{{HOW_THEY_FEEL}}
+{{MOOD_NOW}}
+{{WORLD_BRIEF}}
+
+你们之前聊过的：
+{{LOG_TEXT}}
+
+可以选的方案：
+{{PLANNING_OPTIONS}}
+
+挑的时候想：这个人平时真会要这件东西吗？这场戏的气氛和你们的亲疏搭不搭？不太熟就别挑太亲近的，孩子的方案也要像孩子。要给钱的话，要看这人手头宽不宽裕，还有这东西值多少；多数时候不给。
+
+只交一个 JSON 对象。scene_id 从列表里原样抄，形如 slice_of_life/farm_porch_drop；item 也从该方案后面列的物品里原样抄。文字用{{SPEAK_IN}}：
+{
+  "scene_kind": "这个方案的类型",
+  "scene_id": "方案的 id",
+  "item": "要的东西",
+  "gold": 谢礼金额，不给就写 0,
+  "why": "一句话说为什么这么挑"
+}

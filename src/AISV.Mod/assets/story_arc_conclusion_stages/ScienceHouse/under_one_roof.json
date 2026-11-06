@@ -1,0 +1,99 @@
+{
+  "key": "aisv.stage.sciencehouse.under_one_roof",
+  "name": "一屋子人",
+  "venue": "ScienceHouse",
+  "moods": [
+    "conflict",
+    "reconciliation",
+    "revelation"
+  ],
+  "only_for": [
+    "family",
+    "stepfamily",
+    "parenting",
+    "science",
+    "ambition",
+    "work",
+    "runaway"
+  ],
+  "not_for": [],
+  "fewest_voices": 1,
+  "most_voices": 4,
+  "tune": "tickTock",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "workshop_interior",
+    "base": "86674a",
+    "second": "4b3829",
+    "ground": "7a5c3e",
+    "accent": "6fb1c4",
+    "trim": "d8d2b4"
+  },
+  "blocking": {
+    "lens": {
+      "x": 8,
+      "y": 18
+    },
+    "hero": {
+      "x": 8,
+      "y": 20,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 8,
+        "y": 18,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_2",
+        "x": 7,
+        "y": 18,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_3",
+        "x": 9,
+        "y": 20,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_4",
+        "x": 7,
+        "y": 17,
+        "dir": "down"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_4",
+      "x": 0.5,
+      "y": 0.43,
+      "size": 0.97,
+      "dir": "down"
+    }
+  ]
+}

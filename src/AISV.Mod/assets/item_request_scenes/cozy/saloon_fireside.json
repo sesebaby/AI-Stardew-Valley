@@ -1,0 +1,20 @@
+{
+  "templateId": "cozy/saloon_fireside",
+  "sceneType": "cozy",
+  "title": "壁炉边的晚饭",
+  "location": "Saloon",
+  "timeWindow": {
+    "min": 1600,
+    "max": 2400
+  },
+  "itemHints": [
+    "Hashbrowns",
+    "Fried Mushroom",
+    "Pale Ale",
+    "Pancakes",
+    "Goat Cheese"
+  ],
+  "blockedForChildCodedNpcs": true,
+  "llmLineInstructions": "收工以后的酒吧，暖和、不赶时间。村民谢谢农夫带来的东西，像朋友一起坐下吃顿饭那样聊两句；第二句可以轻轻带到那天开口拜托的事。",
+  "scriptTemplate": "continue/14 20/farmer 13 20 1 {{NPC}} 15 20 3/skippable/AisvItemRequestSceneComplete {{FAVOR_ID}}/pause 600/speak {{NPC}} \"{{NPC_LINE_1}}\"/emote {{NPC}} 32/pause 400/faceDirection {{NPC}} 2/pause 500/faceDirection {{NPC}} 3/speak {{NPC}} \"{{NPC_LINE_2}}\"/emote farmer 56/pause 600/end"
+}

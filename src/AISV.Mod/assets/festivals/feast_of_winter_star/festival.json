@@ -1,0 +1,19 @@
+{
+  "id": "feast_of_winter_star",
+  "name": "冬日星盛宴",
+  "priority": 0,
+  "detection": {
+    "season": "winter",
+    "day": 25,
+    "matchAnyDate": false,
+    "locations": [
+      "Town",
+      "Temp"
+    ]
+  },
+  "gossip": {
+    "summary": "冬日星盛宴上，大树挂满了灯，格斯的长桌摆满热菜，大家悄悄换了礼物。",
+    "chat": "谁抽到了谁、送了什么，镇上还在打听。",
+    "promptDays": 2
+  }
+}

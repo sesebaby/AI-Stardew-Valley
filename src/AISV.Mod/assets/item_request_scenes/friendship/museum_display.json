@@ -1,0 +1,20 @@
+{
+  "templateId": "friendship/museum_display",
+  "sceneType": "friendship",
+  "title": "博物馆的新展柜",
+  "location": "ArchaeologyHouse",
+  "timeWindow": {
+    "min": 900,
+    "max": 1700
+  },
+  "itemHints": [
+    "Earth Crystal",
+    "Topaz",
+    "Iron Ore",
+    "Blue Jazz",
+    "Green Tea"
+  ],
+  "blockedForChildCodedNpcs": false,
+  "llmLineInstructions": "在博物馆里摆弄展柜，安静又认真。村民谢谢农夫，兴致勃勃地说说这件东西放哪儿最好看。",
+  "scriptTemplate": "continue/7 11/farmer 6 11 1 {{NPC}} 8 11 3/skippable/AisvItemRequestSceneComplete {{FAVOR_ID}}/pause 500/speak {{NPC}} \"{{NPC_LINE_1}}\"/emote {{NPC}} 8/pause 400/faceDirection {{NPC}} 0/pause 700/faceDirection {{NPC}} 3/emote {{NPC}} 32/speak {{NPC}} \"{{NPC_LINE_2}}\"/pause 500/end"
+}

@@ -1,0 +1,89 @@
+{
+  "key": "aisv.stage.forest.fairy_ring",
+  "name": "蘑菇圈",
+  "venue": "Forest",
+  "moods": [
+    "confession",
+    "quiet",
+    "revelation"
+  ],
+  "only_for": [
+    "romance",
+    "confession",
+    "magic",
+    "art",
+    "solitude",
+    "mystery",
+    "nature"
+  ],
+  "not_for": [
+    "community",
+    "politics"
+  ],
+  "fewest_voices": 1,
+  "most_voices": 3,
+  "tune": "woodsTheme",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "deep_woods",
+    "base": "3f6b4a",
+    "second": "1f3a2b",
+    "ground": "4d4630",
+    "accent": "b98ad0",
+    "trim": "d6e3a4"
+  },
+  "blocking": {
+    "lens": {
+      "x": 14,
+      "y": 40
+    },
+    "hero": {
+      "x": 14,
+      "y": 42,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 14,
+        "y": 40,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_2",
+        "x": 13,
+        "y": 40,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_3",
+        "x": 15,
+        "y": 40,
+        "dir": "left"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    }
+  ]
+}

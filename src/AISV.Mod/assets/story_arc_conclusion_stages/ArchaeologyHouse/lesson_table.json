@@ -1,0 +1,99 @@
+{
+  "key": "aisv.stage.archaeologyhouse.lesson_table",
+  "name": "上课的长桌",
+  "venue": "ArchaeologyHouse",
+  "moods": [
+    "reconciliation",
+    "revelation",
+    "quiet"
+  ],
+  "only_for": [
+    "children",
+    "teaching",
+    "history",
+    "knowledge",
+    "books",
+    "mystery",
+    "writing"
+  ],
+  "not_for": [],
+  "fewest_voices": 1,
+  "most_voices": 4,
+  "tune": "libraryTheme",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "library_interior",
+    "base": "7a5a44",
+    "second": "42302a",
+    "ground": "6a4c38",
+    "accent": "c9a35c",
+    "trim": "e7dcc0"
+  },
+  "blocking": {
+    "lens": {
+      "x": 17,
+      "y": 9
+    },
+    "hero": {
+      "x": 17,
+      "y": 12,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 17,
+        "y": 9,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_2",
+        "x": 16,
+        "y": 9,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_3",
+        "x": 18,
+        "y": 9,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_4",
+        "x": 19,
+        "y": 10,
+        "dir": "left"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_4",
+      "x": 0.7,
+      "y": 0.61,
+      "size": 1.07,
+      "dir": "left"
+    }
+  ]
+}

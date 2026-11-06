@@ -1,0 +1,20 @@
+{
+  "templateId": "date/beach_sunset_picnic",
+  "sceneType": "date",
+  "title": "海边看日落",
+  "location": "Beach",
+  "timeWindow": {
+    "min": 1700,
+    "max": 2200
+  },
+  "itemHints": [
+    "Pink Cake",
+    "Cactus Fruit",
+    "Juice",
+    "Coleslaw",
+    "Blue Jazz"
+  ],
+  "blockedForChildCodedNpcs": true,
+  "llmLineInstructions": "傍晚的海边，两个人坐着看日落。浪漫但收着说，谢谢农夫带来的东西，让这一刻像一次小约会。不提结婚、吃醋，不写成人内容。",
+  "scriptTemplate": "sweet/34 26/farmer 33 26 1 {{NPC}} 35 26 3/skippable/AisvItemRequestSceneComplete {{FAVOR_ID}}/pause 800/faceDirection {{NPC}} 2/faceDirection farmer 2/pause 1200/faceDirection {{NPC}} 3/speak {{NPC}} \"{{NPC_LINE_1}}\"/emote {{NPC}} 20/pause 400/faceDirection farmer 1/speak {{NPC}} \"{{NPC_LINE_2}}\"/emote farmer 20/pause 800/end"
+}

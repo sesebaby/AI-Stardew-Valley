@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 纯逻辑：领域模型、规则、记忆、八卦、提示词、回复解析、存档数据结构。不引用游戏，能在 Linux 上单独测试。 -->
+  <PropertyGroup>
+    <RootNamespace>AISV.Core</RootNamespace>
+  </PropertyGroup>
+</Project>

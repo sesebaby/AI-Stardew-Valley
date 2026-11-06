@@ -1,0 +1,25 @@
+今天{{SEASON_NOW}} {{DAY_NUM}} 日，{{SKY}}。{{FIRST_NAME}}和{{SECOND_NAME}}在{{WHERE_AT}}碰上了。写下他们俩这一会儿发生的一件小事，农夫不在场。
+
+这两个人：
+{{FIRST_NAME}}：{{FIRST_NATURE}}
+{{SECOND_NAME}}：{{SECOND_NATURE}}
+他们的关系：{{BOND}}
+{{VILLAGE_TIES}}{{RUMORS_HEARD}}
+这次大致的类型是 {{MEETUP_THEME}}。戏剧程度 {{SPICE}}（数越大，越容易有点波澜；小数值就老老实实写日常）。
+
+一件小事就是一件小事：借了什么东西、说岔了一句话、顺手帮了个忙、为一点小分歧拌嘴。它要合这两人的脾气和彼此的关系，也不改变任何人的人生：没有分手、出走、大病、大秘密曝光这样的事。孩子只写孩子该有的玩闹，孩子和任何人之间都不写暧昧。别把农夫写进去。
+
+用{{SPEAK_IN}}写。只交一个 JSON 对象：
+{
+  "vibe": "mundane、sweet、funny、awkward、tense、strange 之一",
+  "what_happened": "第三人称一两句话，写清谁做了什么，180 字以内",
+  "line_a": "{{FIRST_NAME}}这时说的一句话，140 字以内",
+  "line_b": "{{SECOND_NAME}}这时说的一句话，140 字以内",
+  "worth_telling": true 或 false，别人听了会不会愿意转述,
+  "worth_remembering": true 或 false，两人的关系是不是真的被这事改变了；这种时候很少,
+  "mood_a": {{FIRST_NAME}}的心情变化，-30 到 30 的整数,
+  "mood_b": {{SECOND_NAME}}的心情变化，-30 到 30 的整数,
+  "bond_shift": { "closer": 0, "liking": 0, "trust": 0, "friction": 0, "banter": 0 },
+  "labels": ["几个英文小写短标签，比如 small_favor、rivalry、repairing"]
+}
+bond_shift 每项是 -0.2 到 0.2 的小数，分别代表更熟了、更喜欢了、更信任了、更有摩擦了、更爱斗嘴了。多数时候只动一两项，而且动得很小。

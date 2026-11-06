@@ -1,0 +1,19 @@
+{
+  "id": "spirits_eve",
+  "name": "万灵节",
+  "priority": 0,
+  "detection": {
+    "season": "fall",
+    "day": 27,
+    "matchAnyDate": false,
+    "locations": [
+      "Town",
+      "Temp"
+    ]
+  },
+  "gossip": {
+    "summary": "万灵节那晚，广场点满了南瓜灯，法师的迷宫和笼子里的骷髅吓坏了不少人。",
+    "chat": "那座迷宫里的岔路，镇上的孩子还在比谁记得清。",
+    "promptDays": 2
+  }
+}

@@ -1,0 +1,7 @@
+bin/
+obj/
+.vs/
+*.user
+.local/
+src/AISV.Mod/assets/connection.dat
+src/AISV.Mod/config.json

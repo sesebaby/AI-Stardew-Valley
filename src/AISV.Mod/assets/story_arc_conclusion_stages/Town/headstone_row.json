@@ -1,0 +1,90 @@
+{
+  "key": "aisv.stage.town.headstone_row",
+  "name": "老墓碑之间",
+  "venue": "Town",
+  "moods": [
+    "revelation",
+    "farewell",
+    "quiet"
+  ],
+  "only_for": [
+    "grief",
+    "memory",
+    "death",
+    "ghost",
+    "secret",
+    "family_secret",
+    "regret",
+    "loss"
+  ],
+  "not_for": [
+    "celebration",
+    "comedy"
+  ],
+  "fewest_voices": 1,
+  "most_voices": 3,
+  "tune": "desolate",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "graveyard_dusk",
+    "base": "3b4257",
+    "second": "1f2433",
+    "ground": "4a5048",
+    "accent": "9a8fb5",
+    "trim": "c9c7d6"
+  },
+  "blocking": {
+    "lens": {
+      "x": 47,
+      "y": 87
+    },
+    "hero": {
+      "x": 47,
+      "y": 89,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 47,
+        "y": 87,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_2",
+        "x": 46,
+        "y": 87,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_3",
+        "x": 48,
+        "y": 87,
+        "dir": "left"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "key": "aisv.stage.joshhouse.evening_tv",
+  "name": "电视开着的客厅",
+  "venue": "JoshHouse",
+  "moods": [
+    "reconciliation",
+    "revelation",
+    "quiet"
+  ],
+  "only_for": [
+    "family",
+    "grandparents",
+    "grief",
+    "pride",
+    "sports",
+    "old_age",
+    "memory"
+  ],
+  "not_for": [],
+  "fewest_voices": 1,
+  "most_voices": 4,
+  "tune": "distantBanjo",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "home_interior",
+    "base": "8a6f52",
+    "second": "4f3f30",
+    "ground": "76604a",
+    "accent": "d8a860",
+    "trim": "ece0c8"
+  },
+  "blocking": {
+    "lens": {
+      "x": 16,
+      "y": 22
+    },
+    "hero": {
+      "x": 15,
+      "y": 23,
+      "dir": "right"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 15,
+        "y": 22,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_2",
+        "x": 17,
+        "y": 22,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_3",
+        "x": 18,
+        "y": 22,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_4",
+        "x": 16,
+        "y": 21,
+        "dir": "down"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.7,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_4",
+      "x": 0.5,
+      "y": 0.43,
+      "size": 0.97,
+      "dir": "down"
+    }
+  ]
+}

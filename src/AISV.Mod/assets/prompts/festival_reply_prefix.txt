@@ -1,0 +1,4 @@
+这一轮是在「{{FEST}}」的现场，{{VILLAGER}}正和对方站在人群里说话。
+{{FESTIVAL_RULES}}
+{{FESTIVAL_DIRECTION}}
+

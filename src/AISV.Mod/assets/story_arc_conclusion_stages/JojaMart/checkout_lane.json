@@ -1,0 +1,101 @@
+{
+  "key": "aisv.stage.jojamart.checkout_lane",
+  "name": "收银台前",
+  "venue": "JojaMart",
+  "moods": [
+    "conflict",
+    "revelation"
+  ],
+  "only_for": [
+    "joja",
+    "work",
+    "corporate",
+    "rivalry",
+    "money",
+    "business",
+    "burnout"
+  ],
+  "not_for": [
+    "romance",
+    "confession"
+  ],
+  "fewest_voices": 1,
+  "most_voices": 4,
+  "tune": "jojaOfficeSoundscape",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "fluorescent_interior",
+    "base": "5a7fa8",
+    "second": "33506e",
+    "ground": "a8aeb4",
+    "accent": "d24a4a",
+    "trim": "e8ecf0"
+  },
+  "blocking": {
+    "lens": {
+      "x": 6,
+      "y": 19
+    },
+    "hero": {
+      "x": 6,
+      "y": 21,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 6,
+        "y": 19,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_2",
+        "x": 5,
+        "y": 19,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_3",
+        "x": 9,
+        "y": 19,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_4",
+        "x": 4,
+        "y": 20,
+        "dir": "right"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_4",
+      "x": 0.3,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    }
+  ]
+}

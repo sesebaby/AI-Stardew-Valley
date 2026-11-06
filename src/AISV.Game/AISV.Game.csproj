@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 游戏接入：游戏事件、存档读写、内容注入，把游戏状态翻译给 Core。 -->
+  <Import Project="../../GameReferences.props" />
+  <PropertyGroup>
+    <RootNamespace>AISV.Game</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../AISV.Core/AISV.Core.csproj" />
+  </ItemGroup>
+</Project>

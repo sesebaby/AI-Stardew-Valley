@@ -1,0 +1,99 @@
+{
+  "key": "aisv.stage.samhouse.breakfast_places",
+  "name": "早饭的座位",
+  "venue": "SamHouse",
+  "moods": [
+    "reconciliation",
+    "conflict",
+    "confession"
+  ],
+  "only_for": [
+    "family",
+    "war",
+    "ptsd",
+    "marriage",
+    "parenting",
+    "brothers",
+    "music"
+  ],
+  "not_for": [],
+  "fewest_voices": 1,
+  "most_voices": 4,
+  "tune": "sampractice",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "home_interior",
+    "base": "8f7a58",
+    "second": "544734",
+    "ground": "7a6848",
+    "accent": "e3b45e",
+    "trim": "f0e4c2"
+  },
+  "blocking": {
+    "lens": {
+      "x": 6,
+      "y": 5
+    },
+    "hero": {
+      "x": 6,
+      "y": 7,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 6,
+        "y": 5,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_2",
+        "x": 7,
+        "y": 5,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_3",
+        "x": 5,
+        "y": 5,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_4",
+        "x": 8,
+        "y": 5,
+        "dir": "left"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_4",
+      "x": 0.7,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "key": "aisv.stage.trailer.thin_walls",
+  "name": "隔音很差的拖车",
+  "venue": "Trailer",
+  "moods": [
+    "confession",
+    "reconciliation",
+    "conflict"
+  ],
+  "only_for": [
+    "family",
+    "mother_daughter",
+    "addiction",
+    "shame",
+    "poverty",
+    "apology",
+    "private"
+  ],
+  "not_for": [
+    "celebration",
+    "community"
+  ],
+  "fewest_voices": 1,
+  "most_voices": 3,
+  "tune": "tinymusicbox",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "cramped_interior",
+    "base": "6d6a5a",
+    "second": "3c3a30",
+    "ground": "5f5a48",
+    "accent": "b8a06a",
+    "trim": "d8d0b0"
+  },
+  "blocking": {
+    "lens": {
+      "x": 13,
+      "y": 6
+    },
+    "hero": {
+      "x": 13,
+      "y": 8,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 13,
+        "y": 6,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_2",
+        "x": 12,
+        "y": 7,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_3",
+        "x": 14,
+        "y": 6,
+        "dir": "left"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    }
+  ]
+}

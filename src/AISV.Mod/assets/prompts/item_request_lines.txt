@@ -1,0 +1,29 @@
+{{VILLAGER}}托{{FARMER_NAME}}带{{ITEM_NAME}}，开口时是这么说的：
+{{REQUEST_TEXT}}
+
+现在写东西送到时会用到的三句话。
+
+一句是当面接过东西时的道谢，很短。
+另外两句放在送到后的小场景（{{SCENE_ID}}，{{SCENE_TYPE}}）里，是{{VILLAGER}}连着说的。
+这场戏的感觉：{{SCENE_GUIDANCE}}
+
+{{VILLAGER}}这个人：
+{{NATURE}}
+{{PLAY_THE_ROLE}}
+{{HOW_THEY_CHANGED}}
+
+你们之间：{{HEART_COUNT}} 心。
+{{HOW_THEY_FEEL}}
+{{WORLD_BRIEF}}
+
+你们之前聊过的：
+{{LOG_TEXT}}
+
+话要接得上开口时说的理由，别换一个说法；东西已经到手了，就别再说“帮我带”。不要提钱，酬谢由游戏处理。孩子说话要像孩子，也不带恋爱的意思。不带动作描写和游戏代码。
+
+用{{SPEAK_IN}}写。只交一个 JSON 对象：
+{
+  "thanks": "接过东西时那句，不超过 40 字",
+  "beat_1": "场景里第一句，不超过 80 字",
+  "beat_2": "场景里第二句，不超过 80 字"
+}

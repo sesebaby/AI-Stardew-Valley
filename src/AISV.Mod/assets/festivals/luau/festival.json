@@ -1,0 +1,19 @@
+{
+  "id": "luau",
+  "name": "夏威夷宴会",
+  "priority": 0,
+  "detection": {
+    "season": "summer",
+    "day": 11,
+    "matchAnyDate": false,
+    "locations": [
+      "Beach",
+      "Temp"
+    ]
+  },
+  "gossip": {
+    "summary": "夏威夷宴会那天海滩上挤满了人，一锅汤从早熬到州长来尝。",
+    "chat": "那锅汤到底加了什么，镇上还在猜。",
+    "promptDays": 2
+  }
+}

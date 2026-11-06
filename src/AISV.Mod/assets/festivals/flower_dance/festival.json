@@ -1,0 +1,25 @@
+{
+  "id": "flower_dance",
+  "name": "花舞节",
+  "priority": 0,
+  "detection": {
+    "season": "spring",
+    "day": 24,
+    "matchAnyDate": false,
+    "locations": [
+      "Forest",
+      "Temp"
+    ]
+  },
+  "gossip": {
+    "summary": "煤矿森林里办了花舞节，乐声一起，谁请了谁跳舞全镇都看在眼里。",
+    "chat": "花舞节上那几对舞伴，到现在还有人在议论。",
+    "promptDays": 2
+  },
+  "action": {
+    "id": "ask_to_dance",
+    "kind": "dance",
+    "label": "请对方跳舞",
+    "tip": "邀请这位村民做你花舞节的舞伴。"
+  }
+}

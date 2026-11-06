@@ -1,0 +1,101 @@
+{
+  "key": "aisv.stage.mountain.tent_clearing",
+  "name": "帐篷前的空地",
+  "venue": "Mountain",
+  "moods": [
+    "reconciliation",
+    "quiet",
+    "conflict"
+  ],
+  "only_for": [
+    "dignity",
+    "outsider",
+    "nature",
+    "apology",
+    "prejudice",
+    "wilderness",
+    "science"
+  ],
+  "not_for": [
+    "celebration"
+  ],
+  "fewest_voices": 1,
+  "most_voices": 4,
+  "tune": "breezy",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "mountain_air",
+    "base": "5e8c7a",
+    "second": "35574e",
+    "ground": "6e6a4a",
+    "accent": "c7b070",
+    "trim": "e6e2c4"
+  },
+  "blocking": {
+    "lens": {
+      "x": 44,
+      "y": 18
+    },
+    "hero": {
+      "x": 44,
+      "y": 20,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 44,
+        "y": 18,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_2",
+        "x": 43,
+        "y": 18,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_3",
+        "x": 45,
+        "y": 19,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_4",
+        "x": 43,
+        "y": 17,
+        "dir": "down"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_4",
+      "x": 0.5,
+      "y": 0.43,
+      "size": 0.97,
+      "dir": "down"
+    }
+  ]
+}

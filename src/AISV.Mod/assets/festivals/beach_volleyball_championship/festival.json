@@ -1,0 +1,27 @@
+{
+  "id": "beach_volleyball_championship",
+  "name": "沙滩排球锦标赛",
+  "priority": 20,
+  "detection": {
+    "season": "summer",
+    "day": 9,
+    "matchAnyDate": false,
+    "locations": [
+      "IslandSouth"
+    ],
+    "festivalDataMarkers": {
+      "Lucas.BeachEpisode/Id": "Lucas.BeachEpisode/BeachVolleyballChampionship"
+    }
+  },
+  "gossip": {
+    "summary": "姜岛的沙滩排球锦标赛又开打了，四支队伍顶着海风和烈日拼到最后。",
+    "chat": "那几个惊险的救球，山谷里的人还在比划。",
+    "promptDays": 2
+  },
+  "action": {
+    "id": "invite_as_partner",
+    "kind": "invitation",
+    "label": "邀请组队",
+    "tip": "邀请这位选手和你组队参加今天的锦标赛。"
+  }
+}

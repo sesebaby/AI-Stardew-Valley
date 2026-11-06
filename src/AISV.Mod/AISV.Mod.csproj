@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- SMAPI 入口（组装各层）。输出就是可以直接放进 Mods 的 AIStardewValley 文件夹。 -->
+  <Import Project="../../GameReferences.props" />
+  <PropertyGroup>
+    <RootNamespace>AISV.Mod</RootNamespace>
+    <AssemblyName>AIStardewValley</AssemblyName>
+    <OutDir>$(MSBuildThisFileDirectory)../../bin/AIStardewValley/</OutDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../AISV.Core/AISV.Core.csproj" />
+    <ProjectReference Include="../AISV.Game/AISV.Game.csproj" />
+    <ProjectReference Include="../AISV.UI/AISV.UI.csproj" />
+    <ProjectReference Include="../AISV.Integrations/AISV.Integrations.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="manifest.json"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></None>
+    <None Update="i18n/**/*"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></None>
+    <None Update="assets/**/*"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></None>
+  </ItemGroup>
+</Project>

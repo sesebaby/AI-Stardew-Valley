@@ -1,0 +1,99 @@
+{
+  "key": "aisv.stage.seedshop.between_the_shelves",
+  "name": "货架中间",
+  "venue": "SeedShop",
+  "moods": [
+    "conflict",
+    "revelation",
+    "reconciliation"
+  ],
+  "only_for": [
+    "family",
+    "family_secret",
+    "business",
+    "money",
+    "parenting",
+    "marriage",
+    "rivalry"
+  ],
+  "not_for": [],
+  "fewest_voices": 1,
+  "most_voices": 4,
+  "tune": "event1",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "shop_interior",
+    "base": "7d8a4e",
+    "second": "4c5a30",
+    "ground": "8a6a44",
+    "accent": "d9a441",
+    "trim": "ece0a8"
+  },
+  "blocking": {
+    "lens": {
+      "x": 12,
+      "y": 23
+    },
+    "hero": {
+      "x": 12,
+      "y": 25,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 12,
+        "y": 23,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_2",
+        "x": 13,
+        "y": 23,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_3",
+        "x": 11,
+        "y": 23,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_4",
+        "x": 14,
+        "y": 23,
+        "dir": "left"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_4",
+      "x": 0.7,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    }
+  ]
+}

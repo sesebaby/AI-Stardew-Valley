@@ -1,0 +1,20 @@
+{
+  "templateId": "date/town_lamplight_walk",
+  "sceneType": "date",
+  "title": "路灯下散步",
+  "location": "Town",
+  "timeWindow": {
+    "min": 1900,
+    "max": 2400
+  },
+  "itemHints": [
+    "Juice",
+    "Pink Cake",
+    "Green Tea",
+    "Blue Jazz",
+    "Hashbrowns"
+  ],
+  "blockedForChildCodedNpcs": true,
+  "llmLineInstructions": "夜里镇上的路灯下慢慢走。村民有点害羞，谢谢农夫，话不多但真心；不提结婚、吃醋，不写成人内容。",
+  "scriptTemplate": "continue/51 22/farmer 50 22 1 {{NPC}} 52 22 3/skippable/AisvItemRequestSceneComplete {{FAVOR_ID}}/pause 600/speak {{NPC}} \"{{NPC_LINE_1}}\"/emote {{NPC}} 60/pause 500/faceDirection {{NPC}} 2/pause 400/faceDirection {{NPC}} 3/speak {{NPC}} \"{{NPC_LINE_2}}\"/emote {{NPC}} 20/pause 600/end"
+}

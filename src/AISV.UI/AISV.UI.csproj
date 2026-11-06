@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 界面：AisvTheme、外壳、各页面和应用。 -->
+  <Import Project="../../GameReferences.props" />
+  <PropertyGroup>
+    <RootNamespace>AISV.UI</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../AISV.Core/AISV.Core.csproj" />
+    <ProjectReference Include="../AISV.Game/AISV.Game.csproj" />
+  </ItemGroup>
+</Project>

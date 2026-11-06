@@ -1,0 +1,102 @@
+{
+  "key": "aisv.stage.hospital.waiting_chairs",
+  "name": "候诊的椅子",
+  "venue": "Hospital",
+  "moods": [
+    "revelation",
+    "reconciliation",
+    "quiet"
+  ],
+  "only_for": [
+    "health",
+    "care",
+    "addiction",
+    "recovery",
+    "illness",
+    "worry",
+    "ptsd"
+  ],
+  "not_for": [
+    "celebration",
+    "comedy"
+  ],
+  "fewest_voices": 1,
+  "most_voices": 4,
+  "tune": "Hospital_Ambient",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "clinic_interior",
+    "base": "a9c4c2",
+    "second": "6d8a8c",
+    "ground": "b8bdb0",
+    "accent": "5aa0a6",
+    "trim": "eef2e8"
+  },
+  "blocking": {
+    "lens": {
+      "x": 6,
+      "y": 15
+    },
+    "hero": {
+      "x": 6,
+      "y": 17,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 6,
+        "y": 15,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_2",
+        "x": 7,
+        "y": 15,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_3",
+        "x": 5,
+        "y": 15,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_4",
+        "x": 9,
+        "y": 15,
+        "dir": "left"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_4",
+      "x": 0.7,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    }
+  ]
+}

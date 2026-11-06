@@ -1,0 +1,21 @@
+{
+  "id": "parrot_night",
+  "name": "鹦鹉之夜",
+  "priority": 20,
+  "detection": {
+    "season": "",
+    "day": 0,
+    "matchAnyDate": true,
+    "locations": [
+      "IslandSouth"
+    ],
+    "festivalDataMarkers": {
+      "Lucas.BeachEpisode/Id": "Lucas.BeachEpisode/ParrotNight"
+    }
+  },
+  "gossip": {
+    "summary": "鹦鹉之夜，姜岛的灯笼亮了一整晚，鼓点一响，满树的鹦鹉都跟着应和。",
+    "chat": "灯笼下的音乐和鹦鹉的叫声，大家还在回味。",
+    "promptDays": 2
+  }
+}

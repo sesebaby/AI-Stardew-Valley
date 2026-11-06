@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 第三方集成：Squad、Stardew Thief、GMCM、内容包兼容。 -->
+  <Import Project="../../GameReferences.props" />
+  <PropertyGroup>
+    <RootNamespace>AISV.Integrations</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../AISV.Core/AISV.Core.csproj" />
+    <ProjectReference Include="../AISV.Game/AISV.Game.csproj" />
+  </ItemGroup>
+</Project>

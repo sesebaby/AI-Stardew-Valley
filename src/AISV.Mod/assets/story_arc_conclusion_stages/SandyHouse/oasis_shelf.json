@@ -1,0 +1,86 @@
+{
+  "key": "aisv.stage.sandyhouse.oasis_shelf",
+  "name": "绿洲店的货架",
+  "venue": "SandyHouse",
+  "moods": [
+    "reunion",
+    "reconciliation",
+    "celebration"
+  ],
+  "only_for": [
+    "friendship",
+    "loneliness",
+    "letters",
+    "reunion",
+    "gossip",
+    "fashion",
+    "travel"
+  ],
+  "not_for": [],
+  "fewest_voices": 1,
+  "most_voices": 3,
+  "tune": "50s",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "desert_interior",
+    "base": "d8a06a",
+    "second": "9c6a44",
+    "ground": "c8a878",
+    "accent": "4ab8a8",
+    "trim": "f8e0b0"
+  },
+  "blocking": {
+    "lens": {
+      "x": 1,
+      "y": 5
+    },
+    "hero": {
+      "x": 2,
+      "y": 7,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 1,
+        "y": 5,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_2",
+        "x": 3,
+        "y": 5,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_3",
+        "x": 2,
+        "y": 4,
+        "dir": "down"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.7,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    }
+  ]
+}

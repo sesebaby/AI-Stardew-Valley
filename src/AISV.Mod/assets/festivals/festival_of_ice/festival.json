@@ -1,0 +1,19 @@
+{
+  "id": "festival_of_ice",
+  "name": "冰雪节",
+  "priority": 0,
+  "detection": {
+    "season": "winter",
+    "day": 8,
+    "matchAnyDate": false,
+    "locations": [
+      "Forest",
+      "Temp"
+    ]
+  },
+  "gossip": {
+    "summary": "冰雪节那天，煤矿森林的湖面结了厚冰，冰雕雪人之间比起了冰钓。",
+    "chat": "冰钓比赛谁钓得最多，现在还有人不服气。",
+    "promptDays": 2
+  }
+}

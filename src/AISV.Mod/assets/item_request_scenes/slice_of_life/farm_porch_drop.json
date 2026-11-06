@@ -1,0 +1,20 @@
+{
+  "templateId": "slice_of_life/farm_porch_drop",
+  "sceneType": "slice_of_life",
+  "title": "农场门口的交接",
+  "location": "Farm",
+  "timeWindow": {
+    "min": 700,
+    "max": 1800
+  },
+  "itemHints": [
+    "Hardwood",
+    "Clay",
+    "Coal",
+    "Potato",
+    "Spring Onion"
+  ],
+  "blockedForChildCodedNpcs": false,
+  "llmLineInstructions": "村民来农场门口取东西，顺便聊两句日常。平实、自然，像邻居之间的小事。",
+  "scriptTemplate": "continue/65 16/farmer 64 16 1 {{NPC}} 66 16 3/skippable/AisvItemRequestSceneComplete {{FAVOR_ID}}/pause 500/speak {{NPC}} \"{{NPC_LINE_1}}\"/emote {{NPC}} 32/pause 400/faceDirection {{NPC}} 1/pause 500/faceDirection {{NPC}} 3/speak {{NPC}} \"{{NPC_LINE_2}}\"/pause 400/end"
+}

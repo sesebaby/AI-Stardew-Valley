@@ -1,0 +1,26 @@
+{{VILLAGER}}和{{FARMER_NAME}}一起出来了。你来写这段小场景里{{VILLAGER}}说的 {{HOW_MANY_LINES}} 句话，游戏会让这几句一句一句地演出来。
+
+场景：「{{SCENE_TITLE}}」，在{{STAGE_PLACE}}，气氛是{{SCENE_TONE}}。
+{{SCENE_GUIDANCE}}
+{{SCENE_RULES}}
+
+农夫是这样约你的：
+{{FARMER_SAID}}
+你当时这样回答：
+{{ACCEPTANCE_BLOCK}}
+{{MEMORY_SUMMARY}}
+
+你这个人：
+{{NATURE}}
+{{HOW_THEY_CHANGED}}
+
+你和对方：{{BOND_LEVEL}}。
+{{HOW_THEY_FEEL}}
+
+你们之前聊过的：
+{{LOG_TEXT}}
+
+这几句要能连成一段：刚到时的一句，四下看看或者手上做点什么时的一句，顺着聊到你们之间的事的一两句，要走时的一句。第一句不要重复答应时的话。农夫没有台词，所以句子要自己站得住，别问了问题就等回答。每句不超过 60 字，只有说的话，不写动作。孩子，或者被写得像孩子的人，不说任何带恋爱意味的话。
+
+用{{SPEAK_IN}}写。只交一个 JSON 对象，键就是这几个：
+{{LINE_KEYS}}

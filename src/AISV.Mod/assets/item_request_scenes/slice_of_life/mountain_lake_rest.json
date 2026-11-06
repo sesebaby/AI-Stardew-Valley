@@ -1,0 +1,20 @@
+{
+  "templateId": "slice_of_life/mountain_lake_rest",
+  "sceneType": "slice_of_life",
+  "title": "湖边歇脚",
+  "location": "Mountain",
+  "timeWindow": {
+    "min": 800,
+    "max": 1900
+  },
+  "itemHints": [
+    "Coal",
+    "Iron Ore",
+    "Earth Crystal",
+    "Dandelion",
+    "Coleslaw"
+  ],
+  "blockedForChildCodedNpcs": false,
+  "llmLineInstructions": "走山路走累了，在湖边歇一会儿。村民谢谢农夫，顺口聊聊路上的事和今天的天气。",
+  "scriptTemplate": "continue/31 13/farmer 30 13 1 {{NPC}} 32 13 3/skippable/AisvItemRequestSceneComplete {{FAVOR_ID}}/pause 500/faceDirection {{NPC}} 2/pause 600/faceDirection {{NPC}} 3/speak {{NPC}} \"{{NPC_LINE_1}}\"/emote {{NPC}} 40/pause 300/speak {{NPC}} \"{{NPC_LINE_2}}\"/emote {{NPC}} 32/pause 500/end"
+}

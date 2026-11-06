@@ -1,0 +1,88 @@
+{
+  "key": "aisv.stage.wizardhouse.cauldron_glow",
+  "name": "炉火映着的塔里",
+  "venue": "WizardHouse",
+  "moods": [
+    "revelation",
+    "confession"
+  ],
+  "only_for": [
+    "magic",
+    "occult",
+    "secret",
+    "family_secret",
+    "junimo",
+    "prophecy",
+    "mystery"
+  ],
+  "not_for": [
+    "community",
+    "comedy"
+  ],
+  "fewest_voices": 1,
+  "most_voices": 3,
+  "tune": "WizardSong",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "arcane_interior",
+    "base": "4a3a6b",
+    "second": "241c3c",
+    "ground": "3a3048",
+    "accent": "7ee0c0",
+    "trim": "c8b8f0"
+  },
+  "blocking": {
+    "lens": {
+      "x": 2,
+      "y": 17
+    },
+    "hero": {
+      "x": 2,
+      "y": 19,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 2,
+        "y": 17,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_2",
+        "x": 4,
+        "y": 17,
+        "dir": "left"
+      },
+      {
+        "role": "speaker_3",
+        "x": 3,
+        "y": 19,
+        "dir": "left"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.6,
+      "y": 0.7,
+      "size": 1.12,
+      "dir": "left"
+    }
+  ]
+}

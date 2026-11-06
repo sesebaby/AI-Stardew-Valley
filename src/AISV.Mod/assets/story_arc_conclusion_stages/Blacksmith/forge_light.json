@@ -1,0 +1,86 @@
+{
+  "key": "aisv.stage.blacksmith.forge_light",
+  "name": "炉前的光",
+  "venue": "Blacksmith",
+  "moods": [
+    "confession",
+    "reconciliation"
+  ],
+  "only_for": [
+    "unrequited_love",
+    "loneliness",
+    "craft",
+    "confession",
+    "friendship",
+    "courage"
+  ],
+  "not_for": [
+    "community"
+  ],
+  "fewest_voices": 1,
+  "most_voices": 3,
+  "tune": "event2",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "forge_interior",
+    "base": "5c4036",
+    "second": "2c1e1a",
+    "ground": "4a3a32",
+    "accent": "f07a3a",
+    "trim": "e8c080"
+  },
+  "blocking": {
+    "lens": {
+      "x": 8,
+      "y": 12
+    },
+    "hero": {
+      "x": 8,
+      "y": 14,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 8,
+        "y": 12,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_2",
+        "x": 7,
+        "y": 12,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_3",
+        "x": 9,
+        "y": 13,
+        "dir": "left"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "left"
+    }
+  ]
+}

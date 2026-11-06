@@ -1,0 +1,157 @@
+{
+  "key": "aisv.stage.town.everyone_turns_up",
+  "name": "人都到了",
+  "venue": "Town",
+  "moods": [
+    "community",
+    "revelation",
+    "reckoning"
+  ],
+  "only_for": [
+    "community",
+    "town",
+    "rumor",
+    "scandal",
+    "expulsion",
+    "expulsion_return",
+    "politics",
+    "celebration",
+    "friendship"
+  ],
+  "not_for": [
+    "private",
+    "confession",
+    "family_secret"
+  ],
+  "fewest_voices": 3,
+  "most_voices": 8,
+  "tune": "springtown",
+  "backdrop": {
+    "style": "vanilla_event",
+    "feel": "open_street",
+    "base": "6f9a6b",
+    "second": "3f5f4a",
+    "ground": "8c7a5c",
+    "accent": "e2b85a",
+    "trim": "f3e6b8"
+  },
+  "blocking": {
+    "lens": {
+      "x": 17,
+      "y": 90
+    },
+    "hero": {
+      "x": 17,
+      "y": 92,
+      "dir": "up"
+    },
+    "others": [
+      {
+        "role": "speaker_1",
+        "x": 17,
+        "y": 90,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_2",
+        "x": 16,
+        "y": 90,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_3",
+        "x": 18,
+        "y": 90,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_4",
+        "x": 15,
+        "y": 90,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_5",
+        "x": 19,
+        "y": 90,
+        "dir": "down"
+      },
+      {
+        "role": "speaker_6",
+        "x": 14,
+        "y": 90,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_7",
+        "x": 16,
+        "y": 92,
+        "dir": "right"
+      },
+      {
+        "role": "speaker_8",
+        "x": 18,
+        "y": 92,
+        "dir": "left"
+      }
+    ]
+  },
+  "spots": [
+    {
+      "role": "speaker_1",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_2",
+      "x": 0.4,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_3",
+      "x": 0.6,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_4",
+      "x": 0.3,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_5",
+      "x": 0.7,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "down"
+    },
+    {
+      "role": "speaker_6",
+      "x": 0.2,
+      "y": 0.52,
+      "size": 1.02,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_7",
+      "x": 0.4,
+      "y": 0.7,
+      "size": 1.12,
+      "dir": "right"
+    },
+    {
+      "role": "speaker_8",
+      "x": 0.6,
+      "y": 0.7,
+      "size": 1.12,
+      "dir": "left"
+    }
+  ]
+}
