@@ -164,7 +164,7 @@ public sealed class PhoneItem
 		}
 		bool use = e.Button.IsUseToolButton();
 		bool action = e.Button.IsActionButton() && !SomethingToInteract(e.Cursor.GrabTile) && !SomethingToInteract(e.Cursor.Tile);
-		if (!use && !action)
+		if ((!use && !action) || OverScreenMenu(e.Cursor))
 		{
 			return;
 		}
@@ -172,7 +172,14 @@ public sealed class PhoneItem
 		Open();
 	}
 
-	private static bool SomethingToInteract(Vector2 tile)
+	/// <summary>点在物品栏、时钟这些屏幕上的界面上：交给游戏（比如换别的物品），不开手机。</summary>
+	private static bool OverScreenMenu(ICursorPosition cursor)
+	{
+		Vector2 at = cursor.GetScaledScreenPixels();
+		return Game1.onScreenMenus.Any(m => m.isWithinBounds((int)at.X, (int)at.Y));
+	}
+
+		private static bool SomethingToInteract(Vector2 tile)
 	{
 		GameLocation? loc = Game1.currentLocation;
 		if (loc == null)
