@@ -37,6 +37,8 @@ public static class GmcmSettings
 		api.AddNumberOption(manifest, () => get().ChatWaitSeconds, v => get().ChatWaitSeconds = v, () => Tr.Get("config.timeout", "对话超时（秒）"), min: 5, max: 300);
 		api.AddNumberOption(manifest, () => get().NightlyWaitSeconds, v => get().NightlyWaitSeconds = v, () => Tr.Get("config.bgTimeout", "后台超时（秒）"), min: 5, max: 300);
 		api.AddNumberOption(manifest, () => get().NightlyCallsPerDay, v => get().NightlyCallsPerDay = v, () => Tr.Get("config.bgDaily", "每天后台请求上限（自己的网关，0 = 不限）"), min: 0, max: 2000);
+		api.AddBoolOption(manifest, () => get().ShareUsageStats, v => get().ShareUsageStats = v, () => Tr.Get("shell.settings.shareStats", "帮助改进功能"),
+			() => Tr.Get("shell.settings.shareStatsNote", "用服务器时上报游戏时长和各功能用了几次，不含聊天内容；关掉后不再收集"));
 
 		api.AddSectionTitle(manifest, () => Tr.Get("config.dialogue", "对话"));
 		api.AddBoolOption(manifest, () => get().AiOn, v => get().AiOn = v, () => Tr.Get("config.aiFeatures", "用 AI 说话"));

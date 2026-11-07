@@ -43,6 +43,9 @@ public sealed class PlayerModel
 	public double? Factor { get; set; }
 }
 
+/// <summary>后台给玩家加了额度时附的一条提示。</summary>
+public sealed record AccountNotice(long Id, double Amount, string Text);
+
 /// <summary>账号信息存在哪：游戏层用 SMAPI 全局数据，测试用内存。</summary>
 public interface IAccountStore
 {
@@ -79,6 +82,10 @@ public sealed class ServerAccount
 	private AccountState _state;
 
 	private string _deferredDay = "";
+
+	private readonly List<AccountNotice> _notices = new List<AccountNotice>();
+
+	private readonly HashSet<long> _shownNotices = new HashSet<long>();
 
 	public ServerAccount(ServerConnection connection, IAccountStore store, HttpClient http, ILog log)
 	{
@@ -287,7 +294,7 @@ public sealed class ServerAccount
 			line += Tr.Get("account.empty", "。今天的额度用完了，明天再来。");
 		}
 		string result = who + "：" + line;
-		string author = authorName.Trim().Length > 0 ? authorName.Trim() : "远古牛哥";
+		string author = authorName.Trim().Length > 0 ? authorName.Trim() : DefaultAuthor;
 		if (GiftEnabled && GiftAmount > 0)
 		{
 			result += "\n" + Tr.Get("account.giftToday", "今天{{author}}请客 {{daily}} 元，已经用了 {{used}} 元。", ("author", author), ("daily", Money(GiftAmount)), ("used", Money(Math.Min(GiftAmount, GiftUsedToday))));
@@ -303,6 +310,16 @@ public sealed class ServerAccount
 		return result;
 	}
 
+	/// <summary>加额度提示在游戏里显示的那句话。</summary>
+	public static string NoticeLine(AccountNotice notice)
+	{
+		string line = Tr.Get("account.notice", "{{author}}送了你 {{amount}} 元 AI 额度。", ("author", DefaultAuthor), ("amount", Money(notice.Amount)));
+		return notice.Text.Trim().Length > 0 ? line + " " + notice.Text.Trim() : line;
+	}
+
+	/// <summary>作者名也走翻译：英文等字体里没有中文字。</summary>
+	private static string DefaultAuthor => Tr.Get("account.authorName", "远古牛哥");
+
 	public static string Money(double yuan) => yuan >= 1 ? yuan.ToString("0.##", CultureInfo.InvariantCulture) : yuan.ToString("0.####", CultureInfo.InvariantCulture);
 
 	private async Task<(bool Ok, string Message)> SignInAsync(string path, string user, string password)
@@ -311,7 +328,8 @@ public sealed class ServerAccount
 		{
 			["username"] = user.Trim(),
 			["password"] = password,
-			["device"] = DeviceName()
+			["device"] = DeviceName(),
+			["hw"] = MachineId.Hash()
 		}, withToken: false).ConfigureAwait(false);
 		if (!ok || body == null)
 		{
@@ -330,12 +348,69 @@ public sealed class ServerAccount
 		return (true, created ? "created" : "");
 	}
 
+	/// <summary>心跳：这段时间玩了几秒、各功能用了几次。Ok = 发到了；Unsupported = 服务器没有这个接口（老版本）。</summary>
+	public async Task<(bool Ok, bool Unsupported)> PingAsync(int seconds, IReadOnlyDictionary<string, int> events)
+	{
+		if (!IsLoggedIn)
+		{
+			return (false, false);
+		}
+		JsonObject counts = new JsonObject();
+		foreach (KeyValuePair<string, int> e in events)
+		{
+			counts[e.Key] = e.Value;
+		}
+		(bool ok, JsonObject? body, _, int status) = await SendCoreAsync(HttpMethod.Post, "/aisv/ping", new JsonObject { ["seconds"] = seconds, ["events"] = counts, ["hw"] = MachineId.Hash() }, withToken: true).ConfigureAwait(false);
+		if (ok)
+		{
+			TakeNotices(body);
+		}
+		return (ok, status == 404);
+	}
+
+	/// <summary>还没在游戏里显示过的额度提示，取出后算已显示，并告诉服务器已读。</summary>
+	public List<AccountNotice> DrainNotices()
+	{
+		List<AccountNotice> list;
+		lock (_lock)
+		{
+			list = _notices.Where(n => _shownNotices.Add(n.Id)).ToList();
+			_notices.Clear();
+		}
+		if (list.Count > 0)
+		{
+			JsonArray ids = new JsonArray(list.Select(n => (JsonNode)n.Id).ToArray());
+			Task.Run(() => SendAsync(HttpMethod.Post, "/aisv/notices/seen", new JsonObject { ["ids"] = ids }, withToken: true));
+		}
+		return list;
+	}
+
+	private void TakeNotices(JsonObject? body)
+	{
+		if (body?["notices"] is not JsonArray arr)
+		{
+			return;
+		}
+		lock (_lock)
+		{
+			foreach (JsonObject o in arr.OfType<JsonObject>())
+			{
+				long id = o["id"] is JsonValue v && v.TryGetValue(out long n) ? n : 0;
+				if (id > 0 && !_shownNotices.Contains(id) && _notices.All(x => x.Id != id))
+				{
+					_notices.Add(new AccountNotice(id, Num(o, "amount") ?? 0, o["text"]?.ToString() ?? ""));
+				}
+			}
+		}
+	}
+
 	internal void ApplyMe(JsonObject? me)
 	{
 		if (me == null)
 		{
 			return;
 		}
+		TakeNotices(me);
 		GiftLeft = Num(me, "giftLeft");
 		Available = Num(me, "available");
 		GiftEnabled = Bool(me, "giftEnabled");
@@ -375,9 +450,15 @@ public sealed class ServerAccount
 	/// <summary>发给服务器；失败时带一句给玩家看的话（服务器的说明或"连不上服务器"）。</summary>
 	private async Task<(bool Ok, JsonObject? Body, string Message)> SendAsync(HttpMethod method, string path, JsonObject? body, bool withToken)
 	{
+		(bool ok, JsonObject? json, string message, _) = await SendCoreAsync(method, path, body, withToken).ConfigureAwait(false);
+		return (ok, json, message);
+	}
+
+	private async Task<(bool Ok, JsonObject? Body, string Message, int Status)> SendCoreAsync(HttpMethod method, string path, JsonObject? body, bool withToken)
+	{
 		if (!_connection.IsAvailable)
 		{
-			return (false, null, Tr.Get("account.noServer", "这个版本没有内置服务器。"));
+			return (false, null, Tr.Get("account.noServer", "这个版本没有内置服务器。"), 0);
 		}
 		try
 		{
@@ -402,7 +483,7 @@ public sealed class ServerAccount
 			}
 			if (resp.IsSuccessStatusCode)
 			{
-				return (true, json, "");
+				return (true, json, "", (int)resp.StatusCode);
 			}
 			string code = json?["error"]?["code"]?.ToString() ?? "";
 			string message = json?["error"]?["message"]?.ToString() ?? "";
@@ -410,12 +491,12 @@ public sealed class ServerAccount
 			{
 				SessionExpired();
 			}
-			return (false, json, message.Length > 0 ? message : Tr.Get("account.serverError", "服务器出错了（{{status}}），稍后再试。", ("status", (int)resp.StatusCode)));
+			return (false, json, message.Length > 0 ? message : Tr.Get("account.serverError", "服务器出错了（{{status}}），稍后再试。", ("status", (int)resp.StatusCode)), (int)resp.StatusCode);
 		}
 		catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
 		{
 			_log.Warn("连不上 AI星露谷服务器：" + _connection.Mask(ex.Message));
-			return (false, null, Tr.Get("account.offline", "连不上服务器，检查一下网络。"));
+			return (false, null, Tr.Get("account.offline", "连不上服务器，检查一下网络。"), 0);
 		}
 	}
 

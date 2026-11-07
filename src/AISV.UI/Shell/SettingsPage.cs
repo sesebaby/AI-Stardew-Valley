@@ -131,6 +131,8 @@ internal sealed class SettingsPage : ShellPage
 				(Tr.Get("shell.settings.ai", "AI"), new List<Row>
 				{
 					new LinkRow(Tr.Get("shell.settings.account", "账号"), Tr.Get("shell.settings.accountNote", "注册、登录、改密码，看今天还能用多少"), ctx => new AccountPage(ctx)),
+					new ToggleRow(Tr.Get("shell.settings.shareStats", "帮助改进功能"), Tr.Get("shell.settings.shareStatsNote", "用服务器时上报游戏时长和各功能用了几次，不含聊天内容；关掉后不再收集"), c => c.ShareUsageStats, (c, v) => c.ShareUsageStats = v),
+					new LinkRow(Tr.Get("shell.settings.privacy", "数据说明"), Tr.Get("shell.settings.privacyNote", "服务器会收到哪些信息、拿来做什么"), ctx => new PrivacyPage(ctx)),
 					new LinkRow(Tr.Get("shell.settings.gateway", "AI 连接"), Tr.Get("shell.settings.gatewayNote", "用服务器还是自己的 AI 网关、模型、思考档位"), ctx => new GatewayPage(ctx)),
 					new LinkRow(Tr.Get("shell.settings.aiStatus", "AI 状态"), Tr.Get("shell.settings.aiStatusNote", "现在好不好用、今天用了多少、最近为什么失败"), ctx => new AiStatusPage(ctx)),
 					new LinkRow(Tr.Get("shell.settings.npcCompat", "村民和 NPC mod"), Tr.Get("shell.settings.npcCompatNote", "哪些村民用 AI，为什么；关掉谁、用哪些 mod 的村民"), ctx => new NpcCompatPage(ctx)),

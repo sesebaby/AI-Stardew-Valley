@@ -57,6 +57,9 @@ public sealed class ModConfig
 
 	public string ServerThinkingLevel { get; set; } = "";
 
+	/// <summary>帮助改进功能：向服务器上报游戏时长和各功能用了几次（不含聊天内容）。</summary>
+	public bool ShareUsageStats { get; set; } = true;
+
 	// ---- 语言 ----
 
 	/// <summary>AI 说什么语言：跟游戏、固定越南语，或自己填（CustomLanguage）。</summary>

@@ -114,7 +114,11 @@ public sealed partial class ShellMenu : IClickableMenu, IShellHost
 		Layout();
 		StartBoot();
 		Page.Reload();
+		AISV.Core.Ai.UsageReporter.Note("device." + (device == Device.Window ? "shell" : device.ToString()));
+		NoteTab();
 	}
+
+	private void NoteTab() => AISV.Core.Ai.UsageReporter.Note("tab." + (_tab switch { Tab.Social => "social." + _social, Tab.World => "world." + _world, _ => _tab.ToString() }));
 
 	private Stack<ShellPage> Stack
 	{
@@ -621,10 +625,12 @@ public sealed partial class ShellMenu : IClickableMenu, IShellHost
 		Game1.playSound("smallSelect");
 		_hits.Clear();
 		Page.Reload();
+		NoteTab();
 	}
 
 	void IShellHost.Push(ShellPage page)
 	{
+		AISV.Core.Ai.UsageReporter.Note("page." + page.GetType().Name);
 		page.Host = this;
 		Stack.Push(page);
 		_hits.Clear();

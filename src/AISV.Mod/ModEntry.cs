@@ -60,6 +60,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private ServerAccount _account = null!;
 
+	private UsageReporter _usage = null!;
+
 	private AiService _ai = null!;
 
 	private NpcOwnershipScanner _ownership = null!;
@@ -182,6 +184,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_account = new ServerAccount(_connection, new GlobalAccountStore(helper.Data), accountHttp, _log) { ClientVersion = ModManifest.Version.ToString() };
 			ChatClient chat = new ChatClient(aiHttp, () => _config, _log, _connection.Mask);
 			_ai = new AiService(() => _config, chat, _connection, _account, _log);
+			_usage = new UsageReporter(_account, () => _config.ShareUsageStats && _ai.UsesServer, _log);
+			UsageReporter.Shared = _usage;
 		}
 		using (timer.Step("村民和人设"))
 		{
@@ -595,6 +599,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			helper.Events.GameLoop.UpdateTicked += (_, _) => _accountPrompt.OnUpdateTicked();
 			helper.Events.GameLoop.UpdateTicked += (_, _) => Notices.Flush();
 			helper.Events.GameLoop.OneSecondUpdateTicked += (_, _) => AnnounceFocus();
+			helper.Events.GameLoop.OneSecondUpdateTicked += (_, _) => TickUsage();
 			helper.Events.GameLoop.UpdateTicked += (_, e) =>
 			{
 				_festivals.OnUpdateTicked();
@@ -889,6 +894,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		}
 		else if (Matches(_config.KeyRumors, e.Button))
 		{
+			UsageReporter.Note("key.gossip");
 			OpenShell("gossip");
 		}
 		else if (Matches(_config.KeyAboutMe, e.Button))
@@ -922,6 +928,28 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		{
 			StardewValley.Game1.playSound("reward");
 			StardewValley.Game1.addHUDMessage(new StardewValley.HUDMessage(AISV.Core.Apps.FocusClock.Shared.Resting ? Tr.Get("tools.focus.doneWork", "专心时间到了，歇一会儿吧。") : Tr.Get("tools.focus.doneRest", "歇够了，开始下一轮吧。")));
+		}
+	}
+
+	/// <summary>每秒：存档开着、游戏窗口在前台就算在玩；隔几分钟发一次心跳；有加额度的提示就显示出来。</summary>
+	private void TickUsage()
+	{
+		if (Context.IsWorldReady && StardewValley.Game1.game1.IsActive)
+		{
+			_usage.AddSeconds(1);
+		}
+		if (_usage.Due(DateTime.UtcNow) && _account.IsLoggedIn)
+		{
+			Task.Run(_usage.FlushAsync);
+		}
+		if (Context.IsWorldReady)
+		{
+			foreach (AccountNotice notice in _account.DrainNotices())
+			{
+				StardewValley.Game1.playSound("reward");
+				StardewValley.Game1.addHUDMessage(new StardewValley.HUDMessage(ServerAccount.NoticeLine(notice)) { noIcon = true, timeLeft = 9000 });
+				RefreshAccountInBackground();
+			}
 		}
 	}
 
@@ -1225,6 +1253,10 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
 	{
+		if (_account.IsLoggedIn)
+		{
+			Task.Run(_usage.FlushAsync);
+		}
 		_conversations.ResetDaily();
 		_conversations.EndDayTransition();
 		_talkClock.Reset();

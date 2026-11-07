@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -336,6 +337,24 @@ internal sealed class AccountPage : ShellPage
 		y = Input(b, hits, Tr.Get("account.password", "密码"), _inputs[1], x, y, w, reveal: true);
 		y = Message(b, x, y, w);
 		Buttons(b, hits, x, y, Tr.Get("account.doEnter", "开始"), Submit, Tr.Get("account.doLater", "稍后"), Later);
+		PrivacyLink(b, hits, x, y + 52 + 16, w);
+	}
+
+	/// <summary>表单下面一行：开始即表示读过数据说明，点了打开全文。</summary>
+	private void PrivacyLink(SpriteBatch b, Hits hits, int x, int y, int w)
+	{
+		List<string> lines = Hearth.WrapLines(Tr.Get("account.privacyLine", "点“开始”即表示你已阅读《数据说明》（点这里查看）。"), w, 0.76f).ToList();
+		Rectangle r = new Rectangle(x, y, w, lines.Count * Hearth.LineHeight(0.76f));
+		Color color = Hearth.Hover(r) ? Hearth.LeafDeep : Hearth.QuillSoft;
+		foreach (string line in lines)
+		{
+			Hearth.Ink(b, line, new Vector2(x, y), color, 0.76f);
+			y += Hearth.LineHeight(0.76f);
+		}
+		if (!_busy)
+		{
+			hits.Add(r, () => Host.Push(new PrivacyPage(Ctx)));
+		}
 	}
 
 	private void DrawPassword(SpriteBatch b, Hits hits, int x, int y, int w)

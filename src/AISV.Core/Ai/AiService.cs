@@ -450,6 +450,10 @@ public sealed class AiService : IAiSender
 		{
 			headers["X-AISV-Essential"] = "1";
 		}
+		if (config.ShareUsageStats && requestName.Length > 0)
+		{
+			headers["X-AISV-Feature"] = requestName;
+		}
 		return new ChatEndpoint(_connection.ChatBaseUrl, _account.Token, model, effort, config.CustomLlmSupportsSystemPrompt, IsServer: true, headers);
 	}
 

@@ -55,6 +55,7 @@ internal sealed class AppsPage : ShellPage
 			new App("museum", AppIcons.Museum, new Color(232, 228, 216), Tr.Get("tools.museum", "博物馆"), () => Tr.Get("tools.museum.line", "捐了什么，还差什么"), () => Host.Push(new CollectionPage(Ctx, Tr.Get("tools.museum", "博物馆"), Tr.Get("tools.museum.lead", "彩色的是已经捐出去的。"), CollectionPage.Museum))),
 			new App("thanks", AppIcons.Thanks, new Color(252, 232, 238), Tr.Get("apps.thanks", "致谢"), () => Tr.Get("apps.thanks.line", "谢谢每一位帮过这个 mod 的老乡"), () => Host.Push(new ThanksPage(Ctx)))
 		};
+		_apps = _apps.Select(a => a with { Open = () => { AISV.Core.Ai.UsageReporter.Note("app." + a.Id); a.Open(); } }).ToList();
 	}
 
 	public IReadOnlyList<App> All => _apps;
