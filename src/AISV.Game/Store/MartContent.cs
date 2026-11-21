@@ -75,7 +75,7 @@ public sealed class MartContent
 					Description = Tr.Get("mart.buildingDesc", "自己的小超市。摆上陈列台和收银台，把农场里的东西卖给镇上的人。"),
 					Texture = TextureAsset,
 					Size = shed.Size,
-					SourceRect = shed.SourceRect,
+					SourceRect = HasArt ? Rectangle.Empty : shed.SourceRect,
 					DrawShadow = shed.DrawShadow,
 					CollisionMap = shed.CollisionMap,
 					DrawOffset = shed.DrawOffset,
@@ -158,9 +158,18 @@ public sealed class MartContent
 		return string.Join("/", f);
 	}
 
-	/// <summary>原版大棚屋的图换成暖色，门上加一条红白遮阳棚。</summary>
+	/// <summary>mod 自带的外观图（112 宽，门在正中，底边对齐地基）。</summary>
+	public const string ArtFile = "assets/store/farmer_mart.png";
+
+	private bool HasArt => System.IO.File.Exists(System.IO.Path.Combine(_helper.DirectoryPath, ArtFile));
+
+	/// <summary>优先用自带的外观图；没有时把原版大棚屋的图换成暖色、门上加一条红白遮阳棚。</summary>
 	private Texture2D Compose()
 	{
+		if (HasArt)
+		{
+			return _helper.ModContent.Load<Texture2D>(ArtFile);
+		}
 		Texture2D source = _helper.GameContent.Load<Texture2D>("Buildings\\Big Shed");
 		Color[] px = new Color[source.Width * source.Height];
 		source.GetData(px);
