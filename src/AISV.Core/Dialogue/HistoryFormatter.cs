@@ -51,7 +51,10 @@ public static class HistoryFormatter
 				continue;
 			}
 			sb.AppendLine(other ? $"[今天·和另一位农夫 {e.Farmer} 的单独对话]" : "[今天·这场对话]");
-			sb.AppendLine("  你说：" + e.Opener);
+			if (!string.IsNullOrWhiteSpace(e.Opener))
+			{
+				sb.AppendLine("  你说：" + e.Opener);
+			}
 			if (!string.IsNullOrEmpty(e.FarmerReply))
 			{
 				sb.AppendLine(other ? $"  {e.Farmer}（另一位农夫，不是眼前这位）说：" : "  农夫说：");

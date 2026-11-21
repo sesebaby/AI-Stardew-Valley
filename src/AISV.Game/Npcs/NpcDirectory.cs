@@ -47,7 +47,7 @@ public sealed class NpcDirectory
 				{
 					continue;
 				}
-				if (npc!.IsVillager)
+				if (npc!.IsVillager && !NpcBusy.IsStandIn(npc))
 				{
 					present.Add(name);
 				}
@@ -64,7 +64,7 @@ public sealed class NpcDirectory
 		_eligibility.SetWorld(new NpcEligibility.World(present, sve, managed));
 	}
 
-	public bool IsEnabled(NPC npc) => _eligibility.IsEnabled(npc.Name, npc.IsVillager, IsManaged(npc.Name));
+	public bool IsEnabled(NPC npc) => !NpcBusy.IsStandIn(npc) && _eligibility.IsEnabled(npc.Name, npc.IsVillager, IsManaged(npc.Name));
 
 	public bool IsEnabled(string name) => _eligibility.IsEnabled(name);
 

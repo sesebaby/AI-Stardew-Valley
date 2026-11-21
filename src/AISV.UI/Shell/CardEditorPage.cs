@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AISV.Core.Dialogue;
 using AISV.Core.Persona;
 using AISV.Core.Text;
 using AISV.UI.Dialogue;
@@ -61,9 +62,13 @@ internal sealed class CardEditorPage : ShellPage
 
 	private TextArea? _lastFocused;
 
-	public CardEditorPage(ShellContext ctx, string npc) : base(ctx)
+	// 孩子的卡：_npc 是记录键，名字另给；卡存在存档里，没有试聊和社交标签。
+	private readonly string? _kidName;
+
+	public CardEditorPage(ShellContext ctx, string npc, string? kidName = null) : base(ctx)
 	{
 		_npc = npc;
+		_kidName = kidName;
 		_slots = new[]
 		{
 			new Slot(Tr.Get("card.displayName", "显示名"), Tr.Get("card.displayNameHint", "AI 用这个名字称呼这位村民；不填用游戏里的名字。"), _fields.Add(24, singleLine: true), 56),
@@ -73,15 +78,36 @@ internal sealed class CardEditorPage : ShellPage
 			new Slot(Tr.Get("card.tags", "社交标签"), Tr.Get("card.tagsHint", "几个词就够，用顿号隔开，比如：爱热闹、记仇、护短。"), _fields.Add(200), 56),
 			new Slot(Tr.Get("card.speech", "说话方式"), Tr.Get("card.speechHint", "口头禅、语气、爱用的词。"), _fields.Add(400), 96)
 		};
-		Fill(Ctx.Npcs.Cards.Get(npc));
+		if (_kidName != null)
+		{
+			_slots[1] = _slots[1] with { Hint = Tr.Get("card.kidPersonalityHint", "写了就替换默认的孩子性格；不管写什么，孩子说话都会像个小孩。") };
+			_slots[4].Area.Locked = true;
+		}
+		Fill(StoredCard());
 		_saved = Snapshot();
 	}
 
-	public override string Title => Ctx.Display(_npc);
+	private CharacterCard? StoredCard() => _kidName != null ? Ctx.KidCards?.Get(_npc) : Ctx.Npcs.Cards.Get(_npc);
+
+	private string ShownName => _kidName ?? Ctx.Display(_npc);
+
+	private NpcPersona PreviewOf(CharacterCard? card)
+	{
+		if (_kidName == null)
+		{
+			return Ctx.Npcs.Preview(_npc, card);
+		}
+		StardewValley.Characters.Child? child = AISV.Game.Social.Kids.Find(_npc);
+		ChildContext c = child == null ? new ChildContext { Name = _kidName } : AISV.Game.Social.Kids.Context(child, null, Ctx.Display, null, "中文");
+		ChildContext withCard = new ChildContext { Key = c.Key, Name = c.Name, Boy = c.Boy, Stage = c.Stage, ParentName = c.ParentName, ParentRole = c.ParentRole, Card = card };
+		return new NpcPersona(c.Name, ChildPrompts.Persona(withCard), card?.Replaces == true ? PersonaSource.Card : PersonaSource.Generated, card?.DisplayName ?? "");
+	}
+
+	public override string Title => ShownName;
 
 	public override bool CapturesKeys => _fields.Typing;
 
-	public override void Reload() => _default = Ctx.Npcs.Preview(_npc, null);
+	public override void Reload() => _default = PreviewOf(null);
 
 	/// <summary>和 <see cref="_slots"/> 同样的顺序。</summary>
 	private static string[] Values(CharacterCard c) => new[] { c.DisplayName, c.Personality, c.Appearance, c.Lore, c.SocialTags, c.Speech };
@@ -216,7 +242,7 @@ internal sealed class CardEditorPage : ShellPage
 		if (key != _previewKey)
 		{
 			_previewKey = key;
-			_preview = Ctx.Npcs.Preview(_npc, Draft());
+			_preview = PreviewOf(Draft());
 		}
 		CharacterCard draft = Draft();
 		(string mode, Color fill, Color ink) = draft.IsEmpty ? (Tr.Get("card.modeDefault", "用默认"), Hearth.Slip, Hearth.QuillSoft)
@@ -227,7 +253,7 @@ internal sealed class CardEditorPage : ShellPage
 		}
 		Rectangle body = Column(b, r, Tr.Get("card.preview", "AI 实际看到的"), Hearth.LeafPale);
 		Hearth.Tag(b, new Vector2(r.Right - 16 - Hearth.TagWidth(mode, 0.66f), r.Y + 13), mode, fill, ink, 0.66f);
-		string name = _preview.DisplayNameOverride.Length > 0 ? _preview.DisplayNameOverride : Ctx.Display(_npc);
+		string name = _preview.DisplayNameOverride.Length > 0 ? _preview.DisplayNameOverride : ShownName;
 		string text = Tr.Get("card.previewName", "称呼：{{name}}", ("name", name)) + "\n\n" + _preview.Personality;
 		string count = Tr.Get("card.chars", "{{n}} 字", ("n", _preview.Personality.Length));
 		Vector2 cp = new Vector2(body.Right - 12 - Hearth.Width(count, 0.66f), body.Bottom - Hearth.LineHeight(0.66f) - 6);
@@ -263,6 +289,10 @@ internal sealed class CardEditorPage : ShellPage
 		int y = body.Y + 12 - _mid.Offset;
 		foreach (Slot s in _slots)
 		{
+			if (_kidName != null && s == _slots[4])
+			{
+				continue;
+			}
 			Hearth.InkBold(b, s.Label, new Vector2(x, y), Hearth.Quill, 0.8f);
 			string count = $"{s.Area.Text.Length}/{s.Area.MaxChars}";
 			Hearth.Ink(b, count, new Vector2(x + w - Hearth.Width(count, 0.62f), y + 4), Hearth.QuillPale, 0.62f);
@@ -314,7 +344,7 @@ internal sealed class CardEditorPage : ShellPage
 		x = SmallButton(b, x, r, Tr.Get("card.export", "复制成文字"), hits, Export) + 10;
 		x = SmallButton(b, x, r, Tr.Get("card.import", "从剪贴板导入"), hits, Import) + 10;
 		x = SmallButton(b, x, r, Tr.Get("card.reset", "恢复默认"), hits, Reset) + 10;
-		if (Ctx.TryChat != null)
+		if (Ctx.TryChat != null && _kidName == null)
 		{
 			x = SmallButton(b, x, r, Tr.Get("card.trial", "试聊"), hits, () => Host.Push(new CardTrialPage(Ctx, _npc, Draft())));
 		}
@@ -344,6 +374,18 @@ internal sealed class CardEditorPage : ShellPage
 	private void Save()
 	{
 		CharacterCard card = Draft();
+		if (_kidName != null)
+		{
+			card.SocialTags = "";
+			Ctx.KidCards?.Save(_npc, card);
+			_saved = Snapshot();
+			CardsPage.Changed = true;
+			_fields.BlurAll();
+			Game1.playSound("newRecipe");
+			Host.Notice(card.IsEmpty ? Tr.Get("card.resetDone", "{{name}} 用回默认人设了", ("name", ShownName))
+				: Tr.Get("card.kidSaved", "{{name}} 的角色卡存好了，只在这个存档里", ("name", ShownName)));
+			return;
+		}
 		if (card.DisplayName.Length > 0 && Ctx.Npcs.Names.TakenByOther(card.DisplayName, _npc))
 		{
 			Host.Notice(Tr.Get("card.nameTaken", "“{{name}}”已经是别的村民的名字了，换一个吧", ("name", card.DisplayName)));

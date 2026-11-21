@@ -233,7 +233,13 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_conversations.Skipped += _social.OnSkipped;
 			GiftPatch.Handler = _social.OnGiftReceived;
 			GiftPatch.Apply(harmony, _log);
-			new ChildTalk(() => _config, _npcs, _log) { Ai = _ai, Language = PromptLanguage, Rewritten = n => !string.IsNullOrWhiteSpace(_npcs.Cards.Get(n)?.Personality) }.Apply(harmony);
+			_childCards = new ChildCards(store);
+			_childBook = new ChildBook(store);
+			_childTalk = new ChildTalk(() => _config, _npcs, _log) { Ai = _ai, Language = PromptLanguage, Rewritten = n => !string.IsNullOrWhiteSpace(_npcs.Cards.Get(n)?.Personality), Cards = _childCards, Book = _childBook };
+			_childTalk.Apply(harmony);
+			ChildConversation childChat = new ChildConversation(() => _config, new ChildDialogue(_ai, _childBook, _log), _childTalk, _log);
+			_childTalk.ChatRequested = childChat.Start;
+			_shell.KidCards = _childCards;
 			_approaches = new ApproachCoordinator(source => source == MomentDirector.Source ? _config.EncountersOn : _awareness.Enabled, _dialogue.IsGeneratingFor, () => GenerationStatus.IsActive, () => _conversations.InDayTransition, _conversations.PresentPrepared, _log);
 			_awareness = new AwarenessSystem(() => _config, store, _npcs, _approaches, materials, _dialogue, helper.DirectoryPath, _log)
 			{
@@ -252,6 +258,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			materials.Awareness = _awareness.PromptBlock;
 			_festivals = new FestivalSystem(() => _config, helper.DirectoryPath, _dialogue, _social, helper.ModRegistry, _log);
 			_conversations.Festivals = _festivals;
+			_conversations.SaveConfig = SaveConfig;
 			_festivals.DanceAccepted += _looks.WearDanceOutfit;
 			_conversations.FestivalTalked += _social.OnFestivalTalked;
 			_conversations.FestivalInvited += _social.OnFestivalInvite;
@@ -277,6 +284,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			helper.ConsoleCommands.Add("aisv_gossip", "八卦调试。\n用法：aisv_gossip list | inject <起头的村民> <事实> [| 他的原话] | spread", (_, args) => _log.Info(Context.IsWorldReady ? GossipCommand(args) : "先进存档。"));
 			helper.ConsoleCommands.Add("aisv_drama", "社交剧情调试。\n用法：aisv_drama [status] | hostility | <村民>", (_, args) => DramaCommand(args));
 			_dialogue.PostResolutionLine = _arcs.PostResolutionLine;
+			_dialogue.HasPostResolutionLine = _arcs.HasPostResolutionLine;
 			_npcs.Eligibility.SetExpelledCheck(_arcs.Expulsions.IsExpelled);
 			ShopPatches.Apply(harmony, _arcs.Shops.IsDetached, _log);
 			_shell.Arcs = _arcs;
@@ -355,11 +363,11 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_groups = new GroupDirector(() => _config, _ai, groupAi, groupMaterial, _approaches, _dialogue, helper, _log)
 			{
 				Social = _social,
-				IsNpcOccupied = n => _conversations.IsTalkingWith(n, ConversationController.TalkGraceTicks) || _approaches.IsNpcBusy(n) || fishing(n) || SquadMark.IsControlled(n) || _schedules.IsHolding(n) || _moments.IsInScene(n),
+				IsNpcOccupied = n => _conversations.IsTalkingWith(n, ConversationController.TalkGraceTicks) || _approaches.IsNpcBusy(n) || fishing(n) || SquadMark.IsControlled(n) || _schedules.IsHolding(n) || _moments.IsInScene(n) || NpcBusy.Is(n),
 				InDayTransition = () => _conversations.InDayTransition
 			};
 			_groups.PlayerSpoke += () => _talkClock.Talked();
-			_awareness.IsBusyElsewhere = n => fishing(n) || _groups.IsNpcInvolved(n) || SquadMark.IsControlled(n) || _schedules.IsHolding(n);
+			_awareness.IsBusyElsewhere = n => fishing(n) || _groups.IsNpcInvolved(n) || SquadMark.IsControlled(n) || _schedules.IsHolding(n) || NpcBusy.Is(n);
 			_awareness.IsFollowing = SquadMark.IsControlled;
 			_residents = new ResidentsService(() => _config, store, _ai, groupAi, groupMaterial, _log) { IsViewing = () => ShellMenu.ViewingResidents };
 			_shell.Residents = _residents;
@@ -418,8 +426,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			helper.ConsoleCommands.Add("aisv_market", "市场调试，结果写到 debug/。\n用法：aisv_market dump | price <id> [品质] | bin <id> <件数> [品质] | advance <天数> [id:件数,...] | set <id> <系数>", (_, args) => _log.Info(Context.IsWorldReady ? _market.Command(args, debugFile) : "先进存档。"));
 			_awareness.IsTalking = n => _conversations.IsTalkingWith(n, ConversationController.TalkGraceTicks);
 			// 招募键不因为约见挡人：Squad 带走时约见自己取消。
-			_squad = new SquadBridge(helper, _log, () => _config, n => _approaches.IsNpcBusy(n) || fishing(n) || _groups.IsNpcInvolved(n) || _conversations.IsTalkingWith(n), Relationships.RawHearts);
-			_schedules = new ScheduleOverlayService(() => _config, store, helper.Reflection, n => _conversations.IsTalkingWith(n, ConversationController.TalkGraceTicks) || _approaches.IsNpcBusy(n) || fishing(n) || _groups.IsNpcInvolved(n), _log);
+			_squad = new SquadBridge(helper, _log, () => _config, n => _approaches.IsNpcBusy(n) || fishing(n) || _groups.IsNpcInvolved(n) || _conversations.IsTalkingWith(n) || NpcBusy.Is(n), Relationships.RawHearts);
+			_schedules = new ScheduleOverlayService(() => _config, store, helper.Reflection, n => _conversations.IsTalkingWith(n, ConversationController.TalkGraceTicks) || _approaches.IsNpcBusy(n) || fishing(n) || _groups.IsNpcInvolved(n) || NpcBusy.IsBySources(n), _log);
 			_meetups = new MeetupService(() => _config, store, _schedules, _log);
 			_farmHelp = new FarmHelpService(() => _config, store, _schedules, _meetups, () => _social.Feelings, _log) { Crew = _squad };
 			_offers = new OfferDesk(() => _config, _meetups, _farmHelp, relationships.EffectiveHearts, _log);
@@ -656,10 +664,17 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 					StardewValley.DelayedAction.functionAfterDelay(() => _outings.TryStartHere(), 200);
 				}
 			};
+			PetThoughts pets = new PetThoughts(() => _config, _log)
+			{
+				Ai = _ai,
+				Language = PromptLanguage,
+				FirstTime = () => Hints.Hud(Tr.Get("pet.firstHint", "灰色泡泡是宠物的心里话（暂时不能和宠物对话）。设置 → 看到听到 里可以关掉或调频率。"), 9000)
+			};
 			helper.Events.GameLoop.TimeChanged += (_, _) =>
 			{
 				if (_saveData.Current != null)
 				{
+					pets.OnTimeChanged();
 					_outings.OnTimeChanged();
 					_schedules.OnTimeChanged();
 					_farmHelp.OnTimeChanged();
@@ -669,6 +684,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				}
 			};
 			NpcSpeech.Show = HeadBubbles.Show;
+			NpcSpeech.ShowThought = HeadBubbles.ShowThought;
 			HeadBubbles.Display = _npcs.Names.Display;
 			helper.Events.GameLoop.UpdateTicked += (_, _) => HeadBubbles.Update(StardewValley.Game1.currentGameTime?.ElapsedGameTime.TotalMilliseconds ?? 16.7);
 			helper.Events.Display.RenderedHud += (_, e) =>
@@ -768,8 +784,15 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	/// <remarks>显式传转换器数组：只传 Formatting 会绑定到新版 Newtonsoft 才有的重载，旧版 SMAPI 会拒绝加载整个 mod。</remarks>
 	private static string? LenientJson(string text) => Newtonsoft.Json.Linq.JToken.Parse(text).ToString(Newtonsoft.Json.Formatting.None, Array.Empty<Newtonsoft.Json.JsonConverter>());
 
+	private ChildCards? _childCards;
+
+	private ChildBook? _childBook;
+
+	private ChildTalk? _childTalk;
+
 	private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
 	{
+		Kids.RegisterFamily();
 		AISV.Game.World.HeartEventSource.Refresh(Helper, _log);
 		StepTimer timer = new StepTimer("AI星露谷 进存档");
 		using (timer.Step("打开存档数据"))
@@ -816,6 +839,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private void OnDayStarted(object? sender, DayStartedEventArgs e)
 	{
+		Kids.RegisterFamily();
+		_childBook?.Forget(Kids.All().Select(Kids.Key));
 		AISV.Game.World.HeartEventSource.Refresh(Helper, _log);
 		HeadBubbles.Clear();
 		_eco.Invalidate();

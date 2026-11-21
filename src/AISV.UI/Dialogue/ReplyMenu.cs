@@ -93,7 +93,26 @@ public sealed class ReplyMenu : IClickableMenu
 
 	private bool _cancelled;
 
-	private readonly string _shownLine;
+	private string _shownLine;
+
+	// 玩家先开口：台词卡空着，可以点"让 TA 先说"；玩家说过第一句后按钮就收起来。
+	private readonly bool _playerFirst;
+
+	private bool _opening;
+
+	private bool _spoke;
+
+	private Rectangle _letThemButton;
+
+	// "下次我先开口"开关：null 表示不显示（节日、孩子）。
+	private bool? _nextIStart;
+
+	private Rectangle _nextToggle;
+
+	private Rectangle _nextHit;
+
+	// 孩子：没有保密、也没有"想一起做点什么"。
+	private readonly bool _kid;
 
 	private string? _failure;
 
@@ -122,11 +141,16 @@ public sealed class ReplyMenu : IClickableMenu
 	/// <param name="outings">这一轮能不能约出去、约会。</param>
 	/// <param name="errands">能不能从这里托他办事。</param>
 	/// <param name="loans">能不能从这里向他借钱（或还钱）。</param>
-	public ReplyMenu(NPC npc, string displayName, string line, string? emotion, bool multiTurn, int hearts, bool festival = false, string? inviteLabel = null, string? inviteTip = null, ProposalOptions? proposals = null, OutingOptions? outings = null, bool errands = false, bool loans = false)
+	/// <param name="nextIStart">显示"下次我先开口"开关和它现在的值；null 不显示。</param>
+	/// <param name="kid">和孩子说话：不显示保密和"想一起做点什么"。</param>
+	public ReplyMenu(NPC npc, string displayName, string line, string? emotion, bool multiTurn, int hearts, bool festival = false, string? inviteLabel = null, string? inviteTip = null, ProposalOptions? proposals = null, OutingOptions? outings = null, bool errands = false, bool loans = false, bool? nextIStart = null, bool kid = false)
 	{
+		_kid = kid;
+		_playerFirst = string.IsNullOrWhiteSpace(line) && !festival;
+		_nextIStart = festival || kid ? null : nextIStart;
 		_errands = errands && !festival;
 		_loans = loans && !festival;
-		_showAction = !festival;
+		_showAction = !festival && !kid;
 		_proposalKind = festival || proposals == null ? null : proposals.Marriage ? ProposalKind.Marriage : proposals.Dating ? ProposalKind.Dating : null;
 		_outings = festival || outings == null ? OutingOptions.None : outings;
 		_inviteLabel = inviteLabel;
@@ -144,10 +168,37 @@ public sealed class ReplyMenu : IClickableMenu
 		_reply.Focus();
 	}
 
-	/// <summary>回复框上面显示的那句（多轮时是上一句反应）。</summary>
-	public string DisplayedLine { get; }
+	/// <summary>回复框上面显示的那句（多轮时是上一句反应；玩家先开口时是空的）。</summary>
+	public string DisplayedLine { get; private set; }
 
-	public string? DisplayedEmotion { get; }
+	public string? DisplayedEmotion { get; private set; }
+
+	/// <summary>台词卡空着：等玩家先开口。</summary>
+	public bool AwaitingPlayer => _playerFirst && string.IsNullOrWhiteSpace(DisplayedLine);
+
+	/// <summary>点了"让 TA 先说"。</summary>
+	public event Action? OpenerRequested;
+
+	/// <summary>"下次我先开口"开关变了。</summary>
+	public event Action<bool>? NextIStartChanged;
+
+	/// <summary>"让 TA 先说"生成好了（或失败了，传 null）：填进台词卡。</summary>
+	public void ShowOpener(string? line, string? emotion = null)
+	{
+		_opening = false;
+		if (string.IsNullOrWhiteSpace(line))
+		{
+			Game1.playSound("cancel");
+			return;
+		}
+		DisplayedLine = line;
+		DisplayedEmotion = emotion;
+		_shownLine = GameDialogueText.ForDisplay(line, Game1.player?.Name ?? "").Replace("#$b#", " ");
+		_lineScroll = 0;
+		Game1.playSound("smallSelect");
+	}
+
+	private bool CanAskOpener => AwaitingPlayer && !_spoke && !_opening && !Locked;
 
 	/// <summary>玩家打开了节日邀请开关。</summary>
 	public bool Inviting => _inviting;
@@ -242,7 +293,16 @@ public sealed class ReplyMenu : IClickableMenu
 		_errandHit = _errands ? new Rectangle(px, py, errandW, below ? 40 : 36) : Rectangle.Empty;
 		px = _errands ? _errandHit.Right + 10 : px;
 		_loanHit = _loans ? new Rectangle(px, py, loanW, below ? 40 : 36) : Rectangle.Empty;
+		int letW = (int)Game1.smallFont.MeasureString(LetThemLabel).X + 48;
+		_letThemButton = new Rectangle(_lineCard.Center.X - letW / 2, _lineCard.Bottom - 64, letW, 48);
+		int nextW = 56 + 12 + (int)(Game1.smallFont.MeasureString(NextIStartLabel).X * 0.8f) + 8;
+		_nextToggle = _nextIStart == null ? Rectangle.Empty : new Rectangle(_lineCard.Right - nextW + 4, _lineCard.Bottom + 8, 56, 28);
+		_nextHit = _nextIStart == null ? Rectangle.Empty : new Rectangle(_nextToggle.X - 4, _nextToggle.Y - 6, nextW, 40);
 	}
+
+	private static string LetThemLabel => Tr.Get("reply.letThemStart", "让 TA 先说");
+
+	private static string NextIStartLabel => Tr.Get("reply.nextIStart", "下次我先开口");
 
 	private (Rectangle Toggle, Rectangle Hit) ToggleAt(int x, string label)
 	{
@@ -310,6 +370,20 @@ public sealed class ReplyMenu : IClickableMenu
 			}
 			return;
 		}
+		if (CanAskOpener && _letThemButton.Contains(x, y))
+		{
+			_opening = true;
+			Game1.playSound("bigSelect");
+			OpenerRequested?.Invoke();
+			return;
+		}
+		if (_nextIStart != null && _nextHit.Contains(x, y))
+		{
+			_nextIStart = !_nextIStart.Value;
+			Game1.playSound("drumkit6");
+			NextIStartChanged?.Invoke(_nextIStart.Value);
+			return;
+		}
 		if (_reply.Bounds.Contains(x, y))
 		{
 			Activate(_reply);
@@ -323,7 +397,7 @@ public sealed class ReplyMenu : IClickableMenu
 			_inviting = !_inviting;
 			Game1.playSound("drumkit6");
 		}
-		else if (_secretToggle.Contains(x, y))
+		else if (!_kid && _secretToggle.Contains(x, y))
 		{
 			_keepSecret = !_keepSecret;
 			Game1.playSound("drumkit6");
@@ -360,7 +434,7 @@ public sealed class ReplyMenu : IClickableMenu
 		{
 			Submit();
 		}
-		else if (_skipButton.Contains(x, y))
+		else if (_skipButton.Contains(x, y) && !AwaitingPlayer)
 		{
 			Skip();
 		}
@@ -517,6 +591,7 @@ public sealed class ReplyMenu : IClickableMenu
 		_reply.Locked = true;
 		_action.Locked = true;
 		string? action = !_showAction || _outing != null || string.IsNullOrWhiteSpace(_action.Text) ? null : _action.Text.Trim();
+		_spoke = true;
 		Submitted?.Invoke(text, action, _keepSecret);
 	}
 
@@ -598,8 +673,22 @@ public sealed class ReplyMenu : IClickableMenu
 				Hearth.Ink(b, _inviteTip, new Vector2(_inviteToggle.Right + 12 + Game1.smallFont.MeasureString(_inviteLabel).X + 20, _inviteToggle.Y), Hearth.QuillSoft);
 			}
 		}
-		Hearth.Latch(b, _secretToggle, _keepSecret);
-		Hearth.Ink(b, Tr.Get("reply.keepSecret", "保密"), new Vector2(_secretToggle.Right + 12, _secretToggle.Y), Hearth.QuillSoft);
+		if (!_kid)
+		{
+			Hearth.Latch(b, _secretToggle, _keepSecret);
+			Hearth.Ink(b, Tr.Get("reply.keepSecret", "保密"), new Vector2(_secretToggle.Right + 12, _secretToggle.Y), Hearth.QuillSoft);
+		}
+		if (_nextIStart is bool next)
+		{
+			Hearth.Latch(b, _nextToggle, next);
+			b.DrawString(Game1.smallFont, NextIStartLabel, new Vector2(_nextToggle.Right + 10, _nextToggle.Y + 2), next ? Hearth.Leaf : Hearth.QuillSoft, 0f, Vector2.Zero, 0.8f, SpriteEffects.None, 1f);
+			if (next && _nextHit.Contains(Game1.getMouseX(), Game1.getMouseY()))
+			{
+				string tip = Tr.Get("reply.nextIStartTip", "下次点村民时不等 TA 开场，直接由你起话题");
+				Vector2 size = Game1.smallFont.MeasureString(tip) * 0.7f;
+				b.DrawString(Game1.smallFont, tip, new Vector2(_lineCard.Right - size.X, _nextHit.Bottom + 2), Hearth.Leaf, 0f, Vector2.Zero, 0.7f, SpriteEffects.None, 1f);
+			}
+		}
 		if (_proposalKind != null)
 		{
 			Hearth.Latch(b, _proposalToggle, _proposing);
@@ -643,7 +732,10 @@ public sealed class ReplyMenu : IClickableMenu
 		else
 		{
 			Hearth.PressPlate(b, _closeButton, Tr.Get("reply.close", "先不说了"), hover: _closeButton.Contains(mx, my));
-			Hearth.PressPlate(b, _skipButton, _multiTurn ? Tr.Get("reply.finish", "聊到这") : Tr.Get("reply.skip", "不回了"), hover: _skipButton.Contains(mx, my));
+			if (!AwaitingPlayer)
+			{
+				Hearth.PressPlate(b, _skipButton, _multiTurn ? Tr.Get("reply.finish", "聊到这") : Tr.Get("reply.skip", "不回了"), hover: _skipButton.Contains(mx, my));
+			}
 			Hearth.PressPlate(b, _sendButton, Tr.Get("reply.send", "发送"), primary: true, hover: _sendButton.Contains(mx, my), disabled: _reply.Text.Trim().Length == 0);
 		}
 		drawMouse(b);
@@ -682,6 +774,21 @@ public sealed class ReplyMenu : IClickableMenu
 	private void DrawLine(SpriteBatch b)
 	{
 		Hearth.CardSlip(b, _lineCard);
+		if (AwaitingPlayer)
+		{
+			if (_opening)
+			{
+				string dots = new string('.', (int)(DateTime.UtcNow.TimeOfDay.TotalSeconds * 2) % 4);
+				Hearth.InkMiddle(b, Tr.Get("reply.thinking", "{{npc}}在想", ("npc", _displayName)) + dots, new Rectangle(_lineCard.X, _lineCard.Y + 16, _lineCard.Width, 40), Hearth.Leaf);
+				return;
+			}
+			Hearth.InkMiddle(b, Tr.Get("reply.youStart", "{{npc}}在等你开口……", ("npc", _displayName)), new Rectangle(_lineCard.X, _lineCard.Y + 16, _lineCard.Width, 40), Hearth.QuillSoft);
+			if (CanAskOpener)
+			{
+				Hearth.PressPlate(b, _letThemButton, LetThemLabel, hover: _letThemButton.Contains(Game1.getMouseX(), Game1.getMouseY()));
+			}
+			return;
+		}
 		string text = Hearth.Wrap(_shownLine, _lineCard.Width - 32);
 		string[] lines = text.Split('\n');
 		int lh = Hearth.LineHeight();

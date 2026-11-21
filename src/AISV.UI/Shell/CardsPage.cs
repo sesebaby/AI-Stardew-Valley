@@ -15,7 +15,8 @@ namespace AISV.UI.Shell;
 /// <summary>村民角色卡：所有能聊天的村民排成格子，标出谁的人设被改写或补充过，点进去编辑。</summary>
 internal sealed class CardsPage : ShellPage
 {
-	private sealed record Entry(string Npc, string Name, PersonaSource Source, CharacterCard? Card);
+	/// <param name="Npc">村民的内部名；孩子是记录键。</param>
+	private sealed record Entry(string Npc, string Name, PersonaSource Source, CharacterCard? Card, bool Kid = false);
 
 	private readonly Scroller _scroll = new Scroller();
 
@@ -55,6 +56,13 @@ internal sealed class CardsPage : ShellPage
 			NpcPersona p = Ctx.Npcs.Preview(n, null);
 			return new Entry(n, Ctx.Display(n), p.Source, Ctx.Npcs.Cards.Get(n));
 		}).OrderByDescending(e => e.Card != null).ThenBy(e => e.Name, StringComparer.CurrentCulture).ToList();
+		// 自己家的孩子排在最前面：卡跟着存档走。
+		if (Ctx.KidCards != null && Game1.player != null)
+		{
+			List<Entry> kids = Game1.player.getChildren().Where(c => !string.IsNullOrWhiteSpace(c.Name))
+				.Select(c => new Entry(AISV.Game.Social.Kids.Key(c), c.Name, PersonaSource.Generated, Ctx.KidCards.Get(AISV.Game.Social.Kids.Key(c)), Kid: true)).ToList();
+			_all.InsertRange(0, kids);
+		}
 	}
 
 	public override void Scroll(int direction) => _scroll.Wheel(direction);
@@ -112,7 +120,7 @@ internal sealed class CardsPage : ShellPage
 			hits.Add(r, () =>
 			{
 				_search.Selected = false;
-				Host.Push(new CardEditorPage(Ctx, e.Npc));
+				Host.Push(e.Kid ? new CardEditorPage(Ctx, e.Npc, kidName: e.Name) : new CardEditorPage(Ctx, e.Npc));
 			}, _view);
 		}
 		Hearth.EndClip(b);
@@ -124,10 +132,17 @@ internal sealed class CardsPage : ShellPage
 		bool hover = Hearth.Hover(r, _view);
 		Hearth.Bordered(b, r, Hearth.Slip, hover ? Hearth.Leaf : e.Card != null ? Hearth.Amber * 0.7f : Hearth.SlipEdge, 12);
 		Rectangle av = new Rectangle(r.X + 14, r.Y + 14, 68, 68);
-		Kit.Avatar(b, av, Ctx, e.Npc);
+		if (e.Kid)
+		{
+			Hearth.Cameo(b, av, Game1.getCharacterFromName(e.Name, mustBeVillager: false), e.Name.Length > 0 ? e.Name.Substring(0, 1) : "?");
+		}
+		else
+		{
+			Kit.Avatar(b, av, Ctx, e.Npc);
+		}
 		int tx = av.Right + 14;
 		Hearth.InkBold(b, Hearth.Truncate(e.Name, r.Right - tx - 16, 0.88f), new Vector2(tx, r.Y + 16), Hearth.Quill, 0.88f);
-		(string label, Color fill, Color ink) = e.Card == null ? (SourceName(e.Source), Hearth.ParchmentDeep, Hearth.QuillSoft) : Badge(e.Card);
+		(string label, Color fill, Color ink) = e.Card == null ? (e.Kid ? Tr.Get("cards.kid", "孩子") : SourceName(e.Source), e.Kid ? Hearth.RosePale : Hearth.ParchmentDeep, e.Kid ? Hearth.Rose : Hearth.QuillSoft) : Badge(e.Card);
 		Hearth.Tag(b, new Vector2(tx, r.Y + 52), label, fill, ink, 0.66f);
 	}
 

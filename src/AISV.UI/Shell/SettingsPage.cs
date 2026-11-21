@@ -38,6 +38,22 @@ internal sealed class SettingsPage : ShellPage
 
 	private static readonly int[] WindowSizes = { 70, 80, 90, 100, 110, 125, 150 };
 
+	private static readonly int[] PetDaily = { 1, 2, 3, 5, 8 };
+
+	private static readonly int[] PetChances = { 10, 25, 40, 60 };
+
+	private static readonly int[] RunawayChances = { 1, 3, 5, 10 };
+
+	private static readonly string[] ChildModes = { "Off", "Line", "Chat" };
+
+	private static readonly string[] HelpLevels = { "Light", "Normal", "Busy" };
+
+	private static readonly int[] SpendLimits = { 0, 200, 400, 800, 1500 };
+
+	private static readonly int[] MartOpens = { 700, 800, 900, 1000, 1100 };
+
+	private static readonly int[] MartCloses = { 1500, 1600, 1700, 1800, 2000, 2200 };
+
 	private static readonly int[] DailyLimits = { 3, 5, 6, 8, 10, 15 };
 
 	private static readonly int[] ItemRequestChances = { 0, 5, 6, 10, 20, 35, 50 };
@@ -137,6 +153,7 @@ internal sealed class SettingsPage : ShellPage
 					new LinkRow(Tr.Get("shell.settings.aiStatus", "AI 状态"), Tr.Get("shell.settings.aiStatusNote", "现在好不好用、今天用了多少、最近为什么失败"), ctx => new AiStatusPage(ctx)),
 					new LinkRow(Tr.Get("shell.settings.npcCompat", "村民和 NPC mod"), Tr.Get("shell.settings.npcCompatNote", "哪些村民用 AI，为什么；关掉谁、用哪些 mod 的村民"), ctx => new NpcCompatPage(ctx)),
 					new ToggleRow(Tr.Get("shell.settings.aiFeatures", "AI 功能"), Tr.Get("shell.settings.aiFeaturesNote", "关掉后村民用游戏原来的台词，晚上也不整理八卦和日记"), c => c.AiOn, (c, v) => c.AiOn = v),
+					new ToggleRow(Tr.Get("shell.settings.playerStarts", "我先开口"), Tr.Get("shell.settings.playerStartsNote", "点村民时不等 TA 开场，直接打开回复框由你起话题；TA 有非说不可的话时还是 TA 先说。回复框里也能切换"), c => c.PlayerStartsTalk, (c, v) => c.PlayerStartsTalk = v),
 					new ChoiceRow(Tr.Get("shell.settings.talkMinutes", "聊天花的时间"), Tr.Get("shell.settings.talkMinutesNote", "当面聊一轮、群聊说一句，钟走几分钟（只在单人游戏里；聊完关掉对话框再走，最晚到 25:50）"),
 						TalkMinutes.Select(m => m == 0 ? Tr.Get("shell.settings.talkFree", "不花时间") : Tr.Get("shell.settings.minutes", "{{n}} 分钟", ("n", m))).ToArray(),
 						c => Nearest(TalkMinutes, c.MinutesPerReply), (c, i) => c.MinutesPerReply = TalkMinutes[i])
@@ -292,6 +309,57 @@ internal sealed class SettingsPage : ShellPage
 					new ChoiceRow(Tr.Get("shell.settings.arcFizzle", "几季没进展就作罢"), Tr.Get("shell.settings.arcFizzleNote", "一个目标都没办成的小剧场，过了这么多季就不了了之"), FizzleSeasons.Select(n => Tr.Get("shell.settings.seasons", "{{n}} 季", ("n", n))).ToArray(), c => Nearest(FizzleSeasons, c.StorylineStaleSeasons), (c, i) => c.StorylineStaleSeasons = FizzleSeasons[i])
 				})
 			}),
+			new Category(Tr.Get("shell.settings.home", "家里"), Tr.Get("shell.settings.homeDesc", "配偶、孩子和宠物。"), new List<(string, List<Row>)>
+			{
+				(Tr.Get("shell.settings.spouse", "配偶"), new List<Row>
+				{
+					new ToggleRow(Tr.Get("shell.settings.kissMenu", "点配偶先选聊天还是亲吻"), Tr.Get("shell.settings.kissMenuNote", "今天还能亲（抱）的时候，配偶头顶弹出小圆盘；关掉就直接聊天，按住跳过键点配偶照样能亲"), c => c.KissChoiceMenu, (c, v) => c.KissChoiceMenu = v),
+					new ToggleRow(Tr.Get("shell.settings.spousePlan", "配偶的日常安排"), Tr.Get("shell.settings.spousePlanNote", "婚后配偶每天自己安排：帮忙干农活、去镇上、看店、带孩子；手机「家务安排」里可以改"), c => c.SpousePlanner, (c, v) => c.SpousePlanner = v),
+					new ChoiceRow(Tr.Get("shell.settings.spouseHelp", "帮忙勤快程度"), Tr.Get("shell.settings.spouseHelpNote", "每样活最多干多少"), new[] { Tr.Get("shell.settings.helpLight", "轻松"), Tr.Get("shell.settings.helpNormal", "一般"), Tr.Get("shell.settings.helpBusy", "勤快") },
+						c => Math.Max(0, Array.IndexOf(HelpLevels, c.SpouseHelpLevel)), (c, i) => c.SpouseHelpLevel = HelpLevels[i]) { Shown = c => c.SpousePlanner },
+					new ChoiceRow(Tr.Get("shell.settings.spouseHarvestTo", "收获的东西放哪"), Tr.Get("shell.settings.spouseHarvestToNote", "收获箱在手机「家务安排」里领取；放出货箱就当晚卖掉"), new[] { Tr.Get("shell.settings.toChest", "收获箱"), Tr.Get("shell.settings.toBin", "出货箱") },
+						c => c.SpouseHarvestTo == "Bin" ? 1 : 0, (c, i) => c.SpouseHarvestTo = i == 1 ? "Bin" : "Chest") { Shown = c => c.SpousePlanner },
+					new ToggleRow(Tr.Get("shell.settings.spouseWater", "浇水"), "", c => c.SpouseWaters, (c, v) => c.SpouseWaters = v) { Shown = c => c.SpousePlanner },
+					new ToggleRow(Tr.Get("shell.settings.spouseHarvest", "收获"), "", c => c.SpouseHarvests, (c, v) => c.SpouseHarvests = v) { Shown = c => c.SpousePlanner },
+					new ToggleRow(Tr.Get("shell.settings.spouseAnimals", "照顾动物"), Tr.Get("shell.settings.spouseAnimalsNote", "补干草、抚摸、捡蛋"), c => c.SpouseTendsAnimals, (c, v) => c.SpouseTendsAnimals = v) { Shown = c => c.SpousePlanner },
+					new ToggleRow(Tr.Get("shell.settings.spouseClear", "清理农场"), Tr.Get("shell.settings.spouseClearNote", "只清杂草、石头、树枝，不砍树，不动你放的东西"), c => c.SpouseClears, (c, v) => c.SpouseClears = v) { Shown = c => c.SpousePlanner },
+					new ToggleRow(Tr.Get("shell.settings.spouseGreenhouse", "温室"), "", c => c.SpouseGreenhouse, (c, v) => c.SpouseGreenhouse = v) { Shown = c => c.SpousePlanner },
+					new ToggleRow(Tr.Get("shell.settings.spousePonds", "鱼塘"), Tr.Get("shell.settings.spousePondsNote", "收鱼塘的产出"), c => c.SpouseFishPonds, (c, v) => c.SpouseFishPonds = v) { Shown = c => c.SpousePlanner },
+					new ToggleRow(Tr.Get("shell.settings.spouseMachines", "收加工机器"), Tr.Get("shell.settings.spouseMachinesNote", "把做好的东西收进收获箱"), c => c.SpouseMachines, (c, v) => c.SpouseMachines = v) { Shown = c => c.SpousePlanner },
+					new ToggleRow(Tr.Get("shell.settings.spouseOut", "去镇上"), Tr.Get("shell.settings.spouseOutNote", "找人聊天、买东西"), c => c.SpouseGoesOut, (c, v) => c.SpouseGoesOut = v) { Shown = c => c.SpousePlanner },
+					new ChoiceRow(Tr.Get("shell.settings.spouseSpend", "每天最多花多少"), Tr.Get("shell.settings.spouseSpendNote", "花的是配偶自己的钱"), SpendLimits.Select(n => n + "g").ToArray(), c => Nearest(SpendLimits, c.SpouseSpendDaily), (c, i) => c.SpouseSpendDaily = SpendLimits[i]) { Shown = c => c.SpousePlanner && c.SpouseGoesOut },
+					new ToggleRow(Tr.Get("shell.settings.spouseShop", "去小超市看店"), Tr.Get("shell.settings.spouseShopNote", "建了农夫小超市时，配偶会去当收银员"), c => c.SpouseMindsShop, (c, v) => c.SpouseMindsShop = v) { Shown = c => c.SpousePlanner },
+					new ToggleRow(Tr.Get("shell.settings.spouseKids", "带孩子玩"), "", c => c.SpousePlaysWithKids, (c, v) => c.SpousePlaysWithKids = v) { Shown = c => c.SpousePlanner },
+					new ToggleRow(Tr.Get("shell.settings.roommatePlan", "室友也这样安排"), "", c => c.RoommatePlans, (c, v) => c.RoommatePlans = v) { Shown = c => c.SpousePlanner }
+				}),
+				(Tr.Get("shell.settings.kids", "孩子"), new List<Row>
+				{
+					new ChoiceRow(Tr.Get("shell.settings.childTalk", "孩子说话"), Tr.Get("shell.settings.childTalkNote", "会走路以后：不变（游戏原来的样子）、每天一句、能来回聊几句；孩子的性格可以写在村民角色卡里"),
+						new[] { Tr.Get("shell.settings.childOff", "不变"), Tr.Get("shell.settings.childLine", "每天一句"), Tr.Get("shell.settings.childChat", "能聊几句") },
+						c => Math.Max(0, Array.IndexOf(ChildModes, c.ChildTalkMode)), (c, i) => c.ChildTalkMode = ChildModes[i]),
+					new ToggleRow(Tr.Get("shell.settings.runaway", "孩子离家出走"), Tr.Get("shell.settings.runawayNote", "孩子偶尔跑到农场上躲起来玩，要你去找；靠近会听到笑声"), c => c.ChildRunaway, (c, v) => c.ChildRunaway = v),
+					new ChoiceRow(Tr.Get("shell.settings.runawayChance", "每天跑出去的机会"), Tr.Get("shell.settings.runawayChanceNote", "上午检查一次；同一个孩子至少隔两周"), RunawayChances.Select(n => n + "%").ToArray(), c => Nearest(RunawayChances, c.ChildRunawayPercent), (c, i) => c.ChildRunawayPercent = RunawayChances[i]) { Shown = c => c.ChildRunaway }
+				}),
+				(Tr.Get("shell.settings.pets", "宠物"), new List<Row>
+				{
+					new ToggleRow(Tr.Get("shell.settings.petThoughts", "宠物的心里话"), Tr.Get("shell.settings.petThoughtsNote", "你在宠物旁边时，它偶尔冒一句心里话（灰色泡泡）；暂时不能和宠物对话"), c => c.PetThoughts, (c, v) => c.PetThoughts = v),
+					new ChoiceRow(Tr.Get("shell.settings.petDaily", "每只每天最多几句"), "", PetDaily.Select(n => n.ToString()).ToArray(), c => Nearest(PetDaily, c.PetThoughtsDaily), (c, i) => c.PetThoughtsDaily = PetDaily[i]) { Shown = c => c.PetThoughts },
+					new ChoiceRow(Tr.Get("shell.settings.petChance", "多常冒一句"), Tr.Get("shell.settings.petChanceNote", "你在旁边时每 10 分钟的机会"), PetChances.Select(n => n + "%").ToArray(), c => Nearest(PetChances, c.PetThoughtsPercent), (c, i) => c.PetThoughtsPercent = PetChances[i]) { Shown = c => c.PetThoughts }
+				})
+			}),
+			new Category(Tr.Get("shell.settings.mart", "小超市"), Tr.Get("shell.settings.martDesc", "自己的农夫小超市，和镇上的商店抢生意。"), new List<(string, List<Row>)>
+			{
+				(Tr.Get("shell.settings.mart", "小超市"), new List<Row>
+				{
+					new ToggleRow(Tr.Get("shell.settings.martOn", "农夫小超市"), Tr.Get("shell.settings.martOnNote", "去 Robin 的木匠铺建一间，放货架上架，村民会来买"), c => c.FarmerMart, (c, v) => c.FarmerMart = v),
+					new ChoiceRow(Tr.Get("shell.settings.martOpen", "几点开门"), "", MartOpens.Select(Clock).ToArray(), c => Nearest(MartOpens, c.FarmerMartOpen), (c, i) => c.FarmerMartOpen = MartOpens[i]) { Shown = c => c.FarmerMart },
+					new ChoiceRow(Tr.Get("shell.settings.martClose", "几点打烊"), "", MartCloses.Select(Clock).ToArray(), c => Nearest(MartCloses, c.FarmerMartClose), (c, i) => c.FarmerMartClose = MartCloses[i]) { Shown = c => c.FarmerMart },
+					new ToggleRow(Tr.Get("shell.settings.martCompete", "和 Pierre、Joja 抢生意"), Tr.Get("shell.settings.martCompeteNote", "抢得多了他们会吃紧，甚至停业整顿；只在 AI星露谷 的经济里，不改原版剧情，种子一定买得到"), c => c.MartCompetition, (c, v) => c.MartCompetition = v) { Shown = c => c.FarmerMart },
+					new ToggleRow(Tr.Get("shell.settings.brawl", "上门理论时可以动手"), Tr.Get("shell.settings.brawlNote", "卡通式打飞，不伤人；会被罚款、上周报"), c => c.AllowBrawl, (c, v) => c.AllowBrawl = v) { Shown = c => c.FarmerMart && c.MartCompetition },
+					new ToggleRow(Tr.Get("shell.settings.stolenNoticed", "赃物可能被认出来"), Tr.Get("shell.settings.stolenNoticedNote", "偷来的东西放在店里卖，失主和熟人可能认出来"), c => c.StolenGoodsNoticed, (c, v) => c.StolenGoodsNoticed = v),
+					new ToggleRow(Tr.Get("shell.settings.cosLink", "和 Farmer's Store 对接"), Tr.Get("shell.settings.cosLinkNote", "装了 Farmer's Store 时：两边不抢村民，它那边的成交也记进村民账本；两家店可以同时开"), c => c.FarmersStoreLink, (c, v) => c.FarmersStoreLink = v)
+				})
+			}),
 			new Category(Tr.Get("shell.settings.keys", "快捷键"), Tr.Get("shell.settings.keysDesc", "在 Generic Mod Config Menu 或 config.json 里改。"), new List<(string, List<Row>)>
 			{
 				(Tr.Get("shell.settings.keysGroup", "按键"), new List<Row>
@@ -300,7 +368,8 @@ internal sealed class SettingsPage : ShellPage
 					new InfoRow(Tr.Get("shell.settings.phoneKey", "打开手机"), "", c => c.KeyPhone),
 					new InfoRow(Tr.Get("shell.settings.profileKey", "我的设定"), "", c => c.KeyAboutMe),
 					new InfoRow(Tr.Get("shell.settings.gossipKey", "直接看八卦"), "", c => c.KeyRumors),
-					new InfoRow(Tr.Get("shell.settings.groupKey", "群聊插话"), "", c => c.KeyGroupTalk)
+					new InfoRow(Tr.Get("shell.settings.groupKey", "群聊插话"), "", c => c.KeyGroupTalk),
+					new InfoRow(Tr.Get("shell.settings.vanillaKey", "按住点村民 = 游戏原来的互动"), "", c => c.VanillaInteractKey)
 				})
 			})
 		};
@@ -320,6 +389,8 @@ internal sealed class SettingsPage : ShellPage
 		}
 		return list;
 	}
+
+	private static string Clock(int time) => $"{time / 100}:{time % 100:00}";
 
 	public override void Scroll(int direction) => _scroll.Wheel(direction);
 
@@ -357,6 +428,18 @@ internal sealed class SettingsPage : ShellPage
 	}
 
 	public override void Draw(SpriteBatch b, Rectangle area, Hits hits)
+	{
+		_hoverNote = null;
+		DrawPage(b, area, hits);
+		if (_hoverNote != null)
+		{
+			IClickableMenu.drawHoverText(b, Game1.parseText(_hoverNote, Game1.smallFont, Math.Min(640, area.Width - 80)), Game1.smallFont);
+		}
+	}
+
+	private string? _hoverNote;
+
+	private void DrawPage(SpriteBatch b, Rectangle area, Hits hits)
 	{
 		if (area.Width < 760)
 		{
@@ -520,7 +603,13 @@ internal sealed class SettingsPage : ShellPage
 		Hearth.Ink(b, row.Label, new Vector2(r.X + 20, ty), Hearth.Quill, 0.88f);
 		if (note.Length > 0)
 		{
-			Hearth.Ink(b, Hearth.Truncate(note, r.Width - 300, 0.7f), new Vector2(r.X + 20, r.Y + 42), Hearth.QuillPale, 0.7f);
+			string shown = Hearth.Truncate(note, r.Width - 300, 0.7f);
+			Hearth.Ink(b, shown, new Vector2(r.X + 20, r.Y + 42), Hearth.QuillPale, 0.7f);
+			// 说明一行放不下被截掉时，鼠标停在这一行上显示全文（英文、德文常常放不下）。
+			if (shown != note && Hearth.Hover(r, _detail))
+			{
+				_hoverNote = note;
+			}
 		}
 		switch (row)
 		{

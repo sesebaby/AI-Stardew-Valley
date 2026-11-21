@@ -198,7 +198,7 @@ public sealed class ProposalService
 		{
 			return "没有";
 		}
-		return string.Join("；", kids.Select(c => $"{(string.IsNullOrWhiteSpace(c.Name) ? "还没起名" : c.Name)}（{(c.Age switch { 0 => "婴儿", 1 => "会爬了", _ => "会走了" })}，{(c.Gender == Gender.Male ? "男孩" : "女孩")}）"));
+		return string.Join("；", kids.Select(c => $"{(string.IsNullOrWhiteSpace(c.Name) ? "还没起名" : c.Name)}（{AISV.Game.Social.Kids.StageName(c.Age)}，{(c.Gender == Gender.Male ? "男孩" : "女孩")}）"));
 	}
 
 	private static string? StartDating(string npc)

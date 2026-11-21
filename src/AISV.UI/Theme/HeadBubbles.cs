@@ -20,6 +20,9 @@ public static class HeadBubbles
 		public double Elapsed;
 
 		public double Duration;
+
+		/// <summary>心里话：灰色、带括号、思考泡的小圆点尾巴。</summary>
+		public bool Thought;
 	}
 
 	private static readonly List<Said> Active = new List<Said>();
@@ -31,6 +34,13 @@ public static class HeadBubbles
 	{
 		Active.RemoveAll(s => s.Npc == npc);
 		Active.Add(new Said { Npc = npc, Text = text.Trim(), Duration = durationMs > 0 ? durationMs : Math.Clamp(1500 + text.Length * 110, 3000, 9000) });
+	}
+
+	/// <summary>心里话（宠物的内心独白）。</summary>
+	public static void ShowThought(NPC npc, string text, int durationMs)
+	{
+		Show(npc, text, durationMs);
+		Active[Active.Count - 1].Thought = true;
 	}
 
 	public static void Clear() => Active.Clear();
@@ -57,6 +67,11 @@ public static class HeadBubbles
 				continue;
 			}
 			float alpha = (float)Math.Clamp(Math.Min(s.Elapsed / 150.0, (s.Duration - s.Elapsed) / 250.0), 0, 1);
+			if (s.Thought)
+			{
+				DrawThought(b, Head(s.Npc), Display(s.Npc.Name), s.Text, alpha);
+				continue;
+			}
 			DrawBubble(b, Head(s.Npc), Display(s.Npc.Name), s.Text, mine: false, alpha);
 		}
 	}
@@ -65,7 +80,13 @@ public static class HeadBubbles
 	public static Vector2 Head(NPC? npc)
 	{
 		Vector2 world;
-		if (npc != null)
+		if (npc is StardewValley.Characters.Pet)
+		{
+			// 宠物贴图 32 高但身子矮：气泡挨着头顶，不飘在半空。
+			Point p = npc.StandingPixel;
+			world = new Vector2(p.X, p.Y - 76);
+		}
+		else if (npc != null)
 		{
 			Point p = npc.StandingPixel;
 			world = new Vector2(p.X, p.Y - (npc.Sprite?.SpriteHeight ?? 32) * 4 + 20);
@@ -76,6 +97,35 @@ public static class HeadBubbles
 			world = new Vector2(p.X, p.Y - 112);
 		}
 		return Utility.ModifyCoordinatesForUIScale(Game1.GlobalToLocal(Game1.viewport, world));
+	}
+
+	/// <summary>思考泡：浅灰底、括号里的字、两三个小圆点当尾巴。</summary>
+	public static Rectangle DrawThought(SpriteBatch b, Vector2 anchor, string name, string text, float alpha)
+	{
+		if (alpha <= 0.01f || string.IsNullOrWhiteSpace(text))
+		{
+			return Rectangle.Empty;
+		}
+		string wrapped = Hearth.Wrap("（" + text.Trim() + "）", Width - 40);
+		Vector2 size = Game1.smallFont.MeasureString(wrapped) * 0.9f;
+		int nameH = name.Length > 0 ? 22 : 0;
+		int w = (int)Math.Max(size.X, name.Length > 0 ? Hearth.Width(name, 0.65f) : 0) + 32;
+		int h = (int)size.Y + 18 + nameH;
+		int x = Math.Clamp((int)anchor.X - w / 2, 8, Math.Max(8, Game1.uiViewport.Width - w - 8));
+		int y = Math.Max(8, (int)anchor.Y - h - 34);
+		Rectangle r = new Rectangle(x, y, w, h);
+		Color fill = new Color(238, 236, 232);
+		Color border = new Color(150, 146, 140);
+		Hearth.Bordered(b, r, fill * alpha, border * alpha, 18);
+		int cx = Math.Clamp((int)anchor.X, r.X + 16, r.Right - 16);
+		Hearth.Bordered(b, new Rectangle(cx - 7, r.Bottom + 4, 14, 12), fill * alpha, border * alpha, 6);
+		Hearth.Bordered(b, new Rectangle(cx - 4, r.Bottom + 20, 8, 8), fill * alpha, border * alpha, 4);
+		if (name.Length > 0)
+		{
+			Hearth.Ink(b, name, new Vector2(r.X + 16, r.Y + 7), new Color(110, 106, 100) * alpha, 0.65f);
+		}
+		b.DrawString(Game1.smallFont, wrapped, new Vector2(r.X + 16, r.Y + 9 + nameH), new Color(92, 86, 80) * alpha, 0f, Vector2.Zero, 0.9f, SpriteEffects.None, 1f);
+		return r;
 	}
 
 	public static Rectangle DrawBubble(SpriteBatch b, Vector2 anchor, string name, string text, bool mine, float alpha)
