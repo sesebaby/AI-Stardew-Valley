@@ -152,7 +152,7 @@ public static class WeeklyNewsRules
 
 	public const string Unconfirmed = "未经证实";
 
-	private static readonly HashSet<string> PublicOrigins = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "festival", "ledger", "scene_event", "invite_out", "stardew_thief" };
+	private static readonly HashSet<string> PublicOrigins = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "festival", "ledger", "scene_event", "invite_out", "stardew_thief", "farmer_store" };
 
 	/// <summary>传言：只有一个人起的头、已经传给好几个人、又不是大家都看得见的事（节日、账本、偶遇这类）。</summary>
 	public static bool Unverified(GossipEntry e) => e.Involved.Count == 1 && e.KnownTo.Count >= 3 && !PublicOrigins.Contains(e.SourceKind ?? "");

@@ -54,6 +54,10 @@ public static class GmcmSettings
 		api.AddBoolOption(manifest, () => get().FeedGameLineToAi, v => get().FeedGameLineToAi = v, () => Tr.Get("config.canon", "参考游戏原来的台词"),
 			() => Tr.Get("config.canon.tip", "把村民这一刻本来要说的话交给 AI 当话题参考，聊天更贴近原作。"));
 		api.AddBoolOption(manifest, () => get().GameLinesWhenAiDown, v => get().GameLinesWhenAiDown = v, () => Tr.Get("config.allowVanilla", "AI 用不了时说游戏原来的台词"));
+		api.AddBoolOption(manifest, () => get().PlayerStartsTalk, v => get().PlayerStartsTalk = v, () => Tr.Get("shell.settings.playerStarts", "我先开口"),
+			() => Tr.Get("shell.settings.playerStartsNote", "点村民时不等 TA 开场，直接打开回复框由你起话题；TA 有非说不可的话时还是 TA 先说。回复框里也能切换"));
+		api.AddTextOption(manifest, () => get().VanillaInteractKey, v => get().VanillaInteractKey = v.Trim(), () => Tr.Get("shell.settings.vanillaKey", "按住点村民 = 游戏原来的互动"),
+			() => Tr.Get("config.vanillaKey.tip", "按住这个键点村民时不走 AI，用游戏原来的互动（亲吻、拥抱、别的 mod 加的动作）。SMAPI 按键写法，逗号隔开表示任一个，比如 LeftAlt, LeftShoulder。"));
 		api.AddBoolOption(manifest, () => get().PauseClockWhileWriting, v => get().PauseClockWhileWriting = v, () => Tr.Get("config.freeze", "等 AI 想台词时暂停时间（单人）"));
 		api.AddTextOption(manifest, () => get().SpeechLanguage.ToString(), v => get().SpeechLanguage = Enum.TryParse(v, out LanguageMode m) ? m : LanguageMode.GameLanguage, () => Tr.Get("config.language", "AI 说的语言"),
 			allowedValues: Enum.GetNames(typeof(LanguageMode)),
@@ -214,6 +218,63 @@ public static class GmcmSettings
 		api.AddBoolOption(manifest, () => get().NoticeByText, v => get().NoticeByText = v, () => Tr.Get("config.sh.text", "走不过来时改发消息"));
 		api.AddBoolOption(manifest, () => get().NoticeVisitors, v => get().NoticeVisitors = v, () => Tr.Get("config.sh.npcMove", "记下室内谁来了"));
 		api.AddNumberOption(manifest, () => get().FishTogetherPercent, v => get().FishTogetherPercent = v, () => Tr.Get("config.sh.fishing", "村民来陪钓的机会（%）"), min: 0, max: 100);
+
+		api.AddSectionTitle(manifest, () => Tr.Get("shell.settings.home", "家里"));
+		api.AddBoolOption(manifest, () => get().KissChoiceMenu, v => get().KissChoiceMenu = v, () => Tr.Get("shell.settings.kissMenu", "点配偶先选聊天还是亲吻"),
+			() => Tr.Get("shell.settings.kissMenuNote", "今天还能亲（抱）的时候，配偶头顶弹出小圆盘；关掉就直接聊天，按住跳过键点配偶照样能亲"));
+		api.AddTextOption(manifest, () => get().ChildTalkMode, v => get().ChildTalkMode = v, () => Tr.Get("shell.settings.childTalk", "孩子说话"),
+			() => Tr.Get("shell.settings.childTalkNote", "会走路以后：不变（游戏原来的样子）、每天一句、能来回聊几句；孩子的性格可以写在村民角色卡里"),
+			allowedValues: new[] { "Off", "Line", "Chat" },
+			formatAllowedValue: v => v switch
+			{
+				"Off" => Tr.Get("shell.settings.childOff", "不变"),
+				"Line" => Tr.Get("shell.settings.childLine", "每天一句"),
+				_ => Tr.Get("shell.settings.childChat", "能聊几句")
+			});
+		api.AddBoolOption(manifest, () => get().ChildRunaway, v => get().ChildRunaway = v, () => Tr.Get("shell.settings.runaway", "孩子离家出走"),
+			() => Tr.Get("shell.settings.runawayNote", "孩子偶尔跑到农场上躲起来玩，要你去找；靠近会听到笑声"));
+		api.AddNumberOption(manifest, () => get().ChildRunawayPercent, v => get().ChildRunawayPercent = v, () => Tr.Get("shell.settings.runawayChance", "每天跑出去的机会"), min: 0, max: 100);
+		api.AddBoolOption(manifest, () => get().PetThoughts, v => get().PetThoughts = v, () => Tr.Get("shell.settings.petThoughts", "宠物的心里话"),
+			() => Tr.Get("shell.settings.petThoughtsNote", "你在宠物旁边时，它偶尔冒一句心里话（灰色泡泡）；暂时不能和宠物对话"));
+		api.AddNumberOption(manifest, () => get().PetThoughtsDaily, v => get().PetThoughtsDaily = v, () => Tr.Get("shell.settings.petDaily", "每只每天最多几句"), min: 1, max: 10);
+		api.AddNumberOption(manifest, () => get().PetThoughtsPercent, v => get().PetThoughtsPercent = v, () => Tr.Get("shell.settings.petChance", "多常冒一句"),
+			() => Tr.Get("shell.settings.petChanceNote", "你在旁边时每 10 分钟的机会"), min: 0, max: 100);
+		api.AddBoolOption(manifest, () => get().SpousePlanner, v => get().SpousePlanner = v, () => Tr.Get("shell.settings.spousePlan", "配偶的日常安排"),
+			() => Tr.Get("shell.settings.spousePlanNote", "婚后配偶每天自己安排：帮忙干农活、去镇上、看店、带孩子；手机“家务安排”里可以改"));
+		api.AddTextOption(manifest, () => get().SpouseHelpLevel, v => get().SpouseHelpLevel = v, () => Tr.Get("shell.settings.spouseHelp", "帮忙勤快程度"), allowedValues: new[] { "Light", "Normal", "Busy" },
+			formatAllowedValue: v => v switch
+			{
+				"Light" => Tr.Get("shell.settings.helpLight", "轻松"),
+				"Busy" => Tr.Get("shell.settings.helpBusy", "勤快"),
+				_ => Tr.Get("shell.settings.helpNormal", "一般")
+			});
+		api.AddTextOption(manifest, () => get().SpouseHarvestTo, v => get().SpouseHarvestTo = v, () => Tr.Get("shell.settings.spouseHarvestTo", "收获的东西放哪"),
+			() => Tr.Get("shell.settings.spouseHarvestToNote", "收获箱在手机“家务安排”里领取；放出货箱就当晚卖掉"), allowedValues: new[] { "Chest", "Bin" },
+			formatAllowedValue: v => v == "Bin" ? Tr.Get("shell.settings.toBin", "出货箱") : Tr.Get("shell.settings.toChest", "收获箱"));
+		api.AddBoolOption(manifest, () => get().SpouseWaters, v => get().SpouseWaters = v, () => Tr.Get("shell.settings.spouseWater", "浇水"));
+		api.AddBoolOption(manifest, () => get().SpouseHarvests, v => get().SpouseHarvests = v, () => Tr.Get("shell.settings.spouseHarvest", "收获"));
+		api.AddBoolOption(manifest, () => get().SpouseTendsAnimals, v => get().SpouseTendsAnimals = v, () => Tr.Get("shell.settings.spouseAnimals", "照顾动物"), () => Tr.Get("shell.settings.spouseAnimalsNote", "补干草、抚摸、捡蛋"));
+		api.AddBoolOption(manifest, () => get().SpouseClears, v => get().SpouseClears = v, () => Tr.Get("shell.settings.spouseClear", "清理农场"), () => Tr.Get("shell.settings.spouseClearNote", "只清杂草、石头、树枝，不砍树，不动你放的东西"));
+		api.AddBoolOption(manifest, () => get().SpouseGreenhouse, v => get().SpouseGreenhouse = v, () => Tr.Get("shell.settings.spouseGreenhouse", "温室"));
+		api.AddBoolOption(manifest, () => get().SpouseFishPonds, v => get().SpouseFishPonds = v, () => Tr.Get("shell.settings.spousePonds", "鱼塘"), () => Tr.Get("shell.settings.spousePondsNote", "收鱼塘的产出"));
+		api.AddBoolOption(manifest, () => get().SpouseMachines, v => get().SpouseMachines = v, () => Tr.Get("shell.settings.spouseMachines", "收加工机器"), () => Tr.Get("shell.settings.spouseMachinesNote", "把做好的东西收进收获箱"));
+		api.AddBoolOption(manifest, () => get().SpouseGoesOut, v => get().SpouseGoesOut = v, () => Tr.Get("shell.settings.spouseOut", "去镇上"), () => Tr.Get("shell.settings.spouseOutNote", "找人聊天、买东西"));
+		api.AddNumberOption(manifest, () => get().SpouseSpendDaily, v => get().SpouseSpendDaily = v, () => Tr.Get("shell.settings.spouseSpend", "每天最多花多少"), () => Tr.Get("shell.settings.spouseSpendNote", "花的是配偶自己的钱"), min: 0, max: 5000, interval: 50);
+		api.AddBoolOption(manifest, () => get().SpouseMindsShop, v => get().SpouseMindsShop = v, () => Tr.Get("shell.settings.spouseShop", "去小超市看店"), () => Tr.Get("shell.settings.spouseShopNote", "建了农夫小超市时，配偶会去当收银员"));
+		api.AddBoolOption(manifest, () => get().SpousePlaysWithKids, v => get().SpousePlaysWithKids = v, () => Tr.Get("shell.settings.spouseKids", "带孩子玩"));
+		api.AddBoolOption(manifest, () => get().RoommatePlans, v => get().RoommatePlans = v, () => Tr.Get("shell.settings.roommatePlan", "室友也这样安排"));
+
+		api.AddSectionTitle(manifest, () => Tr.Get("shell.settings.mart", "小超市"));
+		api.AddBoolOption(manifest, () => get().FarmerMart, v => get().FarmerMart = v, () => Tr.Get("shell.settings.martOn", "农夫小超市"), () => Tr.Get("shell.settings.martOnNote", "去 Robin 的木匠铺建一间，放货架上架，村民会来买"));
+		api.AddNumberOption(manifest, () => get().FarmerMartOpen, v => get().FarmerMartOpen = v, () => Tr.Get("shell.settings.martOpen", "几点开门"), min: 600, max: 1400, interval: 100);
+		api.AddNumberOption(manifest, () => get().FarmerMartClose, v => get().FarmerMartClose = v, () => Tr.Get("shell.settings.martClose", "几点打烊"), min: 1200, max: 2400, interval: 100);
+		api.AddBoolOption(manifest, () => get().MartCheckoutGame, v => get().MartCheckoutGame = v, () => Tr.Get("shell.settings.martCheckout", "收银小游戏"), () => Tr.Get("shell.settings.martCheckoutNote", "你在店里时顾客到柜台排队，点柜台收银找零，又快又对有小费；关掉就自动结账"));
+		api.AddBoolOption(manifest, () => get().MartCompetition, v => get().MartCompetition = v, () => Tr.Get("shell.settings.martCompete", "和 Pierre、Joja 抢生意"),
+			() => Tr.Get("shell.settings.martCompeteNote", "抢得多了他们会吃紧，甚至停业整顿；只在 AI星露谷 的经济里，不改原版剧情，种子一定买得到"));
+		api.AddBoolOption(manifest, () => get().AllowBrawl, v => get().AllowBrawl = v, () => Tr.Get("shell.settings.brawl", "上门理论时可以动手"), () => Tr.Get("shell.settings.brawlNote", "卡通式打飞，不伤人；会被罚款、上周报"));
+		api.AddBoolOption(manifest, () => get().StolenGoodsNoticed, v => get().StolenGoodsNoticed = v, () => Tr.Get("shell.settings.stolenNoticed", "赃物可能被认出来"), () => Tr.Get("shell.settings.stolenNoticedNote", "偷来的东西放在店里卖，失主和熟人可能认出来"));
+		api.AddBoolOption(manifest, () => get().FarmersStoreLink, v => get().FarmersStoreLink = v, () => Tr.Get("shell.settings.cosLink", "和 Farmer's Store 对接"),
+			() => Tr.Get("shell.settings.cosLinkNote", "装了 Farmer's Store 时：两边不抢村民，它那边的成交也记进村民账本；两家店可以同时开"));
 
 		api.AddSectionTitle(manifest, () => Tr.Get("config.group", "群聊"));
 		api.AddBoolOption(manifest, () => get().WorldGroupTalkOn, v => get().WorldGroupTalkOn = v, () => Tr.Get("config.group.inWorld", "在地图上聊（头顶气泡）"),

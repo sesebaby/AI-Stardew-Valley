@@ -144,6 +144,15 @@ public sealed class ModConfig
 	/// <summary>把游戏原来这一刻的台词交给 AI 当话题参考。</summary>
 	public bool FeedGameLineToAi { get; set; } = true;
 
+	/// <summary>点配偶时先弹一个小圆盘，选聊天还是亲吻（室友是拥抱）。</summary>
+	public bool KissChoiceMenu { get; set; } = true;
+
+	/// <summary>点村民时不等 AI 开场白，直接打开回复框由你起话题（有非说不可的话时还是 TA 先说）。</summary>
+	public bool PlayerStartsTalk { get; set; }
+
+	/// <summary>按住这个键点村民：不走 AI，用游戏原来的互动（亲吻、拥抱、别的 mod 的动作）。SMAPI 按键写法，逗号隔开表示任一个。</summary>
+	public string VanillaInteractKey { get; set; } = "LeftAlt, LeftShoulder";
+
 	/// <summary>收尾时在游戏里演一段结局场景（关掉就只在后台写结局）。</summary>
 	public bool FinaleScenesOn { get; set; } = true;
 
@@ -425,6 +434,88 @@ public sealed class ModConfig
 	/// <summary>室内的村民也会记下谁来了。</summary>
 	public bool NoticeVisitors { get; set; }
 
+	/// <summary>宠物有时在头顶冒一句心里话（只冒泡，暂时不能和宠物对话）。</summary>
+	public bool PetThoughts { get; set; } = true;
+
+	/// <summary>每只宠物每天最多冒几句心里话。</summary>
+	public int PetThoughtsDaily { get; set; } = 3;
+
+	/// <summary>宠物在你身边时，每 10 分钟冒一句心里话的概率（0～100）。</summary>
+	public int PetThoughtsPercent { get; set; } = 25;
+
+	// ---- 家里 ----
+
+	/// <summary>孩子说话：Off（游戏原来的样子）、Line（每天一句）、Chat（能来回聊几句）。</summary>
+	public string ChildTalkMode { get; set; } = "Chat";
+
+	/// <summary>孩子偶尔跑到农场上玩，要你去找回来。</summary>
+	public bool ChildRunaway { get; set; } = true;
+
+	/// <summary>每天上午孩子跑出去玩的概率（0～100）。</summary>
+	public int ChildRunawayPercent { get; set; } = 3;
+
+	/// <summary>婚后配偶每天有自己的安排：帮忙干农活、去镇上、看店、带孩子。</summary>
+	public bool SpousePlanner { get; set; } = true;
+
+	/// <summary>配偶帮忙的勤快程度：Light、Normal、Busy。</summary>
+	public string SpouseHelpLevel { get; set; } = "Normal";
+
+	/// <summary>配偶收获的东西放哪：Chest（配偶的收获箱，手机上领取）或 Bin（出货箱）。</summary>
+	public string SpouseHarvestTo { get; set; } = "Chest";
+
+	/// <summary>配偶每天最多花多少自己的钱买东西（0 = 不买）。</summary>
+	public int SpouseSpendDaily { get; set; } = 400;
+
+	public bool SpouseWaters { get; set; } = true;
+
+	public bool SpouseHarvests { get; set; } = true;
+
+	public bool SpouseTendsAnimals { get; set; } = true;
+
+	public bool SpouseClears { get; set; } = true;
+
+	public bool SpouseGreenhouse { get; set; } = true;
+
+	public bool SpouseFishPonds { get; set; } = true;
+
+	/// <summary>配偶帮你把加工机器里做好的东西收出来。</summary>
+	public bool SpouseMachines { get; set; }
+
+	public bool SpouseGoesOut { get; set; } = true;
+
+	public bool SpouseMindsShop { get; set; } = true;
+
+	public bool SpousePlaysWithKids { get; set; } = true;
+
+	/// <summary>室友也照这套安排过日子。</summary>
+	public bool RoommatePlans { get; set; } = true;
+
+	// ---- 小超市 ----
+
+	/// <summary>可以在 Robin 那里建一间自己的农夫小超市。</summary>
+	public bool FarmerMart { get; set; } = true;
+
+	/// <summary>小超市几点开门（游戏时间，比如 900）。</summary>
+	public int FarmerMartOpen { get; set; } = 900;
+
+	/// <summary>小超市几点打烊。</summary>
+	public int FarmerMartClose { get; set; } = 1700;
+
+	/// <summary>小超市和 Pierre、Joja 抢生意：抢得多了他们会吃紧，甚至停业整顿（只在 AI星露谷 的经济里，不改原版剧情）。</summary>
+	public bool MartCompetition { get; set; } = true;
+
+	/// <summary>对手找上门理论时有"动手"这个选项（卡通式打飞，不伤人）。</summary>
+	public bool AllowBrawl { get; set; } = true;
+
+	/// <summary>偷来的东西放在店里卖，买的人可能认出来。</summary>
+	public bool StolenGoodsNoticed { get; set; } = true;
+
+	/// <summary>小超市收银小游戏：顾客排到柜台前等你来收银找零（关掉就自动结账）。</summary>
+	public bool MartCheckoutGame { get; set; } = true;
+
+	/// <summary>装了 Farmer's Store 时和它对接：不抢彼此的村民，它那边的成交也记进村民的账本。</summary>
+	public bool FarmersStoreLink { get; set; } = true;
+
 	/// <summary>村民把话说出口后好感随之变化。</summary>
 	public bool NoticingMovesHearts { get; set; }
 
@@ -587,7 +678,42 @@ public sealed class ModConfig
 		ModVillagerExtras = CleanIds(ModVillagerExtras);
 		HiddenApps = CleanIds(HiddenApps);
 		WindowPercent = System.Math.Clamp(WindowPercent, 70, 150);
+		VanillaInteractKey = (VanillaInteractKey ?? "").Trim();
+		PetThoughtsDaily = System.Math.Clamp(PetThoughtsDaily, 1, 10);
+		PetThoughtsPercent = System.Math.Clamp(PetThoughtsPercent, 0, 100);
+		ChildTalkMode = (ChildTalkMode ?? "").Trim().ToLowerInvariant() switch
+		{
+			"off" => "Off",
+			"line" => "Line",
+			_ => "Chat"
+		};
+		ChildRunawayPercent = System.Math.Clamp(ChildRunawayPercent, 0, 100);
+		SpouseHelpLevel = (SpouseHelpLevel ?? "").Trim().ToLowerInvariant() switch
+		{
+			"light" => "Light",
+			"busy" => "Busy",
+			_ => "Normal"
+		};
+		SpouseHarvestTo = string.Equals((SpouseHarvestTo ?? "").Trim(), "bin", System.StringComparison.OrdinalIgnoreCase) ? "Bin" : "Chest";
+		SpouseSpendDaily = System.Math.Clamp(SpouseSpendDaily, 0, 5000);
+		FarmerMartOpen = Clock(FarmerMartOpen, d.FarmerMartOpen);
+		FarmerMartClose = Clock(FarmerMartClose, d.FarmerMartClose);
+		if (FarmerMartClose <= FarmerMartOpen)
+		{
+			FarmerMartOpen = d.FarmerMartOpen;
+			FarmerMartClose = d.FarmerMartClose;
+		}
 		return this;
+	}
+
+	/// <summary>游戏时间（600～2600，分钟部分是 00～50 的整十）；不合法时用默认值。</summary>
+	private static int Clock(int value, int fallback)
+	{
+		if (value < 600 || value > 2600 || value % 100 >= 60 || value % 10 != 0)
+		{
+			return fallback;
+		}
+		return value;
 	}
 
 	private static List<string> CleanIds(List<string>? ids)

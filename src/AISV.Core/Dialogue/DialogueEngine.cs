@@ -290,6 +290,53 @@ public sealed class DialogueEngine
 	/// <summary>故事弧结局后要说的台词（第 5 期接入）：有就直接用它当今天的开场白。</summary>
 	public Func<string, string?>? PostResolutionLine { get; set; }
 
+	/// <summary>只看一眼（不消耗）这位村民有没有故事收尾的话要说。</summary>
+	public Func<string, bool>? HasPostResolutionLine { get; set; }
+
+	/// <summary>
+	/// 玩家先开口模式下，这位村民今天是不是还得自己先说：故事收尾、初次见面、新看过的心事件后续。
+	/// 这几样只有开场白里才说得出来，跳过就会悄悄丢掉。
+	/// </summary>
+	public bool MustSpeakFirst(DialogueMaterial m)
+	{
+		string npc = m.NpcName;
+		if (HasPostResolutionLine?.Invoke(npc) == true)
+		{
+			return true;
+		}
+		if (_log.Recent(npc, 1).Count == 0 && m.Hearts <= 2)
+		{
+			return true;
+		}
+		List<int> seenNow = WorldFacts.SeenHeartEvents(npc, m.EventsSeen, m.IsReplacedHeartEvent).Select(e => e.EventId).ToList();
+		IReadOnlyList<int> seenBefore = _log.HeartEventsSeen(npc);
+		return m.Hearts >= 4 && seenNow.Any(id => !seenBefore.Contains(id));
+	}
+
+	/// <summary>
+	/// 玩家先开口：建一个空开场白的今天状态（已"说过"开场），这样回复、跳过、每天场数照常算。
+	/// 配偶上一场已经记过数、还能再聊时先清掉旧的状态。
+	/// </summary>
+	public void BeginPlayerFirst(string npc, bool isSpouse, GameDate today)
+	{
+		lock (_sync)
+		{
+			if (_today.TryGetValue(npc, out TodayDialogue? state))
+			{
+				if (!state.SpokeToday && string.IsNullOrEmpty(state.Line))
+				{
+					return;
+				}
+				if (state.SpokeToday && (!isSpouse || !state.Logged || _log.CompletedSpouseConversations(npc, today) >= MaxSpouseConversations))
+				{
+					return;
+				}
+				_log.ClearCachedDialogue(npc);
+			}
+			_today[npc] = new TodayDialogue { Npc = npc, Line = "", Spent = true, WithSpouse = isSpouse };
+		}
+	}
+
 	/// <summary>物品请求：能不能托、方案选项、定下来、开口后登记。</summary>
 	public IItemRequestDesk? ItemRequests { get; set; }
 
@@ -818,7 +865,12 @@ public sealed class DialogueEngine
 	public async Task<ReplyResult?> ReplyAsync(DialogueMaterial m, string playerText, GameDate today, string? currentLine = null, string? proposedAction = null, CancellationToken ct = default, bool remember = true)
 	{
 		string npc = m.NpcName;
+		// 玩家先开口时今天的开场白是空的：照样回应，提示词里不写"你刚说过"。
 		string? line = string.IsNullOrWhiteSpace(currentLine) ? TodayLine(npc) : currentLine;
+		if (line == null && State(npc) is { Line: "" })
+		{
+			line = "";
+		}
 		if (line == null || _templates.Raw("dialogue_reply") == null)
 		{
 			return null;

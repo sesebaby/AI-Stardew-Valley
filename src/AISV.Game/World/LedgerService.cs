@@ -113,6 +113,56 @@ public sealed partial class LedgerService
 	/// <summary>镇上传一条（文字、知道的人）。</summary>
 	public Action<string, IReadOnlyList<string>>? Gossip { get; set; }
 
+	/// <summary>市场竞争：Pierre / Joja 这家店还剩几成生意（1 = 照常；农夫小超市抢走的那部分不来了）。</summary>
+	public Func<string, double>? ShopShare { get; set; }
+
+	/// <summary>店主对应的竞争名（Pierre / Joja），不参与竞争的店为 null。</summary>
+	private static string? Rival(string owner) => owner == "Pierre" ? AISV.Core.Store.Competition.Pierre : owner == "Morris" ? AISV.Core.Store.Competition.Joja : null;
+
+	private double Share(string owner) => Rival(owner) is string r ? Math.Clamp(ShopShare?.Invoke(r) ?? 1, 0, 1) : 1;
+
+	/// <summary>在农夫的店里买了东西：从钱包里扣，东西放进随身（满了放家里），记一笔。只在主机上，同一笔不记两次。</summary>
+	public void OnStorePurchase(AISV.Core.Store.StoreSale sale)
+	{
+		if (!Host || sale.Reclaimed || Wallet(sale.Buyer) is not NpcWallet w)
+		{
+			return;
+		}
+		w.ShoppedDay = Today;
+		string name = string.IsNullOrWhiteSpace(sale.ItemName) ? ItemName(sale.ItemId) : sale.ItemName;
+		string shop = sale.Source == AISV.Core.Store.StoreSale.Cos ? Tr.Get("ledger.shop.cos", "农夫的分店") : Tr.Get("ledger.shop.mart", "农夫小超市");
+		Spend(w, sale.Total, EntryKinds.Shopping, Tr.Get("ledger.note.bought", "在{{shop}}买了{{item}} ×{{count}}", ("shop", shop), ("item", name), ("count", sale.Qty)));
+		if (!LedgerRules.Put(w.Carried, LedgerRules.MaxCarried, sale.ItemId, sale.Qty, sale.Quality))
+		{
+			LedgerRules.Put(w.Home, LedgerRules.MaxHome, sale.ItemId, sale.Qty, sale.Quality);
+		}
+		if (sale.Total >= LedgerRules.BigSpend)
+		{
+			Event(w.Npc, EntryKinds.Shopping, sale.Total, Tr.Get("ledger.event.martBig", "{{name}}在农夫的店里一口气花了 {{gold}}g。", ("name", Display(w.Npc)), ("gold", sale.Total)));
+		}
+		Changed();
+	}
+
+	/// <summary>付给村民一笔钱（比如在小超市上班的工钱）。</summary>
+	public void Pay(string npc, int amount, string note)
+	{
+		if (Host)
+		{
+			Earn(npc, amount, EntryKinds.Wage, note);
+		}
+	}
+
+	/// <summary>认出是自己被偷的东西、拿回家（不付钱）。</summary>
+	public void Reclaim(string npc, string itemId, int qty, int quality)
+	{
+		if (Host && Wallet(npc) is NpcWallet w)
+		{
+			LedgerRules.Put(w.Home, LedgerRules.MaxHome, itemId, qty, quality);
+			Log(w, EntryKinds.Theft, 0, Tr.Get("ledger.note.reclaimed", "在农夫的店里认出了被偷的{{item}}，拿回来了", ("item", ItemName(itemId))));
+			Changed();
+		}
+	}
+
 	public int Version { get; private set; }
 
 	public bool Enabled
@@ -320,7 +370,7 @@ public sealed partial class LedgerService
 			}
 			foreach ((string owner, (int min, int max)) in LedgerRules.ShopTraffic)
 			{
-				Earn(owner, _random.Next(min, max + 1), EntryKinds.Sales, Tr.Get("ledger.note.traffic", "店里的客人"));
+				Earn(owner, (int)(_random.Next(min, max + 1) * Share(owner)), EntryKinds.Sales, Tr.Get("ledger.note.traffic", "店里的客人"));
 			}
 			if (Utility.isFestivalDay(Game1.dayOfMonth, Game1.season))
 			{
@@ -448,7 +498,7 @@ public sealed partial class LedgerService
 					continue;
 				}
 				bool insider = string.Equals(n.DefaultMap, here, StringComparison.OrdinalIgnoreCase) || (Staff.TryGetValue(here, out string[]? staff) && staff.Contains(n.Name));
-				if (!insider && Places.TryGetValue(here, out ShopPlace? shop) && LedgerRules.WillShop(_random.NextDouble(), w.ShoppedDay == Today, shop.Owner == n.Name, time >= shop.Open && time < shop.Close))
+				if (!insider && Places.TryGetValue(here, out ShopPlace? shop) && LedgerRules.WillShop(_random.NextDouble() / Math.Max(0.05, Share(shop.Owner)), w.ShoppedDay == Today, shop.Owner == n.Name, time >= shop.Open && time < shop.Close))
 				{
 					Shop(n, w, shop);
 				}
@@ -461,10 +511,29 @@ public sealed partial class LedgerService
 	}
 
 	/// <summary>在一家店里买一样买得起的东西；你在旁边时他头顶说一句。返回说明（没买成时为 null）。</summary>
-	private string? Shop(NPC n, NpcWallet w, ShopPlace shop)
+	/// <summary>替某人去店里买一趟（配偶日程用）；预算不超过 cap。返回买了什么（说给玩家听），没买成为 null。</summary>
+	public string? ShopFor(NPC n, string place, int cap)
+	{
+		if (Wallet(n.Name) is not NpcWallet w || !Places.TryGetValue(place, out ShopPlace? shop))
+		{
+			return null;
+		}
+		string? log = Shop(n, w, shop, cap);
+		if (log == null)
+		{
+			return null;
+		}
+		_log.Info(log);
+		Changed();
+		return Tr.Get("ledger.spouseBought", "在{{shop}}买了{{item}}", ("shop", Display(shop.Owner)), ("item", _lastBought));
+	}
+
+	private string _lastBought = "";
+
+	private string? Shop(NPC n, NpcWallet w, ShopPlace shop, int cap = int.MaxValue)
 	{
 		w.ShoppedDay = Today;
-		int budget = LedgerRules.ShopBudget(w.Gold);
+		int budget = Math.Min(cap, LedgerRules.ShopBudget(w.Gold));
 		List<(string Id, int Price)> stock = Stock(shop.ShopId).Where(s => s.Price > 0 && s.Price <= budget).ToList();
 		if (stock.Count == 0)
 		{
@@ -474,6 +543,7 @@ public sealed partial class LedgerService
 		int count = Math.Clamp(budget / Math.Max(1, price) / 3, 1, 5);
 		int cost = price * count;
 		string name = ItemName(id);
+		_lastBought = name;
 		int paid = Spend(w, cost, EntryKinds.Shopping, Tr.Get("ledger.note.bought", "在{{shop}}买了{{item}} ×{{count}}", ("shop", Display(shop.Owner)), ("item", name), ("count", count)));
 		if (!LedgerRules.Put(w.Carried, LedgerRules.MaxCarried, id, count, 0))
 		{

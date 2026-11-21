@@ -661,7 +661,7 @@ public sealed class FarmHelpService
 		{
 			foreach (KeyValuePair<Vector2, TerrainFeature> pair in farm.terrainFeatures.Pairs)
 			{
-				if (pair.Value is HoeDirt dirt && (task == "water" ? NeedsWater(dirt) : dirt.readyForHarvest()))
+				if (pair.Value is HoeDirt dirt && (task == "water" ? FarmChoreExecutor.NeedsWater(dirt) : dirt.readyForHarvest()))
 				{
 					tiles.Add(((int)pair.Key.X, (int)pair.Key.Y));
 				}
@@ -671,8 +671,6 @@ public sealed class FarmHelpService
 		center = new Point(c.X, c.Y);
 		return near.Select(t => t.X + "," + t.Y).ToList();
 	}
-
-	private static bool NeedsWater(HoeDirt dirt) => dirt.crop != null && !dirt.crop.dead.Value && !dirt.isWatered() && dirt.needsWatering();
 
 	private static bool TryTile(string target, out Vector2 tile)
 	{
@@ -743,7 +741,7 @@ public sealed class FarmHelpService
 				{
 					continue;
 				}
-				PetQuietly(a);
+				FarmChoreExecutor.Pet(a);
 				did++;
 				continue;
 			}
@@ -763,79 +761,13 @@ public sealed class FarmHelpService
 		}
 	}
 
-	private bool DoTile(string task, Farm farm, Vector2 tile)
+	private bool DoTile(string task, Farm farm, Vector2 tile) => task switch
 	{
-		switch (task)
-		{
-			case "water":
-				if (farm.terrainFeatures.TryGetValue(tile, out TerrainFeature f) && f is HoeDirt dirt)
-				{
-					dirt.state.Value = HoeDirt.watered;
-					return true;
-				}
-				return false;
-			case "harvest":
-				return HarvestQuietly(farm, tile);
-			case "clear":
-				if (farm.objects.TryGetValue(tile, out StardewValley.Object obj))
-				{
-					string? drop = obj.IsTwig() ? "(O)388" : obj.IsBreakableStone() ? "(O)390" : null;
-					if (drop == null)
-					{
-						return false;
-					}
-					farm.objects.Remove(tile);
-					Store(ItemRegistry.Create(drop));
-					return true;
-				}
-				return false;
-		}
-		return false;
-	}
-
-	/// <summary>收获掉出来的东西会落在当前地图，两边都看。</summary>
-	private bool HarvestQuietly(Farm farm, Vector2 tile)
-	{
-		if (!farm.terrainFeatures.TryGetValue(tile, out TerrainFeature f) || f is not HoeDirt dirt || dirt.crop == null || !dirt.readyForHarvest())
-		{
-			return false;
-		}
-		GameLocation? here = Game1.currentLocation;
-		HashSet<Debris> before = new HashSet<Debris>(farm.debris);
-		if (here != null && here != farm)
-		{
-			before.UnionWith(here.debris);
-		}
-		dirt.crop.harvest((int)tile.X, (int)tile.Y, dirt, null, isForcedScytheHarvest: true);
-		if (dirt.crop == null || !dirt.crop.RegrowsAfterHarvest())
-		{
-			dirt.destroyCrop(showAnimation: false);
-		}
-		foreach (GameLocation loc in here != null && here != farm ? new[] { farm, here } : new GameLocation[] { farm })
-		{
-			foreach (Debris d in loc.debris.Where(d => !before.Contains(d)).ToList())
-			{
-				if (d.item != null)
-				{
-					Store(d.item);
-					loc.debris.Remove(d);
-				}
-			}
-		}
-		return true;
-	}
-
-	private static void PetQuietly(FarmAnimal a)
-	{
-		if (a.wasPet.Value)
-		{
-			return;
-		}
-		a.wasPet.Value = true;
-		a.friendshipTowardFarmer.Value = Math.Min(1000, a.friendshipTowardFarmer.Value + (a.wasAutoPet.Value ? 7 : 15));
-		int drain = a.GetAnimalData()?.HappinessDrain ?? 0;
-		a.happiness.Value = (byte)Math.Min(255, a.happiness.Value + Math.Max(5, 30 + drain));
-	}
+		"water" => FarmChoreExecutor.WaterTile(farm, tile),
+		"harvest" => FarmChoreExecutor.HarvestTile(farm, tile, Store),
+		"clear" => FarmChoreExecutor.ClearTile(farm, tile, Store),
+		_ => false
+	};
 
 	/// <summary>放进小队箱子；满了放背包，再不行放门前。</summary>
 	private void Store(Item item)

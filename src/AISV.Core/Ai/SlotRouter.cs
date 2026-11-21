@@ -29,7 +29,8 @@ public static class SlotRouter
 	private static readonly HashSet<string> BackgroundRequests = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 	{
 		"gossip_analysis", "gossip_compaction", "emotional_profile", "letter_generation", "story_arc_detection", "arc_conclusion",
-		"npc_social_moment", "npc_interaction", "weekly_news", "messenger_villager_text", "gift_naming", "market_reason", "quest_text", "spouse_story"
+		"npc_social_moment", "npc_interaction", "weekly_news", "messenger_villager_text", "gift_naming", "market_reason", "quest_text", "spouse_story",
+		"pet_thought", "spouse_day_plan", "store_comment", "store_review", "rival_ad"
 	};
 
 	// 超过每天后台上限也照样发：少了它们记忆和周报会断档。

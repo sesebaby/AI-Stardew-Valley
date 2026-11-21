@@ -321,6 +321,33 @@ public class DialogueEngineTests
 	}
 
 	[Fact]
+	public async Task PlayerFirstRepliesWithoutAnOpenerAndCountsTheTalk()
+	{
+		Talked("Abigail");
+		Assert.False(_engine.MustSpeakFirst(M()));
+		_engine.BeginPlayerFirst("Abigail", false, Today);
+		Assert.Equal("", _engine.State("Abigail")!.Line);
+		_ai.Reply("{\"says\":\"嗯？你找我？\",\"warmth\":5,\"feeling\":\"neutral\"}");
+		ReplyResult? r = await _engine.ReplyAsync(M(), "今天天气真好", Today);
+		Assert.NotNull(r);
+		Assert.DoesNotContain("这是在接你这句话", _ai.Requests[0].User);
+		_engine.CommitReply(M(), "今天天气真好", r!, Today);
+		Assert.True(_engine.State("Abigail")!.SpokeToday);
+		_engine.BeginPlayerFirst("Abigail", false, Today);
+		Assert.True(_engine.State("Abigail")!.SpokeToday);
+	}
+
+	[Fact]
+	public void FirstMeetingStillSpeaksFirst()
+	{
+		Assert.True(_engine.MustSpeakFirst(M(npc: "Leah", hearts: 0)));
+		_engine.HasPostResolutionLine = n => n == "Abigail";
+		Talked("Abigail");
+		Assert.True(_engine.MustSpeakFirst(M()));
+	}
+
+
+	[Fact]
 	public async Task SkipRecordsMarkerWithoutPointsAndWithoutSavedTalkedFlag()
 	{
 		Talked("Abigail");

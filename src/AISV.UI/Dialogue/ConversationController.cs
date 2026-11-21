@@ -18,6 +18,7 @@ using AISV.Game.Npcs;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
+using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.GameData.Shops;
 using StardewValley.Menus;
@@ -65,6 +66,13 @@ public sealed partial class ConversationController
 	private bool _generating;
 
 	private bool _executingVanilla;
+
+	// 从亲吻圆盘选了"聊天"后重新进 checkAction：这一次不再弹圆盘。
+	private bool _skipChoice;
+
+	private string? _bypassText;
+
+	private KeybindList? _bypass;
 
 	private bool _dayTransition;
 
@@ -131,6 +139,170 @@ public sealed partial class ConversationController
 
 	public bool InDayTransition => _dayTransition;
 
+	/// <summary>点到了替身（离家出走的孩子之类）：接管了返回 true；没接管交给游戏。</summary>
+	public Func<NPC, Farmer, bool>? StandInClicked { get; set; }
+
+	/// <summary>改了设置后存盘（回复框里的"下次我先开口"用）。</summary>
+	public Action<ModConfig>? SaveConfig { get; set; }
+
+	/// <summary>按住"跳过 AI"键：这次点村民交给游戏原来的互动。</summary>
+	private bool BypassHeld()
+	{
+		string text = _config().VanillaInteractKey ?? "";
+		if (!string.Equals(text, _bypassText, StringComparison.Ordinal))
+		{
+			_bypassText = text;
+			_bypass = KeybindList.TryParse(text, out KeybindList? parsed, out _) ? parsed : null;
+		}
+		return _bypass?.IsDown() == true;
+	}
+
+	private static bool MarriedOrRoommate(Farmer who, string name) => who.friendshipData.TryGetValue(name, out Friendship? f) && (f.IsMarried() || f.IsRoommate());
+
+	/// <summary>配偶今天还能照原版亲到（抱到）时弹圆盘；弹了返回 true。</summary>
+	private bool TryOfferKiss(NPC npc, Farmer who, GameLocation location)
+	{
+		if (MarriedOrRoommate(who, npc.Name))
+		{
+			_log.Debug($"亲吻检查：skip={_skipChoice} on={_config().KissChoiceMenu} menu={Game1.activeClickableMenu?.GetType().Name}");
+		}
+		if (_skipChoice || !_config().KissChoiceMenu || Game1.activeClickableMenu != null || !MarriedOrRoommate(who, npc.Name))
+		{
+			return false;
+		}
+		Vector2 delta = who.getStandingPosition() - npc.getStandingPosition();
+		KissRules.Situation s = new KissRules.Situation(true, who.getFriendshipHeartLevelForNPC(npc.Name), npc.sleptInBed.Value, Game1.timeOfDay, npc.isMoving(), npc.Sprite.CurrentAnimation != null,
+			npc.hasTemporaryMessageAvailable(), who.ActiveObject != null, npc.hasBeenKissedToday.Value, delta.X, delta.Y);
+		if (!KissRules.CanOffer(s))
+		{
+			_log.Debug($"不弹亲吻圆盘：{s}");
+			return false;
+		}
+		bool roommate = who.friendshipData.TryGetValue(npc.Name, out Friendship? f) && f.IsRoommate();
+		npc.Halt();
+		npc.faceGeneralDirection(who.getStandingPosition(), 0, opposite: false, useTileCalculations: false);
+		List<InteractChoiceMenu.Choice> choices = new List<InteractChoiceMenu.Choice>
+		{
+			new InteractChoiceMenu.Choice(Tr.Get("choice.chat", "聊天"), InteractChoiceMenu.Icon.Talk, () => ChatAfterChoice(npc, who, location)),
+			roommate
+				? new InteractChoiceMenu.Choice(Tr.Get("choice.hug", "拥抱"), InteractChoiceMenu.Icon.Hug, () => DoVanillaKiss(npc, who, location))
+				: new InteractChoiceMenu.Choice(Tr.Get("choice.kiss", "亲吻"), InteractChoiceMenu.Icon.Heart, () => DoVanillaKiss(npc, who, location))
+		};
+		string? hint = null;
+		if (who.mailReceived.Add("AISV_KissChoiceHint"))
+		{
+			hint = Tr.Get("choice.bypassHint", "按住 {{key}} 再点 = 游戏原来的互动", ("key", BypassKeyName()));
+		}
+		Game1.activeClickableMenu = new InteractChoiceMenu(npc, choices, hint);
+		UsageReporter.Note("kiss_menu");
+		return true;
+	}
+
+	private string BypassKeyName()
+	{
+		string text = (_config().VanillaInteractKey ?? "").Split(',')[0].Trim();
+		return text.Length == 0 ? "?" : text;
+	}
+
+	private void ChatAfterChoice(NPC npc, Farmer who, GameLocation location)
+	{
+		_skipChoice = true;
+		try
+		{
+			npc.checkAction(who, location);
+		}
+		finally
+		{
+			_skipChoice = false;
+		}
+	}
+
+	/// <summary>让游戏原来的亲吻（拥抱）照常发生：原版只有在没有待说台词时才亲，所以先把台词收起来，亲完放回去。</summary>
+	private void DoVanillaKiss(NPC npc, Farmer who, GameLocation location)
+	{
+		GameDialogue[] saved = npc.CurrentDialogue.ToArray();
+		List<MarriageDialogueReference> marriage = npc.currentMarriageDialogue.ToList();
+		npc.CurrentDialogue.Clear();
+		npc.currentMarriageDialogue.Clear();
+		_executingVanilla = true;
+		try
+		{
+			npc.checkAction(who, location);
+			UsageReporter.Note("kiss");
+		}
+		catch (Exception ex)
+		{
+			_log.Warn($"让 {npc.Name} 照原版亲吻时出错：{ex.Message}");
+		}
+		finally
+		{
+			_executingVanilla = false;
+			for (int i = saved.Length - 1; i >= 0; i--)
+			{
+				npc.CurrentDialogue.Push(saved[i]);
+			}
+			foreach (MarriageDialogueReference m in marriage)
+			{
+				npc.currentMarriageDialogue.Add(m);
+			}
+		}
+	}
+
+	/// <summary>玩家先开口：不生成开场白，直接打开空着的回复框。今天有非说不可的话（故事收尾、初次见面、心事件后续）时返回 false，照常由 TA 先说。</summary>
+	private bool TryPlayerFirst(NPC npc, GameLocation location, bool spouse)
+	{
+		DialogueMaterial material = _materials.Build(npc, location?.Name, "");
+		if (_engine.MustSpeakFirst(material))
+		{
+			_log.Debug($"{npc.Name} 今天有话要先说，这次还是 TA 开场。");
+			return false;
+		}
+		GameDate today = GameState.Today;
+		_engine.BeginPlayerFirst(npc.Name, spouse, today);
+		TodayDialogue? state = _engine.State(npc.Name);
+		if (state == null || state.SpokeToday || !string.IsNullOrEmpty(state.Line))
+		{
+			return false;
+		}
+		ClearHeadBubble(npc);
+		_aiNpcs.Add(npc.Name);
+		_current = npc;
+		_remainingTurns = 0;
+		OpenReplyMenu(npc, "", null, multiTurn: false);
+		UsageReporter.Note("player_first");
+		_log.Debug($"玩家先开口：直接打开和 {npc.Name} 的回复框。");
+		return true;
+	}
+
+	/// <summary>回复框里点了"让 TA 先说"：照常生成开场白，填进台词卡。</summary>
+	private void RequestOpener(NPC npc, ReplyMenu menu)
+	{
+		DialogueMaterial material = _materials.Build(npc, npc.currentLocation?.Name, _config().FeedGameLineToAi ? GameState.VanillaLine(npc) : "");
+		GameDate today = GameState.Today;
+		TimeSpan budget = TimeSpan.FromSeconds(SlotRouter.DialogueWatchdogSeconds(_config()));
+		int epoch = _epoch;
+		Task.Run(async () =>
+		{
+			string? line = null;
+			try
+			{
+				using CancellationTokenSource cts = new CancellationTokenSource(budget);
+				line = (await _engine.OpeningAsync(material, today, cts.Token).ConfigureAwait(false))?.Dialogue;
+			}
+			catch (Exception ex)
+			{
+				_log.Warn($"给 {npc.Name} 补生成开场白时出错：{ex.Message}");
+			}
+			MainThread.Run(() =>
+			{
+				if (epoch == _epoch && Game1.activeClickableMenu == menu)
+				{
+					menu.ShowOpener(line);
+				}
+			});
+		});
+	}
+
 	/// <summary>节日对话（没有就都按游戏原来的走）。</summary>
 	public FestivalSystem? Festivals { get; set; }
 
@@ -183,6 +355,15 @@ public sealed partial class ConversationController
 		{
 			if (who == null || _executingVanilla)
 			{
+				return null;
+			}
+			if (NpcBusy.IsStandIn(npc))
+			{
+				return StandInClicked?.Invoke(npc, who) == true ? true : null;
+			}
+			if (BypassHeld())
+			{
+				_log.Debug($"按着跳过键点了 {npc.Name}：交给游戏原来的互动。");
 				return null;
 			}
 			if (WantsLogin(npc, who))
@@ -243,6 +424,10 @@ public sealed partial class ConversationController
 			{
 				return null;
 			}
+			if (TryOfferKiss(npc, who, location))
+			{
+				return false;
+			}
 			if (_ai.IsDialogueUnavailable())
 			{
 				if (_account?.LoginRequested == true)
@@ -284,6 +469,10 @@ public sealed partial class ConversationController
 				// 生成过、没聊完（玩家关掉后又点）：直接再显示一次。
 				Present(npc, again!, resumeReaction ? state!.HeldFace ?? Emotion.Neutral : null);
 				_log.Debug($"再次显示 {name} 之前的话。");
+				return false;
+			}
+			if (_config().PlayerStartsTalk && Festivals?.Active == null && TryPlayerFirst(npc, location, spouse))
+			{
 				return false;
 			}
 			StartGeneration(npc, who, location, allowVanilla);
@@ -924,8 +1113,15 @@ public sealed partial class ConversationController
 		OutingOptions outings = festival == null ? Outings?.Options(npc, multiTurn) ?? OutingOptions.None : OutingOptions.None;
 		bool errands = festival == null && ErrandsAvailable?.Invoke(npc.Name) == true;
 		bool loans = festival == null && LoansAvailable?.Invoke(npc.Name) == true;
-		ReplyMenu menu = new ReplyMenu(npc, _npcs.Names.Display(npc.Name), line, emotion, multiTurn, _relationships.EffectiveHearts(npc.Name), festival != null, invite?.Label, invite?.Tip, proposals, outings, errands, loans);
+		ReplyMenu menu = new ReplyMenu(npc, _npcs.Names.Display(npc.Name), line, emotion, multiTurn, _relationships.EffectiveHearts(npc.Name), festival != null, invite?.Label, invite?.Tip, proposals, outings, errands, loans, nextIStart: _config().PlayerStartsTalk);
 		menu.Submitted += OnSubmitted;
+		menu.OpenerRequested += () => RequestOpener(npc, menu);
+		menu.NextIStartChanged += on =>
+		{
+			ModConfig c = _config();
+			c.PlayerStartsTalk = on;
+			SaveConfig?.Invoke(c);
+		};
 		menu.ErrandRequested += () =>
 		{
 			OnCancelled();

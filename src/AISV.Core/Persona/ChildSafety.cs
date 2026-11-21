@@ -33,7 +33,28 @@ public static class ChildSafety
 		_listed = set;
 	}
 
-	public static bool IsListed(string? name) => !string.IsNullOrWhiteSpace(name) && _listed.Contains(name.Trim());
+	private static HashSet<string> _family = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>
+	/// 农夫自己家的孩子（游戏里 Child 的 Age 是成长阶段 0～3，和村民的年龄档不是一回事：会走路的孩子 Age 是 3，
+	/// 刚出生的是 0，按年龄判断会把他们当成大人）。游戏层每天按名字登记一遍，和村民重名的不登记。
+	/// </summary>
+	public static void SetFamily(IEnumerable<string> names)
+	{
+		HashSet<string> set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (string n in names)
+		{
+			if (!string.IsNullOrWhiteSpace(n))
+			{
+				set.Add(n.Trim());
+			}
+		}
+		_family = set;
+	}
+
+	public static bool IsFamilyChild(string? name) => !string.IsNullOrWhiteSpace(name) && _family.Contains(name.Trim());
+
+	public static bool IsListed(string? name) => !string.IsNullOrWhiteSpace(name) && (_listed.Contains(name.Trim()) || _family.Contains(name.Trim()));
 
 	public static bool IsChild(string? name, int? age) => IsListed(name) || age == AgeChild;
 

@@ -305,6 +305,9 @@ public sealed class StoryArcService
 
 	/// <summary>结局后几天里第一次见面时说的话（开场白直接用它）。</summary>
 	/// <summary>开场白在后台线程生成，这里只读，记"说过了"排回主线程。</summary>
+	/// <summary>有没有故事收尾的话要说（只看，不消耗）。</summary>
+	public bool HasPostResolutionLine(string npc) => _npcs.IsEnabled(npc) && Arcs.PeekPostResolutionLine(npc, GameState.Today.TotalDays, _config().AfterwordDays, Usable) != null;
+
 	public string? PostResolutionLine(string npc)
 	{
 		if (!_npcs.IsEnabled(npc) || Arcs.PeekPostResolutionLine(npc, GameState.Today.TotalDays, _config().AfterwordDays, Usable) is not { } hit)
@@ -334,7 +337,7 @@ public sealed class StoryArcService
 		if (ready)
 		{
 			_log.Info($"小剧场「{arc.Title}」可以收尾了。");
-			Game1.addHUDMessage(new HUDMessage(Tr.Get("arcs.ready", "「{{title}}」可以收尾了，去 AI 外壳的社交 > 小剧场看看。", ("title", arc.Title)), HUDMessage.newQuest_type));
+			Game1.addHUDMessage(new HUDMessage(Tr.Get("arcs.ready", "“{{title}}”可以收尾了，去 AI 外壳的社交 > 小剧场看看。", ("title", arc.Title)), HUDMessage.newQuest_type));
 		}
 	}
 

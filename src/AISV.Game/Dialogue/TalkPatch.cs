@@ -18,11 +18,17 @@ public static class TalkPatch
 	public static void Apply(Harmony harmony, ILog log)
 	{
 		_log = log;
-		harmony.Patch(AccessTools.Method(typeof(NPC), nameof(NPC.checkAction)), prefix: new HarmonyMethod(typeof(TalkPatch), nameof(Prefix)));
+		// 排在 Farmer's Store 的前缀之后：它已经接管（比如点的是它的店员顾客）时我们不再插手。
+		HarmonyMethod prefix = new HarmonyMethod(typeof(TalkPatch), nameof(Prefix)) { after = new[] { "bubuge.CommercializationOfStardewValley" } };
+		harmony.Patch(AccessTools.Method(typeof(NPC), nameof(NPC.checkAction)), prefix: prefix);
 	}
 
-	private static bool Prefix(NPC __instance, Farmer who, GameLocation l, ref bool __result)
+	private static bool Prefix(NPC __instance, Farmer who, GameLocation l, ref bool __result, bool __runOriginal)
 	{
+		if (!__runOriginal)
+		{
+			return false;
+		}
 		try
 		{
 			bool? handled = Handler?.Invoke(__instance, who, l);
