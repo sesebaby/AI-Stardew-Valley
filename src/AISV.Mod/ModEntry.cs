@@ -215,7 +215,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_conversations = new ConversationController(() => _config, _ai, _dialogue, materials, relationships, _npcs, helper, _log);
 			_conversations.UseAccount(_account);
 			MainThread.Log = _log;
-			Harmony harmony = new Harmony(ModManifest.UniqueID);
+			Harmony harmony = _harmony = new Harmony(ModManifest.UniqueID);
 			TalkPatch.Handler = _conversations.OnCheckAction;
 			TalkPatch.Apply(harmony, _log);
 			_social = new SocialSystem(() => _config, store, _ai, _templates, PromptLanguage, log, relationships, _npcs, _log);
@@ -508,6 +508,30 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				Gossip = (text, knowers) => _social.Gossip.AddLowKey(text, knowers.ToList(), "ledger", "ledger-" + GameState.Today.TotalDays + "-" + text.GetHashCode(), GameState.Today)
 			};
 			_shell.Ledger = _ledger;
+			_martContent = new AISV.Game.Store.MartContent(helper);
+			_mart = new AISV.Game.Store.MartService(() => _config, store, _npcs, _ledger, _martContent, _log)
+			{
+				Ai = _ai,
+				Language = PromptLanguage,
+				Persona = n => _npcs.Persona(n, StardewValley.Game1.getCharacterFromName(n)).Personality,
+				Display = _npcs.Names.Display,
+				AdjustMood = _social.Moods.Adjust,
+				Gossip = (text, knowers) => _social.Gossip.AddLowKey(text, knowers.ToList(), "farmer_store", "mart-" + GameState.Today.TotalDays + "-" + text.GetHashCode(), GameState.Today),
+				OpenShelf = AISV.UI.Store.MartScreens.OpenShelf,
+				OpenApp = () => AISV.UI.Store.MartScreens.OpenApp(_shell),
+				AskArgument = AISV.UI.Store.MartScreens.AskArgument
+			};
+			_mart.Sales.Recorded += _mart.OnSale;
+			_ledger.ShopShare = _mart.ShareLeft;
+			_shell.Mart = _mart;
+			AISV.Game.Store.MartShopGate.Apply(harmony, _mart, _log);
+			helper.ConsoleCommands.Add("aisv_store", "小超市调试。\n用法：aisv_store dump | customer | brawl <Pierre|Morris> | state <Pierre|Joja> <0-3> | uninstall", (_, args) => _log.Info(Context.IsWorldReady ? StoreCommand(args) : "先进存档。"));
+			helper.Events.GameLoop.UpdateTicked += (_, _) =>
+			{
+				_mart.OnUpdateTicked();
+				_mart.TickFly();
+			};
+			helper.Events.Player.Warped += (_, e) => _mart.OnWarped(e);
 			_shell.Eco = _eco;
 			_shell.TryChat = (npc, card, text, done) =>
 			{
@@ -591,7 +615,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_shell.Stories = _stories;
 			string debugDir = Path.Combine(helper.DirectoryPath, "debug");
 			helper.ConsoleCommands.Add("aisv_story", "伴侣剧情调试，dump 写到 debug/。\n用法：aisv_story dump | marry <村民> | start <村民> [结构 1-5] | inject <村民> <结构> <文件> | prompt <村民> [结构] | theme <村民> <文字> | deliver <包> | advance <包> | scene <包> | due [天] | clear", (_, args) => _log.Info(Context.IsWorldReady ? _stories.Command(args, debugFile, debugDir) : "先进存档。"));
-			materials.Dealings = n => DialoguePrompts.Join(_squad.PromptLine(n), _gifts.PromptBlock(n), _commissions.PromptBlock(n), _errands.PromptBlock(n), _ledger.PromptBlock(n), _meetups.PromptBlock(n), _stories.PromptBlock(n), _farmHelp.PromptBlock(n), _adult.PromptBlock(n));
+			materials.Dealings = n => DialoguePrompts.Join(_squad.PromptLine(n), _gifts.PromptBlock(n), _commissions.PromptBlock(n), _errands.PromptBlock(n), _ledger.PromptBlock(n), _meetups.PromptBlock(n), _stories.PromptBlock(n), _farmHelp.PromptBlock(n), _adult.PromptBlock(n), MartPromptBlock(n));
 			_news = new WeeklyNewsService(() => _config, store, _social, _market, _commissions, _log) { Ai = _ai, Language = PromptLanguage };
 			_shell.News = _news;
 			_news.Money = _ledger.PaperLines;
@@ -702,6 +726,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				{
 					pets.OnTimeChanged();
 					_runaway.OnTimeChanged();
+					_mart.OnTimeChanged();
 					_outings.OnTimeChanged();
 					_schedules.OnTimeChanged();
 					_farmHelp.OnTimeChanged();
@@ -748,6 +773,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
 	{
+		AISV.Game.Compat.FarmersStoreWatcher.Attach(Helper, _harmony, () => _config, _mart.Sales, _log);
 		GmcmSettings.Register(Helper, ModManifest, () => _config, c => { _config = c; _moments?.OnStyleChanged(); }, _connection.IsAvailable, ImeCandidateWindow.SetVariable);
 		RefreshAccountInBackground();
 		StartCompatibilityScan();
@@ -819,10 +845,64 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private ChildRunaway _runaway = null!;
 
+	private Harmony _harmony = null!;
+
+	private AISV.Game.Store.MartContent _martContent = null!;
+
+	private AISV.Game.Store.MartService _mart = null!;
+
+	/// <summary>聊天素材：这位村民最近在农夫的店里买过什么；Pierre 和 Morris 还知道自己的店现在怎么样。</summary>
+	private string MartPromptBlock(string npc)
+	{
+		if (!_config.FarmerMart)
+		{
+			return "";
+		}
+		string bought = AISV.Core.Store.StoreSaleBook.PromptBlock(_mart.Sales.By(npc, StardewValley.Game1.Date.TotalDays, 7), StardewValley.Game1.player.Name);
+		string rival = npc == "Pierre" ? AISV.Core.Store.Competition.Pierre : npc == "Morris" ? AISV.Core.Store.Competition.Joja : "";
+		string state = rival.Length > 0 && _mart.Health(rival) > AISV.Core.Store.Competition.Normal
+			? $"你的店被{StardewValley.Game1.player.Name}开的农夫小超市抢了生意，现在{AISV.Game.Store.MartService.HealthName(_mart.Health(rival))}。"
+			: "";
+		return string.Join("\n", new[] { bought, state }.Where(x => x.Length > 0).Select(x => "- " + x));
+	}
+
+	private string StoreCommand(string[] args)
+	{
+		string cmd = args.Length > 0 ? args[0] : "dump";
+		switch (cmd)
+		{
+			case "customer":
+				_mart.OnTimeChanged();
+				return "按现在的时间叫了一轮顾客。";
+			case "brawl":
+				return _mart.ForceConfront(args.Length > 1 ? args[1] : "Pierre");
+			case "state" when args.Length > 2 && int.TryParse(args[2], out int h) && _mart.State is AISV.Core.Store.MartState s:
+				string rival = args[1].Equals("Joja", StringComparison.OrdinalIgnoreCase) ? AISV.Core.Store.Competition.Joja : AISV.Core.Store.Competition.Pierre;
+				if (!s.Rivals.TryGetValue(rival, out AISV.Core.Store.RivalState? r))
+				{
+					s.Rivals[rival] = r = new AISV.Core.Store.RivalState();
+				}
+				r.Health = Math.Clamp(h, 0, 3);
+				r.ConfrontedSeason = -1;
+				_saveData.Current?.MarkDirty(AISV.Core.Store.MartState.Path);
+				Helper.GameContent.InvalidateCache("Data/Shops");
+				return $"{rival} 的经营状况设成了 {AISV.Game.Store.MartService.HealthName(r.Health)}。";
+			case "uninstall":
+				return _mart.Uninstall();
+			default:
+				AISV.Core.Store.MartState? st = _mart.State;
+				var sales = _mart.Sales.All;
+				return $"小超市 {AISV.Game.Store.MartService.Buildings().Count()} 间，陈列台 {AISV.Game.Store.MartService.AllShelves().Count()} 张，钱箱 {st?.Cashbox ?? 0}g，口碑 {st?.Reputation ?? 0}，成交 {sales.Count} 笔（COS {sales.Count(x => x.Source == AISV.Core.Store.StoreSale.Cos)}）；"
+					+ $"Pierre {AISV.Game.Store.MartService.HealthName(_mart.Health(AISV.Core.Store.Competition.Pierre))} {(int)(_mart.ShareLeft(AISV.Core.Store.Competition.Pierre) * 100)}%，Joja {AISV.Game.Store.MartService.HealthName(_mart.Health(AISV.Core.Store.Competition.Joja))} {(int)(_mart.ShareLeft(AISV.Core.Store.Competition.Joja) * 100)}%；"
+					+ "最近：" + string.Join("；", sales.TakeLast(5).Select(x => $"{x.Source} {x.Buyer} {x.ItemName}×{x.Qty} {x.Total}g{(x.Reclaimed ? "（认出赃物）" : "")}"));
+		}
+	}
+
 	private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
 	{
 		Kids.RegisterFamily();
 		ChildRunaway.Sweep();
+		AISV.Game.Store.MartService.Sweep();
 		AISV.Game.World.HeartEventSource.Refresh(Helper, _log);
 		StepTimer timer = new StepTimer("AI星露谷 进存档");
 		using (timer.Step("打开存档数据"))
@@ -869,6 +949,12 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private void OnDayStarted(object? sender, DayStartedEventArgs e)
 	{
+		_mart.OnDayStarted();
+		if (_martContent.ShopsDirty)
+		{
+			_martContent.ShopsDirty = false;
+			Helper.GameContent.InvalidateCache("Data/Shops");
+		}
 		Kids.RegisterFamily();
 		_childBook?.Forget(Kids.All().Select(Kids.Key));
 		AISV.Game.World.HeartEventSource.Refresh(Helper, _log);
@@ -912,6 +998,11 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	private void OnDayEnding(object? sender, DayEndingEventArgs e)
 	{
 		_runaway.Cleanup();
+		_mart.OnDayEnding();
+		if (_martContent.LastFine > 0)
+		{
+			Helper.GameContent.InvalidateCache("Data/Mail");
+		}
 		_conversations.BeginDayTransition();
 		_groups.Reset();
 		_festivals.OnDayEnding();
@@ -932,6 +1023,11 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
 	{
 		if (!Context.IsPlayerFree || StardewValley.Game1.IsChatting)
+		{
+			return;
+		}
+		_mart.OnButtonPressed(e, Helper.Input);
+		if (Helper.Input.IsSuppressed(e.Button))
 		{
 			return;
 		}
@@ -1268,6 +1364,9 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	/// <summary>Data/mail 里加上村民的信。</summary>
 	private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
 	{
+		_martContent.Enabled = _config.FarmerMart;
+		_martContent.OnAssetRequested(e);
+		_mart.EditShops(e);
 		_looks.OnAssetRequested(e);
 		_phone.OnAssetRequested(e);
 		_computer.OnAssetRequested(e);
@@ -1297,6 +1396,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	private void OnSaving(object? sender, SavingEventArgs e)
 	{
 		_runaway?.Cleanup();
+		_mart?.CleanupVisits();
+		_mart?.CleanupClerks();
 		_sensors.OnSaving();
 		_awareness.OnSaving();
 		StepTimer timer = new StepTimer("AI星露谷 保存");
@@ -1311,6 +1412,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
 	{
 		_runaway?.Cleanup();
+		_mart?.CleanupVisits();
+		_mart?.CleanupClerks();
 		if (_account.IsLoggedIn)
 		{
 			Task.Run(_usage.FlushAsync);

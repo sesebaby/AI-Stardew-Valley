@@ -24,4 +24,7 @@ public static class Hints
 		Hud(text, ms);
 		return true;
 	}
+
+	/// <summary>这条用法提示是不是第一次（记下来，但不弹提示条，给自己画提示的地方用）。</summary>
+	public static bool First(string flag) => Game1.player != null && Game1.player.mailReceived.Add("AISV_" + flag);
 }

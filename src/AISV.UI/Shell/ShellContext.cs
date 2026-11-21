@@ -37,6 +37,9 @@ public sealed class ShellContext
 	/// <summary>孩子的角色卡（跟着存档走）。</summary>
 	public AISV.Core.Dialogue.ChildCards? KidCards { get; set; }
 
+	/// <summary>农夫小超市。</summary>
+	public AISV.Game.Store.MartService? Mart { get; set; }
+
 	/// <summary>这个 mod 的文件夹。</summary>
 	public string ModFolder { get; set; } = "";
 

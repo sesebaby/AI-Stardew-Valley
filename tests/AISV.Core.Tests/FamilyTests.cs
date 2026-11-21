@@ -106,4 +106,62 @@ public class FamilyTests
 		Assert.Equal(40, RunawayRules.FoundPoints(900, 1230));
 		Assert.Equal(20, RunawayRules.FoundPoints(900, 1600));
 	}
+
+	[Fact]
+	public void SalesAreRecordedOnceAndSummed()
+	{
+		AISV.Core.Storage.DocumentStore store = new AISV.Core.Storage.DocumentStore(new AISV.Core.Storage.MemoryBackend());
+		AISV.Core.Store.StoreSaleBook book = new AISV.Core.Store.StoreSaleBook(() => store);
+		int heard = 0;
+		book.Recorded += _ => heard++;
+		AISV.Core.Store.StoreSale sale = new AISV.Core.Store.StoreSale { TxId = "5-1", Buyer = "Emily", ItemName = "甜瓜", Qty = 2, UnitPrice = 300, Day = 5 };
+		Assert.True(book.Record(sale));
+		Assert.False(book.Record(new AISV.Core.Store.StoreSale { TxId = "5-1", Buyer = "Emily", Day = 5 }));
+		Assert.True(book.Record(new AISV.Core.Store.StoreSale { Source = AISV.Core.Store.StoreSale.Cos, TxId = "5-1", Buyer = "Gus", ItemName = "鸡蛋", UnitPrice = 50, Day = 5 }));
+		Assert.Equal(2, heard);
+		Assert.Equal(600, book.Revenue(5, 7)[6]);
+		Assert.Contains("甜瓜×2", AISV.Core.Store.StoreSaleBook.PromptBlock(book.By("Emily", 5, 7), "小麦"));
+	}
+
+	[Fact]
+	public void CustomersPreferWhatTheyLoveAtFairPrices()
+	{
+		var offers = new List<AISV.Core.Store.Offer>
+		{
+			new AISV.Core.Store.Offer("(O)1", 100, 100, 0, 5, 8, false),
+			new AISV.Core.Store.Offer("(O)2", 100, 100, 0, 5, 0, false),
+			new AISV.Core.Store.Offer("(O)3", 900, 100, 0, 5, 0, false)
+		};
+		Assert.True(AISV.Core.Store.CustomerDemand.Score(offers[1], 500) > AISV.Core.Store.CustomerDemand.Score(offers[0], 500));
+		Assert.Equal(0, AISV.Core.Store.CustomerDemand.Score(offers[2], 500));
+		Assert.Equal(1, AISV.Core.Store.CustomerDemand.Pick(offers, 500, 0.9).Index);
+		Assert.Equal(0, AISV.Core.Store.CustomerDemand.Arrivals(0, 1, 0.3, 0));
+		Assert.True(AISV.Core.Store.CustomerDemand.Arrivals(8, 0.8, 0.4, 0) >= 1);
+	}
+
+	[Fact]
+	public void RivalsSlideOneStepAtATime()
+	{
+		(double p0, double j0, double o0) = AISV.Core.Store.Competition.Shares(0, 1, 0, true);
+		Assert.Equal(0, o0);
+		(double p1, _, double o1) = AISV.Core.Store.Competition.Shares(12, 0.8, 30, true);
+		Assert.True(o1 > 0.3 && p1 < p0);
+		Assert.Equal(AISV.Core.Store.Competition.Tight, AISV.Core.Store.Competition.Health(0.1, 1, AISV.Core.Store.Competition.Normal));
+		Assert.Equal(AISV.Core.Store.Competition.Closed, AISV.Core.Store.Competition.Health(0.45, 1, AISV.Core.Store.Competition.Closed));
+		Assert.Equal(AISV.Core.Store.Competition.Losing, AISV.Core.Store.Competition.Health(0.7, 1, AISV.Core.Store.Competition.Closed));
+		Assert.Equal((1100, 1500), AISV.Core.Store.Competition.Hours(900, 1700, AISV.Core.Store.Competition.Closed));
+		Assert.False(AISV.Core.Store.Competition.MayConfront(AISV.Core.Store.Competition.Tight, -1, 5, 0));
+		Assert.False(AISV.Core.Store.Competition.MayConfront(AISV.Core.Store.Competition.Losing, 5, 5, 0));
+		Assert.True(AISV.Core.Store.Competition.MayConfront(AISV.Core.Store.Competition.Losing, 4, 5, 0.1));
+	}
+
+	[Fact]
+	public void StolenGoodsAreRecognisedMostlyByTheirOwners()
+	{
+		Assert.Equal(0.6, AISV.Core.Store.StolenRules.Chance(true, false, 100, 100, 0), 3);
+		Assert.Equal(0.05, AISV.Core.Store.StolenRules.Chance(false, false, 100, 100, 0), 3);
+		Assert.True(AISV.Core.Store.StolenRules.Chance(false, true, 2000, 100, 0) > 0.7);
+		Assert.True(AISV.Core.Store.StolenRules.Chance(true, false, 2000, 100, 0) <= 0.95);
+		Assert.True(AISV.Core.Store.StolenRules.Chance(true, false, 100, 100, 28) < 0.3);
+	}
 }
