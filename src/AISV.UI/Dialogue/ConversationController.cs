@@ -139,6 +139,9 @@ public sealed partial class ConversationController
 
 	public bool InDayTransition => _dayTransition;
 
+	/// <summary>点到了替身（离家出走的孩子之类）：接管了返回 true；没接管交给游戏。</summary>
+	public Func<NPC, Farmer, bool>? StandInClicked { get; set; }
+
 	/// <summary>改了设置后存盘（回复框里的"下次我先开口"用）。</summary>
 	public Action<ModConfig>? SaveConfig { get; set; }
 
@@ -348,6 +351,10 @@ public sealed partial class ConversationController
 			if (who == null || _executingVanilla)
 			{
 				return null;
+			}
+			if (NpcBusy.IsStandIn(npc))
+			{
+				return StandInClicked?.Invoke(npc, who) == true ? true : null;
 			}
 			if (BypassHeld())
 			{

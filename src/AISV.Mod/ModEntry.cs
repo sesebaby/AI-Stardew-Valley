@@ -240,6 +240,32 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			ChildConversation childChat = new ChildConversation(() => _config, new ChildDialogue(_ai, _childBook, _log), _childTalk, _log);
 			_childTalk.ChatRequested = childChat.Start;
 			_shell.KidCards = _childCards;
+			_runaway = new ChildRunaway(() => _config, store, _childTalk, _childBook, _log)
+			{
+				Ai = _ai,
+				Language = PromptLanguage,
+				Persona = n => _npcs.Persona(n, StardewValley.Game1.getCharacterFromName(n)).Personality,
+				Display = _npcs.Names.Display,
+				AdjustMood = _social.Moods.Adjust,
+				Remember = (spouse, text) => _social.Gossip.AddLowKey(text, new[] { spouse }, "family", "runaway-" + GameState.Today.TotalDays, GameState.Today)
+			};
+			_conversations.StandInClicked = _runaway.TryFound;
+			helper.ConsoleCommands.Add("aisv_child", "孩子调试。\n用法：aisv_child runaway | end", (_, args) =>
+			{
+				if (!Context.IsWorldReady)
+				{
+					_log.Info("先进存档。");
+					return;
+				}
+				if (args.Length > 0 && args[0] == "end")
+				{
+					_runaway.Cleanup();
+					_log.Info("收回了离家出走的孩子。");
+					return;
+				}
+				_log.Info(_runaway.Force());
+			});
+			helper.Events.GameLoop.UpdateTicked += (_, _) => _runaway.OnUpdateTicked();
 			_approaches = new ApproachCoordinator(source => source == MomentDirector.Source ? _config.EncountersOn : _awareness.Enabled, _dialogue.IsGeneratingFor, () => GenerationStatus.IsActive, () => _conversations.InDayTransition, _conversations.PresentPrepared, _log);
 			_awareness = new AwarenessSystem(() => _config, store, _npcs, _approaches, materials, _dialogue, helper.DirectoryPath, _log)
 			{
@@ -675,6 +701,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				if (_saveData.Current != null)
 				{
 					pets.OnTimeChanged();
+					_runaway.OnTimeChanged();
 					_outings.OnTimeChanged();
 					_schedules.OnTimeChanged();
 					_farmHelp.OnTimeChanged();
@@ -790,9 +817,12 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private ChildTalk? _childTalk;
 
+	private ChildRunaway _runaway = null!;
+
 	private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
 	{
 		Kids.RegisterFamily();
+		ChildRunaway.Sweep();
 		AISV.Game.World.HeartEventSource.Refresh(Helper, _log);
 		StepTimer timer = new StepTimer("AI星露谷 进存档");
 		using (timer.Step("打开存档数据"))
@@ -881,6 +911,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private void OnDayEnding(object? sender, DayEndingEventArgs e)
 	{
+		_runaway.Cleanup();
 		_conversations.BeginDayTransition();
 		_groups.Reset();
 		_festivals.OnDayEnding();
@@ -1265,6 +1296,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private void OnSaving(object? sender, SavingEventArgs e)
 	{
+		_runaway?.Cleanup();
 		_sensors.OnSaving();
 		_awareness.OnSaving();
 		StepTimer timer = new StepTimer("AI星露谷 保存");
@@ -1278,6 +1310,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
 	{
+		_runaway?.Cleanup();
 		if (_account.IsLoggedIn)
 		{
 			Task.Run(_usage.FlushAsync);

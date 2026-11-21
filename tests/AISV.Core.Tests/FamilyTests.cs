@@ -79,4 +79,31 @@ public class FamilyTests
 		Assert.Equal("皮皮", ChildPrompts.Called(carded));
 		Assert.Null(ChildPrompts.Clean("  \"\" "));
 	}
+
+	[Fact]
+	public void RunawayOnlyOnQuietMornings()
+	{
+		RunawayRules.Day ok = new RunawayRules.Day(false, false, true, true, 20, 930);
+		Assert.True(RunawayRules.MayRun(ok, true, 3, 0.01));
+		Assert.False(RunawayRules.MayRun(ok, true, 3, 0.05));
+		Assert.False(RunawayRules.MayRun(ok, false, 100, 0));
+		Assert.False(RunawayRules.MayRun(ok with { Raining = true }, true, 100, 0));
+		Assert.False(RunawayRules.MayRun(ok with { DaysSinceLast = 5 }, true, 100, 0));
+		Assert.False(RunawayRules.MayRun(ok with { Time = 1300 }, true, 100, 0));
+		Assert.False(RunawayRules.MayRun(ok with { PlayerHome = false }, true, 100, 0));
+	}
+
+	[Fact]
+	public void RunawayHidesBehindThingsAndHintsTheWay()
+	{
+		Assert.Equal(0, RunawayRules.HideScore(10, 3));
+		Assert.Equal(0, RunawayRules.HideScore(30, 0));
+		Assert.True(RunawayRules.HideScore(30, 3) > RunawayRules.HideScore(30, 1));
+		Assert.Equal("北", RunawayRules.Direction(0, -10));
+		Assert.Equal("东南", RunawayRules.Direction(10, 10));
+		Assert.Equal("西", RunawayRules.Direction(-10, 0));
+		Assert.Equal(60, RunawayRules.FoundPoints(900, 1050));
+		Assert.Equal(40, RunawayRules.FoundPoints(900, 1230));
+		Assert.Equal(20, RunawayRules.FoundPoints(900, 1600));
+	}
 }
