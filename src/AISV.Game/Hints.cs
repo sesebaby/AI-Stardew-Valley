@@ -27,7 +27,7 @@ public static class Hints
 		return true;
 	}
 
-	/// <summary>新玩法第一次出现：只弹一行，指向手机里的「使用帮助」（详细用法都在那里）。</summary>
+	/// <summary>新玩法第一次出现：只弹一行，指向手机里的“使用帮助”（详细用法都在那里）。</summary>
 	public static string TipText(string topic) => Tr.Get("hint.tip", "新玩法：{{topic}}（用法见 手机 > 使用帮助）", ("topic", topic));
 
 	public static bool Tip(string flag, string topic) => Once(flag, TipText(topic), 6000);
@@ -39,7 +39,7 @@ public static class Hints
 	{
 		if (e.NameWithoutLocale.IsEquivalentTo("Data/Mail"))
 		{
-			e.Edit(asset => asset.AsDictionary<string, string>().Data[GuideMail] = Tr.Get("mail.guide", "@：\nAI星露谷 加了几样新玩法：\n- 点配偶可以选聊天还是亲吻\n- 可以设成由你先开口\n- 宠物会冒心里话\n- 孩子能聊天、有自己的角色卡，偶尔还会跑出去玩\n- 配偶婚后每天有自己的安排\n- 可以在 Robin 那里建「农夫小超市」，和 Pierre、Joja 抢生意\n\n每样怎么用，都写在 手机 > 应用 > 使用帮助 里。不喜欢的都能在设置里关掉。\n   -AI星露谷").Replace("\n", "^") + "[#]" + Tr.Get("mail.guideTitle", "AI星露谷的新玩法"));
+			e.Edit(asset => asset.AsDictionary<string, string>().Data[GuideMail] = Tr.Get("mail.guide", "@：\nAI星露谷 加了几样新玩法：\n- 点配偶可以选聊天还是亲吻\n- 可以设成由你先开口\n- 宠物会冒心里话\n- 孩子能聊天、有自己的角色卡，偶尔还会跑出去玩\n- 配偶婚后每天有自己的安排\n- 可以在 Robin 那里建“农夫小超市”，和 Pierre、Joja 抢生意\n\n每样怎么用，都写在 手机 > 应用 > 使用帮助 里。不喜欢的都能在设置里关掉。\n   -AI星露谷").Replace("\n", "^") + "[#]" + Tr.Get("mail.guideTitle", "AI星露谷的新玩法"));
 		}
 	}
 

@@ -240,7 +240,7 @@ public static class GmcmSettings
 		api.AddNumberOption(manifest, () => get().PetThoughtsPercent, v => get().PetThoughtsPercent = v, () => Tr.Get("shell.settings.petChance", "多常冒一句"),
 			() => Tr.Get("shell.settings.petChanceNote", "你在旁边时每 10 分钟的机会"), min: 0, max: 100);
 		api.AddBoolOption(manifest, () => get().SpousePlanner, v => get().SpousePlanner = v, () => Tr.Get("shell.settings.spousePlan", "配偶的日常安排"),
-			() => Tr.Get("shell.settings.spousePlanNote", "婚后配偶每天自己安排：帮忙干农活、去镇上、看店、带孩子；手机「家务安排」里可以改"));
+			() => Tr.Get("shell.settings.spousePlanNote", "婚后配偶每天自己安排：帮忙干农活、去镇上、看店、带孩子；手机“家务安排”里可以改"));
 		api.AddTextOption(manifest, () => get().SpouseHelpLevel, v => get().SpouseHelpLevel = v, () => Tr.Get("shell.settings.spouseHelp", "帮忙勤快程度"), allowedValues: new[] { "Light", "Normal", "Busy" },
 			formatAllowedValue: v => v switch
 			{
@@ -249,7 +249,7 @@ public static class GmcmSettings
 				_ => Tr.Get("shell.settings.helpNormal", "一般")
 			});
 		api.AddTextOption(manifest, () => get().SpouseHarvestTo, v => get().SpouseHarvestTo = v, () => Tr.Get("shell.settings.spouseHarvestTo", "收获的东西放哪"),
-			() => Tr.Get("shell.settings.spouseHarvestToNote", "收获箱在手机「家务安排」里领取；放出货箱就当晚卖掉"), allowedValues: new[] { "Chest", "Bin" },
+			() => Tr.Get("shell.settings.spouseHarvestToNote", "收获箱在手机“家务安排”里领取；放出货箱就当晚卖掉"), allowedValues: new[] { "Chest", "Bin" },
 			formatAllowedValue: v => v == "Bin" ? Tr.Get("shell.settings.toBin", "出货箱") : Tr.Get("shell.settings.toChest", "收获箱"));
 		api.AddBoolOption(manifest, () => get().SpouseWaters, v => get().SpouseWaters = v, () => Tr.Get("shell.settings.spouseWater", "浇水"));
 		api.AddBoolOption(manifest, () => get().SpouseHarvests, v => get().SpouseHarvests = v, () => Tr.Get("shell.settings.spouseHarvest", "收获"));

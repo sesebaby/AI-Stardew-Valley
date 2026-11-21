@@ -314,10 +314,10 @@ internal sealed class SettingsPage : ShellPage
 				(Tr.Get("shell.settings.spouse", "配偶"), new List<Row>
 				{
 					new ToggleRow(Tr.Get("shell.settings.kissMenu", "点配偶先选聊天还是亲吻"), Tr.Get("shell.settings.kissMenuNote", "今天还能亲（抱）的时候，配偶头顶弹出小圆盘；关掉就直接聊天，按住跳过键点配偶照样能亲"), c => c.KissChoiceMenu, (c, v) => c.KissChoiceMenu = v),
-					new ToggleRow(Tr.Get("shell.settings.spousePlan", "配偶的日常安排"), Tr.Get("shell.settings.spousePlanNote", "婚后配偶每天自己安排：帮忙干农活、去镇上、看店、带孩子；手机「家务安排」里可以改"), c => c.SpousePlanner, (c, v) => c.SpousePlanner = v),
+					new ToggleRow(Tr.Get("shell.settings.spousePlan", "配偶的日常安排"), Tr.Get("shell.settings.spousePlanNote", "婚后配偶每天自己安排：帮忙干农活、去镇上、看店、带孩子；手机“家务安排”里可以改"), c => c.SpousePlanner, (c, v) => c.SpousePlanner = v),
 					new ChoiceRow(Tr.Get("shell.settings.spouseHelp", "帮忙勤快程度"), Tr.Get("shell.settings.spouseHelpNote", "每样活最多干多少"), new[] { Tr.Get("shell.settings.helpLight", "轻松"), Tr.Get("shell.settings.helpNormal", "一般"), Tr.Get("shell.settings.helpBusy", "勤快") },
 						c => Math.Max(0, Array.IndexOf(HelpLevels, c.SpouseHelpLevel)), (c, i) => c.SpouseHelpLevel = HelpLevels[i]) { Shown = c => c.SpousePlanner },
-					new ChoiceRow(Tr.Get("shell.settings.spouseHarvestTo", "收获的东西放哪"), Tr.Get("shell.settings.spouseHarvestToNote", "收获箱在手机「家务安排」里领取；放出货箱就当晚卖掉"), new[] { Tr.Get("shell.settings.toChest", "收获箱"), Tr.Get("shell.settings.toBin", "出货箱") },
+					new ChoiceRow(Tr.Get("shell.settings.spouseHarvestTo", "收获的东西放哪"), Tr.Get("shell.settings.spouseHarvestToNote", "收获箱在手机“家务安排”里领取；放出货箱就当晚卖掉"), new[] { Tr.Get("shell.settings.toChest", "收获箱"), Tr.Get("shell.settings.toBin", "出货箱") },
 						c => c.SpouseHarvestTo == "Bin" ? 1 : 0, (c, i) => c.SpouseHarvestTo = i == 1 ? "Bin" : "Chest") { Shown = c => c.SpousePlanner },
 					new ToggleRow(Tr.Get("shell.settings.spouseWater", "浇水"), "", c => c.SpouseWaters, (c, v) => c.SpouseWaters = v) { Shown = c => c.SpousePlanner },
 					new ToggleRow(Tr.Get("shell.settings.spouseHarvest", "收获"), "", c => c.SpouseHarvests, (c, v) => c.SpouseHarvests = v) { Shown = c => c.SpousePlanner },

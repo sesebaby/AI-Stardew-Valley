@@ -318,7 +318,7 @@ public sealed class SpousePlanner
 		}
 		string plan = string.Join(Tr.Get("list.sep", "、"), items.Select(i => $"{Clock.Text(i.Time)} {TaskName(i.Task)}"));
 		Hints.Hud(say.Length > 0
-			? Tr.Get("spouse.plan.said", "{{npc}}：「{{say}}」（{{plan}}）", ("npc", Name(spouse)), ("say", say), ("plan", plan))
+			? Tr.Get("spouse.plan.said", "{{npc}}：“{{say}}”（{{plan}}）", ("npc", Name(spouse)), ("say", say), ("plan", plan))
 			: Tr.Get("spouse.plan.hud", "{{npc}}今天的安排：{{plan}}", ("npc", Name(spouse)), ("plan", plan)), 9000);
 		log.Announced = true;
 		Hints.Tip("SpousePlanHint", Tr.Get("help.spouse.title", "配偶的日常安排"));
@@ -911,7 +911,7 @@ public sealed class SpousePlanner
 			return;
 		}
 		string list = string.Join(Tr.Get("list.sep", "、"), done.Select(i => SpouseTasks.IsChore(i.Task) && i.Did > 0 ? $"{TaskName(i.Task)} ×{i.Did}" : i.Note.Length > 0 ? i.Note : TaskName(i.Task)));
-		string box = BoxCount > 0 ? Tr.Get("spouse.plan.boxNote", "（收获在手机「家务安排」里领）") : "";
+		string box = BoxCount > 0 ? Tr.Get("spouse.plan.boxNote", "（收获在手机“家务安排”里领）") : "";
 		Hints.Hud(Tr.Get("spouse.plan.summary", "{{npc}}今天：{{list}}{{box}}", ("npc", Name(spouse)), ("list", list), ("box", box)), 10000);
 	}
 

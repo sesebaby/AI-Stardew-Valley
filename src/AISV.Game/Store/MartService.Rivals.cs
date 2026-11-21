@@ -142,7 +142,7 @@ public sealed partial class MartService
 		{
 			_rivalNoticeDay = Today;
 			(int open, int close) = Competition.Hours(900, rival == Competition.Pierre ? 1700 : 2300, Health(rival));
-			Hints.Hud(Tr.Get("mart.notice", "门口贴着告示：「{{state}}，营业时间 {{open}} - {{close}}，部分商品暂停供应。」", ("state", HealthName(Health(rival))), ("open", Clock(open)), ("close", Clock(close))), 9000);
+			Hints.Hud(Tr.Get("mart.notice", "门口贴着告示：“{{state}}，营业时间 {{open}} - {{close}}，部分商品暂停供应。”", ("state", HealthName(Health(rival))), ("open", Clock(open)), ("close", Clock(close))), 9000);
 		}
 	}
 
@@ -446,7 +446,7 @@ public sealed partial class MartService
 					}
 					_store()!.MarkDirty(MartState.Path);
 				}
-				Gossip?.Invoke(Tr.Get("mart.brawlGossip", "{{farmer}}在自己店里和{{name}}动了手，{{name}}被「嗖」地打飞出门，镇长罚了 {{gold}}g。", ("farmer", Game1.player.Name), ("name", Display(real.Name)), ("gold", fine)), new[] { real.Name, "Lewis" });
+				Gossip?.Invoke(Tr.Get("mart.brawlGossip", "{{farmer}}在自己店里和{{name}}动了手，{{name}}被“嗖”地打飞出门，镇长罚了 {{gold}}g。", ("farmer", Game1.player.Name), ("name", Display(real.Name)), ("gold", fine)), new[] { real.Name, "Lewis" });
 				Hints.Hud(Tr.Get("mart.brawlHud", "{{name}}被打飞出门，晕乎乎地爬起来走了。罚款 {{gold}}g，明天会收到镇长的信。", ("name", Display(real.Name)), ("gold", fine)), 10000);
 				Leave(real, clone, angry: true);
 			}

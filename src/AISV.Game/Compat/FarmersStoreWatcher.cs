@@ -135,7 +135,7 @@ public static class FarmersStoreWatcher
 		{
 			if (Array.Exists(theirs, k => string.Equals(k, mine?.Trim(), StringComparison.OrdinalIgnoreCase)))
 			{
-				_log.Warn(Tr.Get("cos.keyClash", "Farmer's Store 也用 {{key}} 键（我们的「{{what}}」）。可以在 GMCM 或 config.json 里改其中一边。", ("key", mine), ("what", what)));
+				_log.Warn(Tr.Get("cos.keyClash", "Farmer's Store 也用 {{key}} 键（我们的“{{what}}”）。可以在 GMCM 或 config.json 里改其中一边。", ("key", mine), ("what", what)));
 			}
 		}
 	}

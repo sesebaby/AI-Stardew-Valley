@@ -1257,6 +1257,14 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		{
 			ShellMenu.ShowMyErrands();
 		}
+		if (where.Trim().Equals("app", StringComparison.OrdinalIgnoreCase))
+		{
+			// 调试和截图：直接打开某个应用，比如 app:help、app:chores、app:mart。
+			ShellMenu apps = new ShellMenu(_shell, ShellMenu.Tab.Apps, null, null);
+			StardewValley.Game1.activeClickableMenu = apps;
+			apps.OpenApp(arg.Trim());
+			return;
+		}
 		ShellMenu menu = new ShellMenu(_shell, tab, sub, world);
 		StardewValley.Game1.activeClickableMenu = menu;
 		switch (where.Trim().ToLowerInvariant())

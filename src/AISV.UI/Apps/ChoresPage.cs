@@ -103,7 +103,7 @@ internal sealed class ChoresPage : ShellPage
 		}
 		if (log.Say.Length > 0)
 		{
-			y = Text(b, "「" + log.Say + "」", x, y, w, Hearth.LeafDeep, 0.78f) + 6;
+			y = Text(b, "“" + log.Say + "”", x, y, w, Hearth.LeafDeep, 0.78f) + 6;
 		}
 		foreach (SpousePlanItem i in log.Items)
 		{
@@ -156,7 +156,7 @@ internal sealed class ChoresPage : ShellPage
 	{
 		Hearth.InkBold(b, Tr.Get("chores.ask", "让 TA 帮忙"), new Vector2(x, y), Hearth.Quill, 0.9f);
 		y += 34;
-		y = Text(b, Tr.Get("chores.askNote", "今天还来得及就马上去做，不然明天一早做。聊天时说「帮我浇水」也一样。"), x, y, w, Hearth.QuillSoft, 0.72f) + 4;
+		y = Text(b, Tr.Get("chores.askNote", "今天还来得及就马上去做，不然明天一早做。聊天时说“帮我浇水”也一样。"), x, y, w, Hearth.QuillSoft, 0.72f) + 4;
 		int bx = x;
 		foreach (string t in Askable)
 		{
