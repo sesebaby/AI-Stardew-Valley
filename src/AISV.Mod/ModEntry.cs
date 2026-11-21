@@ -961,8 +961,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			case "build":
 				return _mart.DebugBuild(args.Length > 2 && int.TryParse(args[1], out int bx) ? bx : 58, args.Length > 2 && int.TryParse(args[2], out int by) ? by : 20);
 			case "customer":
-				_mart.OnTimeChanged();
-				return "按现在的时间叫了一轮顾客。";
+				return _mart.DebugCustomer();
 			case "brawl":
 				return _mart.ForceConfront(args.Length > 1 ? args[1] : "Pierre");
 			case "state" when args.Length > 2 && int.TryParse(args[2], out int h) && _mart.State is AISV.Core.Store.MartState s:

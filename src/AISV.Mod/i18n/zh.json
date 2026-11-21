@@ -2656,7 +2656,7 @@
   "mart.argueFallback": "……哼，我回去想想。",
   "mart.conceded": "你答应一周内涨价两成。{{name}}的脸色好看多了。",
   "mart.brawlGossip": "{{farmer}}在自己店里和{{name}}动了手，{{name}}被「嗖」地打飞出门，镇长罚了 {{gold}}g。",
-  "mart.brawlHud": "{{name}}被打飞出门，头上冒着星星走了。罚款 {{gold}}g，明天会收到镇长的信。",
+  "mart.brawlHud": "{{name}}被打飞出门，晕乎乎地爬起来走了。罚款 {{gold}}g，明天会收到镇长的信。",
   "mart.hiredGossip": "{{name}}到{{farmer}}的店里帮忙了。",
   "mart.wageNote": "在农夫小超市上班的工钱",
   "mart.cashOut": "从钱箱里取出 {{gold}}g。",

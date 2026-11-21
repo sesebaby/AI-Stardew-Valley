@@ -303,8 +303,12 @@ public sealed partial class MartService
 				case "concede":
 					Concede(rival, real, clone);
 					break;
-				default:
+				case "brawl":
 					Brawl(rival, real, clone);
+					break;
+				default:
+					// 没选就关掉了：对方气呼呼地走了。
+					Leave(real, clone, angry: true);
 					break;
 			}
 		});
@@ -391,9 +395,12 @@ public sealed partial class MartService
 	{
 		public NPC Clone = null!;
 
+		/// <summary>每帧水平移动多少（高低由原版的 jump 管，影子留在地上）。</summary>
 		public Vector2 Velocity;
 
 		public int Ticks;
+
+		public int Facing;
 
 		public Action Done = () => { };
 	}
@@ -407,20 +414,24 @@ public sealed partial class MartService
 		Game1.player.faceGeneralDirection(clone.getStandingPosition(), 0, false, false);
 		GameLocation shop = clone.currentLocation;
 		Vector2 door = Entry(shop).ToVector2() * 64f;
-		Vector2 away = door - clone.Position;
-		Vector2 velocity = (away.LengthSquared() < 1 ? new Vector2(0, 1) : Vector2.Normalize(away)) * 14f + new Vector2(0, -10f);
 		clone.controller = null;
+		clone.Halt();
+		// 原版的跳：抛物线和影子都由游戏自己画；起跳扬一团土。
+		clone.jump(FlyJump);
+		shop.temporarySprites.Add(new TemporaryAnimatedSprite(5, clone.Position, Color.White, 8, false, 50f));
 		_flight = new Flight
 		{
 			Clone = clone,
-			Velocity = velocity,
+			Velocity = (door - clone.Position) / FlyTicks,
+			Facing = clone.FacingDirection,
 			Done = () =>
 			{
-				clone.rotation = 0;
 				clone.Position = door;
-				Game1.playSound("slimeHit");
-				shop.temporarySprites.Add(new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Rectangle(256, 1876, 16, 16), 150f, 4, 4, door + new Vector2(0, -48), false, false, 1f, 0f, Color.White, 4f, 0f, 0f, 0f));
-				int fine = Math.Min(Game1.player.Money, 1000);
+				clone.faceDirection(2);
+				Game1.playSound("dirtyHit");
+				shop.temporarySprites.Add(new TemporaryAnimatedSprite(5, door, Color.White, 8, false, 50f));
+				clone.doEmote(28);
+				int fine = Math.Min(Game1.player.Money, Math.Clamp(Game1.player.Money / 10, 200, 1000));
 				Game1.player.Money -= fine;
 				Content.LastFine = fine;
 				Game1.player.mailForTomorrow.Add(MartContent.FineMail);
@@ -436,7 +447,7 @@ public sealed partial class MartService
 					_store()!.MarkDirty(MartState.Path);
 				}
 				Gossip?.Invoke(Tr.Get("mart.brawlGossip", "{{farmer}}在自己店里和{{name}}动了手，{{name}}被「嗖」地打飞出门，镇长罚了 {{gold}}g。", ("farmer", Game1.player.Name), ("name", Display(real.Name)), ("gold", fine)), new[] { real.Name, "Lewis" });
-				Hints.Hud(Tr.Get("mart.brawlHud", "{{name}}被打飞出门，头上冒着星星走了。罚款 {{gold}}g，明天会收到镇长的信。", ("name", Display(real.Name)), ("gold", fine)), 10000);
+				Hints.Hud(Tr.Get("mart.brawlHud", "{{name}}被打飞出门，晕乎乎地爬起来走了。罚款 {{gold}}g，明天会收到镇长的信。", ("name", Display(real.Name)), ("gold", fine)), 10000);
 				Leave(real, clone, angry: true);
 			}
 		};
@@ -451,18 +462,23 @@ public sealed partial class MartService
 		}
 		f.Ticks++;
 		f.Clone.Position += f.Velocity;
-		f.Velocity.Y += 0.8f;
-		f.Clone.rotation += 0.35f;
-		if (f.Ticks % 6 == 0)
+		// 在空中打转：像原版人物转圈那样轮流换朝向，不旋转贴图。
+		if (f.Ticks % 4 == 0)
 		{
-			f.Clone.currentLocation?.temporarySprites.Add(new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Rectangle(346, 400, 8, 8), 600f, 1, 0, f.Clone.Position + new Vector2(16, 0), false, false, 1f, 0.02f, Color.White, 4f, 0f, 0f, 0f));
+			f.Facing = (f.Facing + 1) % 4;
+			f.Clone.faceDirection(f.Facing);
 		}
-		if (f.Ticks > 40)
+		if (f.Ticks >= FlyTicks)
 		{
 			_flight = null;
 			f.Done();
 		}
 	}
+
+	/// <summary>起跳速度和飞行帧数：原版 jump 每帧减 0.5，滞空 = 初速 × 4 帧；12 大约 0.8 秒、最高两格多。</summary>
+	private const float FlyJump = 12f;
+
+	private const int FlyTicks = 48;
 
 	private void Leave(NPC real, NPC clone, bool angry)
 	{

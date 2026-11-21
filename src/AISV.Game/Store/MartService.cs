@@ -333,11 +333,30 @@ public sealed partial class MartService
 		}
 	}
 
+	/// <summary>调试：马上叫一位顾客（你在店里就真的进门，不在就后台结算）。</summary>
+	public string DebugCustomer()
+	{
+		if (!HasShop || Customer() is not NPC buyer)
+		{
+			return "没店，或者没有能来的村民。";
+		}
+		GameLocation shop = Shops().First();
+		if (Game1.currentLocation == shop && StartVisit(buyer, shop))
+		{
+			return $"{buyer.Name} 进店了。";
+		}
+		SellTo(buyer, shop, live: false);
+		return $"{buyer.Name} 在后台逛了一圈。";
+	}
+
+	/// <summary>住得太远或不会来镇上逛店的人（矿井、下水道、沙漠、姜岛、巫师塔……）。</summary>
+	private static readonly HashSet<string> FarAway = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Dwarf", "Krobus", "Sandy", "Leo", "Wizard", "Bouncer", "Gunther", "Marlon", "Henchman", "Mister Qi", "Birdie", "Fizz", "Gil" };
+
 	/// <summary>挑一位来买东西的村民：开着 AI、不被别的事占着、今天还没逛过店、有点钱。</summary>
 	private NPC? Customer()
 	{
 		List<NPC> pool = Utility.getAllVillagers().Where(n => n.currentLocation != null && !n.IsInvisible && n.CanSocialize && !Kids.IsChild(n) && _npcs.IsEnabled(n)
-			&& !NpcBusy.Is(n.Name) && _visits.All(v => v.Real != n) && n.Name != "Pierre" && n.Name != "Morris" && _ledger.Wallet(n.Name) is { } w && w.ShoppedDay != Today && w.Gold >= 30).ToList();
+			&& !NpcBusy.Is(n.Name) && _visits.All(v => v.Real != n) && n.Name != "Pierre" && n.Name != "Morris" && !FarAway.Contains(n.Name) && _ledger.Wallet(n.Name) is { } w && w.ShoppedDay != Today && w.Gold >= 30).ToList();
 		return pool.Count == 0 ? null : pool[_random.Next(pool.Count)];
 	}
 

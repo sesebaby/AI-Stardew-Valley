@@ -71,7 +71,7 @@ public static class CustomerDemand
 		{
 			return 0;
 		}
-		double expected = Math.Min(2.5, 0.35 + kinds * 0.12) * Math.Clamp(1.6 - avgPriceRatio * 0.6, 0.3, 1.3) * Math.Clamp(share * 2.2, 0.4, 1.4);
+		double expected = Math.Min(2.5, 0.6 + kinds * 0.15) * Math.Clamp(1.6 - avgPriceRatio * 0.6, 0.3, 1.3) * Math.Clamp(share * 2.2, 0.6, 1.4);
 		int n = (int)expected;
 		return Math.Min(3, n + (roll < expected - n ? 1 : 0));
 	}
