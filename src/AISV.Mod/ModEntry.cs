@@ -458,7 +458,16 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_farmHelp = new FarmHelpService(() => _config, store, _schedules, _meetups, () => _social.Feelings, _log) { Crew = _squad };
 			_offers = new OfferDesk(() => _config, _meetups, _farmHelp, relationships.EffectiveHearts, _log);
 			_squad.Ledger = _offers.Ledger;
-			_squad.FarmVisit = _farmHelp.TryHandle;
+			_squad.FarmVisit = (p, n) =>
+			{
+				// 配偶说好的帮忙不收钱，直接排进 TA 的日程。
+				if (_spousePlan != null && _spousePlan.TryRoute(n, p.Task))
+				{
+					_farmHelp.ResolveOffer?.Invoke(p.Id);
+					return true;
+				}
+				return _farmHelp.TryHandle(p, n);
+			};
 			_stories = new SpouseStoryService(() => _config, store, _meetups, _eco, _market, _npcs.IsEnabled, _log)
 			{
 				Ai = _ai,
@@ -532,6 +541,18 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				_mart.TickFly();
 			};
 			helper.Events.Player.Warped += (_, e) => _mart.OnWarped(e);
+			_spousePlan = new SpousePlanner(() => _config, store, _schedules, _ledger, _mart, () => _social.Feelings, _log)
+			{
+				Ai = _ai,
+				Language = PromptLanguage,
+				Persona = n => _npcs.Persona(n, StardewValley.Game1.getCharacterFromName(n)).Personality,
+				Display = _npcs.Names.Display,
+				KidBook = _childBook
+			};
+			_mart.SpouseMinding = () => _spousePlan.Minding;
+			_shell.Spouse = _spousePlan;
+			helper.Events.GameLoop.UpdateTicked += (_, _) => _spousePlan.OnUpdateTicked();
+			helper.ConsoleCommands.Add("aisv_spouse", "配偶日程调试。\n用法：aisv_spouse dump | plan | ask <water|harvest|animals|hay|clear|greenhouse|ponds|machines|visit|shop|mind_shop|kids> | box", (_, args) => _log.Info(Context.IsWorldReady ? SpouseCommand(args) : "先进存档。"));
 			_shell.Eco = _eco;
 			_shell.TryChat = (npc, card, text, done) =>
 			{
@@ -615,7 +636,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_shell.Stories = _stories;
 			string debugDir = Path.Combine(helper.DirectoryPath, "debug");
 			helper.ConsoleCommands.Add("aisv_story", "伴侣剧情调试，dump 写到 debug/。\n用法：aisv_story dump | marry <村民> | start <村民> [结构 1-5] | inject <村民> <结构> <文件> | prompt <村民> [结构] | theme <村民> <文字> | deliver <包> | advance <包> | scene <包> | due [天] | clear", (_, args) => _log.Info(Context.IsWorldReady ? _stories.Command(args, debugFile, debugDir) : "先进存档。"));
-			materials.Dealings = n => DialoguePrompts.Join(_squad.PromptLine(n), _gifts.PromptBlock(n), _commissions.PromptBlock(n), _errands.PromptBlock(n), _ledger.PromptBlock(n), _meetups.PromptBlock(n), _stories.PromptBlock(n), _farmHelp.PromptBlock(n), _adult.PromptBlock(n), MartPromptBlock(n));
+			materials.Dealings = n => DialoguePrompts.Join(_squad.PromptLine(n), _gifts.PromptBlock(n), _commissions.PromptBlock(n), _errands.PromptBlock(n), _ledger.PromptBlock(n), _meetups.PromptBlock(n), _stories.PromptBlock(n), _farmHelp.PromptBlock(n), _adult.PromptBlock(n), MartPromptBlock(n), _spousePlan.PromptBlock(n));
 			_news = new WeeklyNewsService(() => _config, store, _social, _market, _commissions, _log) { Ai = _ai, Language = PromptLanguage };
 			_shell.News = _news;
 			_news.Money = _ledger.PaperLines;
@@ -727,6 +748,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 					pets.OnTimeChanged();
 					_runaway.OnTimeChanged();
 					_mart.OnTimeChanged();
+					_spousePlan.OnTimeChanged();
 					_outings.OnTimeChanged();
 					_schedules.OnTimeChanged();
 					_farmHelp.OnTimeChanged();
@@ -851,6 +873,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private AISV.Game.Store.MartService _mart = null!;
 
+	private SpousePlanner _spousePlan = null!;
+
 	/// <summary>聊天素材：这位村民最近在农夫的店里买过什么；Pierre 和 Morris 还知道自己的店现在怎么样。</summary>
 	private string MartPromptBlock(string npc)
 	{
@@ -864,6 +888,27 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			? $"你的店被{StardewValley.Game1.player.Name}开的农夫小超市抢了生意，现在{AISV.Game.Store.MartService.HealthName(_mart.Health(rival))}。"
 			: "";
 		return string.Join("\n", new[] { bought, state }.Where(x => x.Length > 0).Select(x => "- " + x));
+	}
+
+	private string SpouseCommand(string[] args)
+	{
+		switch (args.Length > 0 ? args[0] : "dump")
+		{
+			case "plan":
+				_spousePlan.OnDayStarted();
+				_spousePlan.OnTimeChanged();
+				return "重新排了今天的安排（AI 排的要等一会儿）。";
+			case "ask" when args.Length > 1:
+				return _spousePlan.RequestTask(args[1], out bool today) ? (today ? "排进今天了。" : "明天一早做。") : "排不上（没结婚、没开，或任务名不对）。";
+			case "box":
+				return $"收获箱 {_spousePlan.BoxCount} 件：" + string.Join("、", _spousePlan.Box().Where(i => i != null).Select(i => $"{i.Name}×{i.Stack}"));
+			default:
+				AISV.Core.Companions.SpouseDayLog? log = _spousePlan.Log;
+				string counts = string.Join("，", AISV.Core.Companions.SpouseTasks.Chores.Select(t => $"{t} {FarmChoreExecutor.Count(t)}"));
+				return $"配偶 {_spousePlan.Spouse()?.Name ?? "无"}，第 {log?.Day} 天：{(log == null ? "" : AISV.Core.Companions.SpouseDayPlan.Describe(log.Items))}\n"
+					+ string.Join("\n", log?.Items.Select(i => $"  {i.Time} {i.Task} {i.State} {i.Did}/{i.Amount} {i.Note}") ?? Array.Empty<string>())
+					+ $"\n活：{counts}\n昨天：{log?.Yesterday}";
+		}
 	}
 
 	private string StoreCommand(string[] args)
@@ -950,6 +995,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	private void OnDayStarted(object? sender, DayStartedEventArgs e)
 	{
 		_mart.OnDayStarted();
+		_spousePlan.OnDayStarted();
 		if (_martContent.ShopsDirty)
 		{
 			_martContent.ShopsDirty = false;
@@ -998,6 +1044,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	private void OnDayEnding(object? sender, DayEndingEventArgs e)
 	{
 		_runaway.Cleanup();
+		_spousePlan.Cleanup();
 		_mart.OnDayEnding();
 		if (_martContent.LastFine > 0)
 		{
@@ -1396,6 +1443,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	private void OnSaving(object? sender, SavingEventArgs e)
 	{
 		_runaway?.Cleanup();
+		_spousePlan?.Cleanup();
 		_mart?.CleanupVisits();
 		_mart?.CleanupClerks();
 		_sensors.OnSaving();
@@ -1412,6 +1460,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
 	{
 		_runaway?.Cleanup();
+		_spousePlan?.Cleanup();
 		_mart?.CleanupVisits();
 		_mart?.CleanupClerks();
 		if (_account.IsLoggedIn)

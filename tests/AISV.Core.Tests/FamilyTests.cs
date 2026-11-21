@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 using AISV.Core.Dialogue;
 using AISV.Core.Persona;
@@ -163,5 +164,64 @@ public class FamilyTests
 		Assert.True(AISV.Core.Store.StolenRules.Chance(false, true, 2000, 100, 0) > 0.7);
 		Assert.True(AISV.Core.Store.StolenRules.Chance(true, false, 2000, 100, 0) <= 0.95);
 		Assert.True(AISV.Core.Store.StolenRules.Chance(true, false, 100, 100, 28) < 0.3);
+	}
+
+	private static AISV.Core.Companions.SpousePlanInput Home(int hearts = 10, bool rain = false, bool festival = false, bool patio = false, int level = 1, params string[] requested) => new AISV.Core.Companions.SpousePlanInput
+	{
+		Hearts = hearts,
+		Rain = rain,
+		Festival = festival,
+		PatioDay = patio,
+		Level = level,
+		Work = new Dictionary<string, int> { ["water"] = 30, ["animals"] = 4, ["clear"] = 0, ["harvest"] = 5 },
+		Allowed = new HashSet<string>(AISV.Core.Companions.SpouseTasks.All),
+		HasKids = true,
+		HasShop = true,
+		Gold = 500,
+		SpendCap = 300,
+		Requested = requested
+	};
+
+	[Fact]
+	public void SpousePlansAroundWeatherAndMood()
+	{
+		var plan = AISV.Core.Companions.SpouseDayPlan.Build(Home());
+		Assert.Equal(3, plan.Count);
+		Assert.Equal("water", plan[0].Task);
+		Assert.Equal(700, plan[0].Time);
+		Assert.True(plan.Select(i => i.Time).SequenceEqual(plan.Select(i => i.Time).OrderBy(t => t)));
+		Assert.DoesNotContain(AISV.Core.Companions.SpouseDayPlan.Build(Home(rain: true)), i => i.Task == "water");
+		Assert.DoesNotContain(AISV.Core.Companions.SpouseDayPlan.Build(Home()), i => i.Task == "clear");
+		Assert.Empty(AISV.Core.Companions.SpouseDayPlan.Build(Home(festival: true)));
+		Assert.Empty(AISV.Core.Companions.SpouseDayPlan.Build(Home(hearts: 3)));
+		Assert.All(AISV.Core.Companions.SpouseDayPlan.Build(Home(patio: true)), i => Assert.False(AISV.Core.Companions.SpouseTasks.IsChore(i.Task)));
+		Assert.Equal(5, AISV.Core.Companions.SpouseDayPlan.Build(Home(level: 2)).Count);
+		Assert.True(AISV.Core.Companions.SpouseDayPlan.Build(Home(level: 2)).Count(i => AISV.Core.Companions.SpouseDayPlan.IsOuting(i.Task)) <= 1);
+	}
+
+	[Fact]
+	public void PlayerRequestsAlwaysGetPlannedAndAiOnlyReorders()
+	{
+		var plan = AISV.Core.Companions.SpouseDayPlan.Build(Home(hearts: 10, level: 0, requested: "hay"));
+		Assert.Contains(plan, i => i.Task == "hay" && i.Requested);
+		var cands = AISV.Core.Companions.SpouseDayPlan.Candidates(Home()).Select(c => c.Task).ToList();
+		var ai = AISV.Core.Companions.SpouseDayPlan.ParseAi("好的 {\"order\":[\"kids\",\"fly\",\"water\"],\"say\":\"今天我带孩子玩\"}", cands);
+		Assert.NotNull(ai);
+		Assert.Equal(new[] { "kids", "water" }, ai!.Value.Order);
+		Assert.Equal("今天我带孩子玩", ai.Value.Say);
+		Assert.Null(AISV.Core.Companions.SpouseDayPlan.ParseAi("不知道", cands));
+		var ordered = AISV.Core.Companions.SpouseDayPlan.Build(Home(level: 0), ai.Value.Order);
+		Assert.Contains(ordered, i => i.Task == "kids");
+	}
+
+	[Fact]
+	public void SpouseDaySummaryFeedsChat()
+	{
+		var log = new AISV.Core.Companions.SpouseDayLog { Spouse = "Leah" };
+		log.Items.Add(new AISV.Core.Companions.SpousePlanItem { Task = "water", Time = 700, State = "done", Did = 12 });
+		log.Items.Add(new AISV.Core.Companions.SpousePlanItem { Task = "visit", Time = 1300, State = "done", Note = "和Emily聊了会儿" });
+		Assert.Equal("浇水（12）；去镇上找人聊天：和Emily聊了会儿", log.Summary());
+		Assert.Contains("你今天的安排", log.PromptBlock("Leah", "小麦"));
+		Assert.Equal("", log.PromptBlock("Abigail", "小麦"));
 	}
 }

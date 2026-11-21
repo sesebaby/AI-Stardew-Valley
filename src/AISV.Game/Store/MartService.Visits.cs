@@ -218,6 +218,53 @@ public sealed partial class MartService
 		}
 	}
 
+	private NPC? _spouseClone;
+
+	/// <summary>配偶来看店：站在收银台后面（真人藏起来）；off 时收回。</summary>
+	public bool SpouseShift(NPC? real, bool on)
+	{
+		if (!on)
+		{
+			if (_spouseClone != null)
+			{
+				_spouseClone.currentLocation?.characters.Remove(_spouseClone);
+				if (_spouseClone.modData.TryGetValue("AIStardewValley.Core/Real", out string? name) && Game1.getCharacterFromName(name) is NPC n)
+				{
+					n.IsInvisible = false;
+					NpcBusy.Release(n.Name);
+				}
+				_spouseClone = null;
+			}
+			return true;
+		}
+		if (real == null || !HasShop || _spouseClone != null)
+		{
+			return false;
+		}
+		GameLocation shop = Shops().First();
+		Point at = Register(shop) is Furniture reg ? new Point((int)reg.TileLocation.X + 1, (int)reg.TileLocation.Y - 1) : Entry(shop);
+		_spouseClone = Clone(real, shop, at, ClerkReason);
+		_spouseClone.faceDirection(2);
+		real.IsInvisible = true;
+		NpcBusy.Hold(real.Name, ClerkReason);
+		return true;
+	}
+
+	/// <summary>配偶把自己做的东西摆到一张空陈列台上（没有空台就不摆）。</summary>
+	public bool StockSpouseWork(string npc, string itemId, int qty)
+	{
+		Furniture? empty = AllShelves().Select(s => s.Shelf).FirstOrDefault(f => f.heldObject.Value == null);
+		if (empty == null || ItemRegistry.Create(itemId, qty, allowNull: true) is not StardewValley.Object o)
+		{
+			return false;
+		}
+		o.modData[SpouseWorkKey] = npc;
+		empty.heldObject.Value = o;
+		return true;
+	}
+
+	public const string SpouseWorkKey = "AIStardewValley.Core/SpouseWork";
+
 	public void CleanupClerks()
 	{
 		foreach ((string name, NPC clone) in _clerkClones.ToList())
@@ -229,6 +276,7 @@ public sealed partial class MartService
 			}
 		}
 		_clerkClones.Clear();
+		SpouseShift(null, false);
 		NpcBusy.ReleaseAll(ClerkReason);
 	}
 

@@ -40,6 +40,8 @@ public sealed class ShellContext
 	/// <summary>农夫小超市。</summary>
 	public AISV.Game.Store.MartService? Mart { get; set; }
 
+	public AISV.Game.Companions.SpousePlanner? Spouse { get; set; }
+
 	/// <summary>这个 mod 的文件夹。</summary>
 	public string ModFolder { get; set; } = "";
 

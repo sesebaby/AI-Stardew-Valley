@@ -511,10 +511,29 @@ public sealed partial class LedgerService
 	}
 
 	/// <summary>在一家店里买一样买得起的东西；你在旁边时他头顶说一句。返回说明（没买成时为 null）。</summary>
-	private string? Shop(NPC n, NpcWallet w, ShopPlace shop)
+	/// <summary>替某人去店里买一趟（配偶日程用）；预算不超过 cap。返回买了什么（说给玩家听），没买成为 null。</summary>
+	public string? ShopFor(NPC n, string place, int cap)
+	{
+		if (Wallet(n.Name) is not NpcWallet w || !Places.TryGetValue(place, out ShopPlace? shop))
+		{
+			return null;
+		}
+		string? log = Shop(n, w, shop, cap);
+		if (log == null)
+		{
+			return null;
+		}
+		_log.Info(log);
+		Changed();
+		return Tr.Get("ledger.spouseBought", "在{{shop}}买了{{item}}", ("shop", Display(shop.Owner)), ("item", _lastBought));
+	}
+
+	private string _lastBought = "";
+
+	private string? Shop(NPC n, NpcWallet w, ShopPlace shop, int cap = int.MaxValue)
 	{
 		w.ShoppedDay = Today;
-		int budget = LedgerRules.ShopBudget(w.Gold);
+		int budget = Math.Min(cap, LedgerRules.ShopBudget(w.Gold));
 		List<(string Id, int Price)> stock = Stock(shop.ShopId).Where(s => s.Price > 0 && s.Price <= budget).ToList();
 		if (stock.Count == 0)
 		{
@@ -524,6 +543,7 @@ public sealed partial class LedgerService
 		int count = Math.Clamp(budget / Math.Max(1, price) / 3, 1, 5);
 		int cost = price * count;
 		string name = ItemName(id);
+		_lastBought = name;
 		int paid = Spend(w, cost, EntryKinds.Shopping, Tr.Get("ledger.note.bought", "在{{shop}}买了{{item}} ×{{count}}", ("shop", Display(shop.Owner)), ("item", name), ("count", count)));
 		if (!LedgerRules.Put(w.Carried, LedgerRules.MaxCarried, id, count, 0))
 		{

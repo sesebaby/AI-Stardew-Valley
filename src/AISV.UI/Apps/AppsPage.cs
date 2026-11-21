@@ -44,6 +44,7 @@ internal sealed class AppsPage : ShellPage
 			new App("horoscope", AppIcons.Horoscope, new Color(234, 228, 250), Tr.Get("apps.horoscope", "星座"), HoroscopeSummary, () => Host.Push(new HoroscopePage(Ctx))),
 			new App("sky", AppIcons.Telescope, new Color(222, 226, 246), Tr.Get("apps.sky", "天文台"), SkySummary, () => Host.Push(new ObservatoryPage(Ctx))),
 			new App("mart", AppIcons.Board, new Color(255, 236, 214), Tr.Get("apps.mart", "小超市"), () => FarmerMartPage.Summary(Ctx), () => Host.Push(new FarmerMartPage(Ctx))),
+			new App("chores", AppIcons.Todo, new Color(222, 242, 210), Tr.Get("apps.chores", "家务安排"), () => ChoresPage.Summary(Ctx), () => Host.Push(new ChoresPage(Ctx))),
 			new App("ads", AppIcons.Board, new Color(246, 234, 214), Tr.Get("apps.ads", "分类广告"), AdsSummary, () => Host.Push(new ClassifiedsPage(Ctx))),
 			new App("whosaid", AppIcons.Quote, new Color(240, 240, 236), Tr.Get("apps.whosaid", "谁说的"), WhoSummary, () => Host.Push(new WhoSaidItPage(Ctx))),
 			new App("junimo", AppIcons.Junimo, new Color(228, 246, 220), Tr.Get("apps.junimo", "Junimo 宠物"), JunimoSummary, () => Host.Push(new JunimoPage(Ctx))),
