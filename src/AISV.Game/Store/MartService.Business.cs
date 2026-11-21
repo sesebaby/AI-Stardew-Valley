@@ -625,7 +625,12 @@ public sealed partial class MartService
 			box.Clear();
 			if (chest.Items.Count > 0)
 			{
-				Game1.getFarm().objects[Game1.player.Tile + new Vector2(1, 0)] = chest;
+				// 背包放不下的装箱，放在农场上离你（不在农场就离家门）最近的空地，不压别的东西。
+				Farm farm = Game1.getFarm();
+				Vector2 from = Game1.player.currentLocation == farm ? Game1.player.Tile : Utility.PointToVector2(farm.GetMainFarmHouseEntry()) + new Vector2(0, 1);
+				Vector2 spot = Enumerable.Range(1, 8).SelectMany(r => Enumerable.Range(-r, 2 * r + 1).SelectMany(dx => new[] { from + new Vector2(dx, -r), from + new Vector2(dx, r), from + new Vector2(-r, dx), from + new Vector2(r, dx) }))
+					.FirstOrDefault(t => farm.CanItemBePlacedHere(t), from + new Vector2(1, 0));
+				farm.objects[spot] = chest;
 			}
 		}
 		return $"{buildings} 间小超市换成了大棚屋，收回了 {items} 样货。货架已拿掉，现在可以卸载 mod 了。";

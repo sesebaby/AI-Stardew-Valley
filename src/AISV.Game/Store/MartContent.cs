@@ -101,7 +101,7 @@ public sealed class MartContent
 				data[BuildingId] = new BuildingData
 				{
 					Name = Tr.Get("mart.building", "农夫小超市"),
-					Description = Tr.Get("mart.buildingDesc", "自己的小超市。摆上陈列台和收银台，把农场里的东西卖给镇上的人。"),
+					Description = Tr.Get("mart.buildingDesc", "皮埃尔杂货店那样的小店，货架、冷柜和收银台都摆好了。把收成和进来的货卖给镇上的人。"),
 					Texture = TextureAsset,
 					Size = shed.Size,
 					SourceRect = HasArt ? Rectangle.Empty : shed.SourceRect,

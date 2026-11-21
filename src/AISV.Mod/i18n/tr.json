@@ -2618,7 +2618,7 @@
   "mart.candidateLine": "{{name}} · 每天 {{gold}}g",
   "mart.hired": "{{name}}明天开始来店里上班。",
   "mart.building": "农夫小超市",
-  "mart.buildingDesc": "自己的小超市。摆上陈列台和收银台，把农场里的东西卖给镇上的人。",
+  "mart.buildingDesc": "皮埃尔杂货店那样的小店，货架、冷柜和收银台都摆好了。把收成和进来的货卖给镇上的人。",
   "mart.register": "收银台",
   "mart.fineMail": "@：^在店里动手打人是不对的，不管是谁先挑的事。按镇上的规矩，罚款 {{gold}}g，已经从你的账上扣了。^下不为例。^   -刘易斯镇长",
   "mart.health.tight": "吃紧",
