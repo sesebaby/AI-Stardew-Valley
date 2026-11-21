@@ -68,7 +68,7 @@ internal sealed class ChoresPage : ShellPage
 		}
 		else if (!Ctx.Config().SpousePlanner)
 		{
-			y = Text(b, Tr.Get("chores.off", "配偶日程已在设置里关掉（设置 → 家里 → 配偶日程）。"), x, y, w, Hearth.QuillSoft);
+			y = Text(b, Tr.Get("chores.off", "配偶日程已在设置里关掉（设置 > 家里 > 配偶日程）。"), x, y, w, Hearth.QuillSoft);
 		}
 		else
 		{
@@ -203,6 +203,6 @@ internal sealed class ChoresPage : ShellPage
 			}, _view);
 			y += 46;
 		}
-		return Text(b, Tr.Get("chores.moreSettings", "勤快程度、收获放哪、每天花多少钱：设置 → 家里 → 配偶日程。"), x, y + 4, w, Hearth.QuillSoft, 0.72f);
+		return Text(b, Tr.Get("chores.moreSettings", "勤快程度、收获放哪、每天花多少钱：设置 > 家里 > 配偶日程。"), x, y + 4, w, Hearth.QuillSoft, 0.72f);
 	}
 }

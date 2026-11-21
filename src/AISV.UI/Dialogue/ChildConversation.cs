@@ -62,7 +62,7 @@ public sealed class ChildConversation
 					return;
 				}
 				_engine.Book.Add(ctx.Key, ctx.Day, "child", line!);
-				if (Hints.Once("ChildCardHint", Tr.Get("child.cardHint", "可以给孩子写角色卡：设置 → 设定 → 村民角色卡 → 孩子。"), 9000))
+				if (Hints.Tip("ChildCardHint", Tr.Get("help.kids.title", "和孩子聊天")))
 				{
 					_log.Debug("第一次和孩子聊天，提示过角色卡。");
 				}

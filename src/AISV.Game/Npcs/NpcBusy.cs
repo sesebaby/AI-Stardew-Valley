@@ -111,4 +111,9 @@ public static class NpcBusy
 
 	/// <summary>我们自己放的替身（离家出走的孩子、在院子里玩的孩子）打这个标记。</summary>
 	public const string StandInKey = "AIStardewValley.Core/StandIn";
+
+	private static Microsoft.Xna.Framework.Graphics.Texture2D? _blank;
+
+	/// <summary>替身用的空白立绘（孩子没有立绘，免得游戏去读不存在的 Portraits/替身名）。</summary>
+	public static Microsoft.Xna.Framework.Graphics.Texture2D BlankPortrait => _blank is { IsDisposed: false } t ? t : _blank = new Microsoft.Xna.Framework.Graphics.Texture2D(StardewValley.Game1.graphics.GraphicsDevice, 64, 64);
 }

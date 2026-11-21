@@ -79,6 +79,32 @@ public sealed class PetThoughts
 		Think(pet, key, said);
 	}
 
+	/// <summary>调试：把当前地图上的一只宠物叫到身边，马上冒一句心里话（不看概率和次数）。</summary>
+	public string Force()
+	{
+		if (Ai == null || _busy)
+		{
+			return "AI 没接上或正在生成。";
+		}
+		Pet? pet = Game1.currentLocation?.characters.OfType<Pet>().FirstOrDefault() ?? Utility.getAllPets().FirstOrDefault();
+		if (pet == null)
+		{
+			return "没有宠物。";
+		}
+		if (pet.currentLocation != Game1.currentLocation)
+		{
+			Game1.warpCharacter(pet, Game1.currentLocation, Game1.player.Tile + new Microsoft.Xna.Framework.Vector2(1, 1));
+		}
+		else
+		{
+			pet.Position = (Game1.player.Tile + new Microsoft.Xna.Framework.Vector2(1, 1)) * 64f;
+		}
+		string key = pet.petId.Value.ToString();
+		List<string> said = _today.TryGetValue(key, out var t) ? t.Said : new List<string>();
+		Think(pet, key, said);
+		return $"让 {pet.Name}（{pet.petType.Value}）想一句。";
+	}
+
 	private static bool Near(Pet pet)
 	{
 		if (pet.IsInvisible || !Utility.isOnScreen(pet.StandingPixel.ToVector2(), 64))

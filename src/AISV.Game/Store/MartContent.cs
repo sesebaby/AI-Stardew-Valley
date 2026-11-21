@@ -136,24 +136,35 @@ public sealed class MartContent
 	}
 
 	/// <summary>照一件原版桌子复制一条家具数据，改名字和价格（找不到就用第一张桌子）。</summary>
+	/// <summary>
+	/// 照一件原版桌子复制一条家具数据。原版很多条目不写贴图序号（第 9 段），用的是自己的数字 ID；
+	/// 我们的 ID 不是数字，所以要把原来的 ID 填进贴图序号，不然会变成"错误物品"。
+	/// </summary>
 	private static string Copy(IDictionary<string, string> data, string[] names, string box, string display, int price)
 	{
-		string? raw = null;
+		KeyValuePair<string, string>? pick = null;
 		foreach (string n in names)
 		{
-			raw = data.Values.FirstOrDefault(v => v.Split('/')[0] == n);
-			if (raw != null)
+			pick = data.FirstOrDefault(p => p.Value.Split('/')[0] == n) is { Value: not null } hit ? hit : null;
+			if (pick != null)
 			{
 				break;
 			}
 		}
-		raw ??= data.Values.FirstOrDefault(v => v.Split('/') is { Length: > 3 } f && f[1] == "table" && f[3] == box) ?? data.Values.First(v => v.Split('/')[1] == "table");
-		string[] f = raw.Split('/');
+		pick ??= data.FirstOrDefault(p => p.Value.Split('/') is { Length: > 3 } f && f[1] == "table" && f[3] == box && int.TryParse(p.Key, out _));
+		string key = pick.Value.Key;
+		List<string> f = pick.Value.Value.Split('/').ToList();
+		while (f.Count < 9)
+		{
+			f.Add("");
+		}
 		f[0] = display.Replace("/", " ");
 		f[5] = price.ToString();
-		if (f.Length > 7)
+		f[6] = string.IsNullOrEmpty(f[6]) ? "-1" : f[6];
+		f[7] = display.Replace("/", " ");
+		if (string.IsNullOrEmpty(f[8]))
 		{
-			f[7] = display.Replace("/", " ");
+			f[8] = key;
 		}
 		return string.Join("/", f);
 	}
@@ -161,14 +172,36 @@ public sealed class MartContent
 	/// <summary>mod 自带的外观图（112 宽，门在正中，底边对齐地基）。</summary>
 	public const string ArtFile = "assets/store/farmer_mart.png";
 
+	/// <summary>直接用 MonoGame 读 png（不经过 SMAPI 的图片解码），再预乘透明度；读不了返回 null。</summary>
+	private Texture2D? LoadArt()
+	{
+		try
+		{
+			using System.IO.FileStream stream = System.IO.File.OpenRead(System.IO.Path.Combine(_helper.DirectoryPath, ArtFile));
+			Texture2D tex = Texture2D.FromStream(Game1.graphics.GraphicsDevice, stream);
+			Color[] px = new Color[tex.Width * tex.Height];
+			tex.GetData(px);
+			for (int i = 0; i < px.Length; i++)
+			{
+				px[i] = px[i].A == 255 ? px[i] : Color.FromNonPremultiplied(px[i].R, px[i].G, px[i].B, px[i].A);
+			}
+			tex.SetData(px);
+			return tex;
+		}
+		catch (Exception)
+		{
+			return null;
+		}
+	}
+
 	private bool HasArt => System.IO.File.Exists(System.IO.Path.Combine(_helper.DirectoryPath, ArtFile));
 
 	/// <summary>优先用自带的外观图；没有时把原版大棚屋的图换成暖色、门上加一条红白遮阳棚。</summary>
 	private Texture2D Compose()
 	{
-		if (HasArt)
+		if (HasArt && LoadArt() is Texture2D art)
 		{
-			return _helper.ModContent.Load<Texture2D>(ArtFile);
+			return art;
 		}
 		Texture2D source = _helper.GameContent.Load<Texture2D>("Buildings\\Big Shed");
 		Color[] px = new Color[source.Width * source.Height];

@@ -250,11 +250,25 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				Remember = (spouse, text) => _social.Gossip.AddLowKey(text, new[] { spouse }, "family", "runaway-" + GameState.Today.TotalDays, GameState.Today)
 			};
 			_conversations.StandInClicked = _runaway.TryFound;
-			helper.ConsoleCommands.Add("aisv_child", "孩子调试。\n用法：aisv_child runaway | end", (_, args) =>
+			helper.ConsoleCommands.Add("aisv_child", "孩子调试。\n用法：aisv_child runaway | end | list | talk", (_, args) =>
 			{
 				if (!Context.IsWorldReady)
 				{
 					_log.Info("先进存档。");
+					return;
+				}
+				if (args.Length > 0 && args[0] == "list")
+				{
+					_log.Info(string.Join("；", Kids.All().Select(k => $"{k.Name} 年龄{k.Age} 在 {k.currentLocation?.Name} ({k.TilePoint.X},{k.TilePoint.Y})")) is { Length: > 0 } l ? l : "没有孩子。");
+					return;
+				}
+				if (args.Length > 0 && args[0] == "talk" && Kids.All().FirstOrDefault(k => k.Age >= 3) is StardewValley.Characters.Child kid)
+				{
+					if (kid.currentLocation != StardewValley.Game1.currentLocation)
+					{
+						StardewValley.Game1.warpCharacter(kid, StardewValley.Game1.currentLocation, StardewValley.Game1.player.Tile + new Microsoft.Xna.Framework.Vector2(1, 0));
+					}
+					kid.checkAction(StardewValley.Game1.player, StardewValley.Game1.currentLocation);
 					return;
 				}
 				if (args.Length > 0 && args[0] == "end")
@@ -739,8 +753,9 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			{
 				Ai = _ai,
 				Language = PromptLanguage,
-				FirstTime = () => Hints.Hud(Tr.Get("pet.firstHint", "灰色泡泡是宠物的心里话（暂时不能和宠物对话）。设置 → 看到听到 里可以关掉或调频率。"), 9000)
+				FirstTime = () => Hints.Hud(Hints.TipText(Tr.Get("help.pets.title", "宠物的心里话")), 6000)
 			};
+			helper.ConsoleCommands.Add("aisv_pet", "宠物调试：让身边的宠物马上冒一句心里话。", (_, _) => _log.Info(Context.IsWorldReady ? pets.Force() : "先进存档。"));
 			helper.Events.GameLoop.TimeChanged += (_, _) =>
 			{
 				if (_saveData.Current != null)
@@ -900,6 +915,33 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				return "重新排了今天的安排（AI 排的要等一会儿）。";
 			case "ask" when args.Length > 1:
 				return _spousePlan.RequestTask(args[1], out bool today) ? (today ? "排进今天了。" : "明天一早做。") : "排不上（没结婚、没开，或任务名不对）。";
+			case "setup":
+			{
+				// 调试：鸡舍 + 两只鸡 + 一个蛋，农场上撒点杂物。
+				StardewValley.Farm farm = StardewValley.Game1.getFarm();
+				bool built = farm.buildStructure("Coop", new Microsoft.Xna.Framework.Vector2(args.Length > 2 && int.TryParse(args[1], out int cx) ? cx : 50, args.Length > 2 && int.TryParse(args[2], out int cy) ? cy : 12), StardewValley.Game1.player, out StardewValley.Buildings.Building? coop, magicalConstruction: true, skipSafetyChecks: true);
+				if (coop?.GetIndoors() is StardewValley.AnimalHouse house)
+				{
+					foreach (string kind in new[] { "White Chicken", "Brown Chicken" })
+					{
+						StardewValley.FarmAnimal hen = new StardewValley.FarmAnimal(kind, StardewValley.Utility.RandomLong(), StardewValley.Game1.player.UniqueMultiplayerID);
+						house.adoptAnimal(hen);
+					}
+					house.objects.TryAdd(new Microsoft.Xna.Framework.Vector2(5, 5), new StardewValley.Object("176", 1) { IsSpawnedObject = true });
+				}
+				farm.piecesOfHay.Value = Math.Max(farm.piecesOfHay.Value, 50);
+				int debris = 0;
+				for (int i = 0; i < 12; i++)
+				{
+					Microsoft.Xna.Framework.Vector2 t = new Microsoft.Xna.Framework.Vector2(60 + i % 6, 25 + i / 6);
+					if (farm.CanItemBePlacedHere(t))
+					{
+						farm.objects.Add(t, StardewValley.ItemRegistry.Create<StardewValley.Object>(i % 2 == 0 ? "(O)294" : "(O)343"));
+						debris++;
+					}
+				}
+				return $"鸡舍 {(built ? "建好" : "没建成")}，杂物 {debris} 个。";
+			}
 			case "box":
 				return $"收获箱 {_spousePlan.BoxCount} 件：" + string.Join("、", _spousePlan.Box().Where(i => i != null).Select(i => $"{i.Name}×{i.Stack}"));
 			default:
@@ -916,6 +958,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		string cmd = args.Length > 0 ? args[0] : "dump";
 		switch (cmd)
 		{
+			case "build":
+				return _mart.DebugBuild(args.Length > 2 && int.TryParse(args[1], out int bx) ? bx : 58, args.Length > 2 && int.TryParse(args[2], out int by) ? by : 20);
 			case "customer":
 				_mart.OnTimeChanged();
 				return "按现在的时间叫了一轮顾客。";
@@ -994,6 +1038,10 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private void OnDayStarted(object? sender, DayStartedEventArgs e)
 	{
+		if (_config.ModOn)
+		{
+			Hints.SendGuide();
+		}
 		_mart.OnDayStarted();
 		_spousePlan.OnDayStarted();
 		if (_martContent.ShopsDirty)
@@ -1414,6 +1462,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		_martContent.Enabled = _config.FarmerMart;
 		_martContent.OnAssetRequested(e);
 		_mart.EditShops(e);
+		Hints.EditMail(e);
 		_looks.OnAssetRequested(e);
 		_phone.OnAssetRequested(e);
 		_computer.OnAssetRequested(e);

@@ -292,8 +292,8 @@ public sealed partial class MartService
 		{
 			answers.Add(new Response("brawl", Tr.Get("mart.choiceBrawl", "动手（会被罚款、上周报）")));
 		}
-		string question = Hints.First("BrawlHint") ? Tr.Get("mart.choiceHint", "怎么办？讲道理看你说得好不好；让一步对方会好受些；动手是卡通式的，但后果不小。") : Tr.Get("mart.choiceAsk", "怎么办？");
-		Game1.currentLocation.createQuestionDialogue(question, answers.ToArray(), (who, answer) =>
+		// 不另写提示语：对方刚吼完那句就是问题，下面直接给三个选项。
+		Game1.currentLocation.createQuestionDialogue("", answers.ToArray(), (who, answer) =>
 		{
 			switch (answer)
 			{

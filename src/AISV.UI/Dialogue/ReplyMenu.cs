@@ -296,7 +296,9 @@ public sealed class ReplyMenu : IClickableMenu
 		int letW = (int)Game1.smallFont.MeasureString(LetThemLabel).X + 48;
 		_letThemButton = new Rectangle(_lineCard.Center.X - letW / 2, _lineCard.Bottom - 64, letW, 48);
 		int nextW = 56 + 12 + (int)(Game1.smallFont.MeasureString(NextIStartLabel).X * 0.8f) + 8;
-		_nextToggle = _nextIStart == null ? Rectangle.Empty : new Rectangle(_lineCard.Right - nextW + 4, _lineCard.Bottom + 8, 56, 28);
+		// 托办件事、借钱挪到上面这一排时，开关让到它们左边。
+		int nextRight = _pillsAbove && pillsW > 0 ? (_errands ? _errandHit.X : _loanHit.X) - 20 : _lineCard.Right + 4;
+		_nextToggle = _nextIStart == null ? Rectangle.Empty : new Rectangle(nextRight - nextW, _lineCard.Bottom + 8, 56, 28);
 		_nextHit = _nextIStart == null ? Rectangle.Empty : new Rectangle(_nextToggle.X - 4, _nextToggle.Y - 6, nextW, 40);
 	}
 
@@ -761,6 +763,11 @@ public sealed class ReplyMenu : IClickableMenu
 			int index = Emotion.PortraitIndex(Emotion.PortraitCommandFor(_npc.Name, DisplayedEmotion, tiles));
 			index = index < tiles ? index : 0;
 			b.Draw(portrait, new Rectangle(box.X + 2, box.Y + 2, box.Width - 4, box.Height - 4), Game1.getSourceRectForStandardTileSheet(portrait, index, 64, 64), Color.White);
+		}
+		else
+		{
+			// 孩子没有立绘：画游戏里的小人。
+			Hearth.Cameo(b, new Rectangle(box.X + 8, box.Y + 8, box.Width - 16, box.Height - 16), _npc, _displayName);
 		}
 		Hearth.InkMiddle(b, _displayName, new Rectangle(box.X - 10, box.Bottom + 2, box.Width + 20, 32), Hearth.Quill);
 		// 每排 7 颗，超过 7 心时再画一排（最多 14 心）。

@@ -162,10 +162,11 @@ public sealed class ChildRunaway
 			_log.Debug($"{child.Name} 想跑出去玩，但农场上没找到能藏的地方。");
 			return false;
 		}
-		NPC standIn = new NPC(new AnimatedSprite(child.Sprite.textureName.Value, 0, child.Sprite.SpriteWidth, child.Sprite.SpriteHeight), new Vector2(hide.Value.X, hide.Value.Y) * 64f, "Farm", 2, "AISV_Runaway_" + child.Name, null, eventActor: true)
+		NPC standIn = new NPC(new AnimatedSprite(child.Sprite.textureName.Value, 0, child.Sprite.SpriteWidth, child.Sprite.SpriteHeight), new Vector2(hide.Value.X, hide.Value.Y) * 64f, "Farm", 2, "AISV_Runaway_" + child.Name, NpcBusy.BlankPortrait, eventActor: true)
 		{
 			displayName = child.displayName
 		};
+		standIn.AllowDynamicAppearance = false;
 		standIn.modData[NpcBusy.StandInKey] = HoldReason;
 		standIn.HideShadow = false;
 		farm.characters.Add(standIn);
@@ -208,9 +209,9 @@ public sealed class ChildRunaway
 		}
 		else
 		{
-			Say(spouse, Tr.Get("runaway.worriedPrompt", "你的孩子{{child}}刚才还在屋里，现在不见了，大概跑到农场上去玩了。你很着急，跟{{farmer}}说一句，催他去找。", ("child", kid), ("farmer", Game1.player.Name)), fallback, worried: true);
+			Say(spouse, Tr.Get("runaway.worriedPrompt", "你的孩子{{child}}刚才还在屋里，现在不见了，大概跑到农场上去玩了。你很着急，跟{{farmer}}说一句，催对方去找。", ("child", kid), ("farmer", Game1.player.Name)), fallback, worried: true);
 		}
-		Hints.Once("RunawayHint", Tr.Get("runaway.firstHint", "孩子离家出走是 AI星露谷 的小剧情：设置 → 家里 → 孩子 里可以关掉或调机会。"), 10000);
+		Hints.Tip("RunawayHint", Tr.Get("help.runaway.title", "孩子离家出走"));
 	}
 
 	/// <summary>配偶说一句：在身边就冒在头顶，不在身边就当成发来的消息。</summary>

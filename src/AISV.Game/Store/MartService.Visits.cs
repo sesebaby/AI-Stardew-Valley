@@ -64,10 +64,12 @@ public sealed partial class MartService
 	/// <summary>照真人的样子做一个替身（同一张图、同一个名字显示）。</summary>
 	public static NPC Clone(NPC real, GameLocation where, Point tile, string reason)
 	{
-		NPC clone = new NPC(new AnimatedSprite(real.Sprite.textureName.Value, 0, real.Sprite.SpriteWidth, real.Sprite.SpriteHeight), tile.ToVector2() * 64f, where.Name, 0, "AISV_" + reason + "_" + real.Name, real.Portrait, eventActor: true)
+		NPC clone = new NPC(new AnimatedSprite(real.Sprite.textureName.Value, 0, real.Sprite.SpriteWidth, real.Sprite.SpriteHeight), tile.ToVector2() * 64f, where.Name, 0, "AISV_" + reason + "_" + real.Name, real is StardewValley.Characters.Child ? NpcBusy.BlankPortrait : real.Portrait, eventActor: true)
 		{
 			displayName = real.displayName
 		};
+		// 替身的名字没有对应的立绘：不让游戏换地图时按名字重新挑外观（会报找不到 Portraits/替身名）。
+		clone.AllowDynamicAppearance = false;
 		clone.modData[NpcBusy.StandInKey] = reason;
 		clone.modData["AIStardewValley.Core/Real"] = real.Name;
 		where.characters.Add(clone);
@@ -350,6 +352,27 @@ public sealed partial class MartService
 	}
 
 	/// <summary>卸 mod 之前：店换成原版大棚屋，陈列台上的货收回背包（放不下的放进箱子）。</summary>
+	/// <summary>调试：在农场 (x,y) 立刻建好一间、摆好两张陈列台和收银台、上一点货。</summary>
+	public string DebugBuild(int x, int y)
+	{
+		Farm farm = Game1.getFarm();
+		if (!farm.buildStructure(MartContent.BuildingId, new Vector2(x, y), Game1.player, out Building? b, magicalConstruction: true, skipSafetyChecks: true) || b?.GetIndoors() is not GameLocation inside)
+		{
+			return $"({x},{y}) 放不下。";
+		}
+		State?.Welcomed.Add(b.id.Value.ToString());
+		_store()?.MarkDirty(MartState.Path);
+		Furniture reg = Furniture.GetFurnitureInstance(MartContent.RegisterId, new Vector2(8, 6));
+		Furniture a = Furniture.GetFurnitureInstance(MartContent.ShelfId, new Vector2(4, 9));
+		Furniture c = Furniture.GetFurnitureInstance(MartContent.ShelfId, new Vector2(12, 9));
+		a.heldObject.Value = ItemRegistry.Create<StardewValley.Object>("(O)24", 10);
+		c.heldObject.Value = ItemRegistry.Create<StardewValley.Object>("(O)176", 6);
+		inside.furniture.Add(reg);
+		inside.furniture.Add(a);
+		inside.furniture.Add(c);
+		return $"在 ({x},{y}) 建好了 {inside.NameOrUniqueName}，门 {b.getPointForHumanDoor()}。";
+	}
+
 	public string Uninstall()
 	{
 		int buildings = 0, items = 0;

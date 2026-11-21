@@ -162,6 +162,10 @@ public sealed partial class ConversationController
 	/// <summary>配偶今天还能照原版亲到（抱到）时弹圆盘；弹了返回 true。</summary>
 	private bool TryOfferKiss(NPC npc, Farmer who, GameLocation location)
 	{
+		if (MarriedOrRoommate(who, npc.Name))
+		{
+			_log.Debug($"亲吻检查：skip={_skipChoice} on={_config().KissChoiceMenu} menu={Game1.activeClickableMenu?.GetType().Name}");
+		}
 		if (_skipChoice || !_config().KissChoiceMenu || Game1.activeClickableMenu != null || !MarriedOrRoommate(who, npc.Name))
 		{
 			return false;
@@ -171,6 +175,7 @@ public sealed partial class ConversationController
 			npc.hasTemporaryMessageAvailable(), who.ActiveObject != null, npc.hasBeenKissedToday.Value, delta.X, delta.Y);
 		if (!KissRules.CanOffer(s))
 		{
+			_log.Debug($"不弹亲吻圆盘：{s}");
 			return false;
 		}
 		bool roommate = who.friendshipData.TryGetValue(npc.Name, out Friendship? f) && f.IsRoommate();

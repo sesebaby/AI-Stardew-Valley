@@ -16,6 +16,9 @@ namespace AISV.UI.Shell;
 /// <summary>一位村民的角色卡：左边默认人设，中间自己写的，右边合起来 AI 实际看到的。</summary>
 internal sealed class CardEditorPage : ShellPage
 {
+	/// <summary>性格、外貌、背景、说话方式基本不限字数（玩家会贴整份人设）。</summary>
+	private const int MaxText = 99999;
+
 	private sealed record Slot(string Label, string Hint, TextArea Area, int Height);
 
 	public static readonly PixelArt Pencil = PixelArt.Of(PixelArt.Inks(('e', new Color(250, 196, 170)), ('t', new Color(120, 120, 130))),
@@ -72,11 +75,11 @@ internal sealed class CardEditorPage : ShellPage
 		_slots = new[]
 		{
 			new Slot(Tr.Get("card.displayName", "显示名"), Tr.Get("card.displayNameHint", "AI 用这个名字称呼这位村民；不填用游戏里的名字。"), _fields.Add(24, singleLine: true), 56),
-			new Slot(Tr.Get("card.personality", "性格"), Tr.Get("card.personalityHint", "写了就整个替换默认人设；留空则保留默认，只把下面几项补上去。"), _fields.Add(1500, Tr.Get("card.personalityPlaceholder", "身份、性子、和谁亲近、怕什么、想要什么……")), 220),
-			new Slot(Tr.Get("card.appearance", "外貌"), Tr.Get("card.appearanceHint", "长相、穿着、身上的小特征。"), _fields.Add(400), 96),
-			new Slot(Tr.Get("card.lore", "背景"), Tr.Get("card.loreHint", "过去的经历、家里的事、没对人说过的秘密。"), _fields.Add(1000), 150),
+			new Slot(Tr.Get("card.personality", "性格"), Tr.Get("card.personalityHint", "写了就整个替换默认人设；留空则保留默认，只把下面几项补上去。"), _fields.Add(MaxText, Tr.Get("card.personalityPlaceholder", "身份、性子、和谁亲近、怕什么、想要什么……")), 220),
+			new Slot(Tr.Get("card.appearance", "外貌"), Tr.Get("card.appearanceHint", "长相、穿着、身上的小特征。"), _fields.Add(MaxText), 96),
+			new Slot(Tr.Get("card.lore", "背景"), Tr.Get("card.loreHint", "过去的经历、家里的事、没对人说过的秘密。"), _fields.Add(MaxText), 150),
 			new Slot(Tr.Get("card.tags", "社交标签"), Tr.Get("card.tagsHint", "几个词就够，用顿号隔开，比如：爱热闹、记仇、护短。"), _fields.Add(200), 56),
-			new Slot(Tr.Get("card.speech", "说话方式"), Tr.Get("card.speechHint", "口头禅、语气、爱用的词。"), _fields.Add(400), 96)
+			new Slot(Tr.Get("card.speech", "说话方式"), Tr.Get("card.speechHint", "口头禅、语气、爱用的词。"), _fields.Add(MaxText), 96)
 		};
 		if (_kidName != null)
 		{

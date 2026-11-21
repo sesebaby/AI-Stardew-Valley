@@ -275,7 +275,7 @@ public sealed partial class MartService
 		{
 			Game1.player.addItemByMenuIfNecessary(ItemRegistry.Create(id));
 		}
-		Hints.Hud(Tr.Get("mart.welcome", "农夫小超市建好了！送你两张陈列台和一个收银台，摆进店里吧。手机里的「小超市」有开店说明。"), 12000);
+		Hints.Hud(Tr.Get("mart.welcome", "农夫小超市建好了！送你两张陈列台和一个收银台。"), 8000);
 		Game1.player.mailReceived.Add("AISV_MartBuilt");
 		_log.Info("农夫小超市建好了，送了开店礼包。");
 	}

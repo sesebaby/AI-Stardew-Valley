@@ -321,7 +321,7 @@ public sealed class SpousePlanner
 			? Tr.Get("spouse.plan.said", "{{npc}}：「{{say}}」（{{plan}}）", ("npc", Name(spouse)), ("say", say), ("plan", plan))
 			: Tr.Get("spouse.plan.hud", "{{npc}}今天的安排：{{plan}}", ("npc", Name(spouse)), ("plan", plan)), 9000);
 		log.Announced = true;
-		Hints.Once("SpousePlanHint", Tr.Get("hint.spousePlan", "配偶每天会自己安排家务和出门的事。手机上的「家务安排」可以看安排、关掉某一项、让 TA 帮忙做什么，收获的东西也在那里领。"), 12000);
+		Hints.Tip("SpousePlanHint", Tr.Get("help.spouse.title", "配偶的日常安排"));
 	}
 
 	/// <summary>玩家要配偶帮忙做一件事：今天还来得及就排进今天，不然明天一早做。</summary>
