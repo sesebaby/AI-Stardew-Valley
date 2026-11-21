@@ -14,8 +14,9 @@ namespace AISV.Game.Store;
 
 /// <summary>
 /// 小超市要的游戏数据：Robin 那里能建的"农夫小超市"（照原版大棚屋，室内也是大棚屋，所以卸掉 mod 后屋里的东西还在），
-/// 陈列台和收银台两件家具（照原版桌子，放上去的东西游戏自己会画出来），Robin 店里卖这两件，被罚款时 Lewis 的信。
-/// 外观在运行时从原版大棚屋改：换个暖色，门上加一条红白条纹的遮阳棚。不随 mod 发原版图片。
+/// 室内照皮埃尔杂货店用原版图块拼（见 <see cref="MartInterior"/>），六种货架家具的贴图从原版皮埃尔店、Joja、酒馆的图块裁出来、抹掉画好的货
+/// （见 <see cref="MartShelves.Compose"/>），Robin 店里卖这些货架，被罚款时 Lewis 的信。外观用 mod 自带的图，没有时把原版大棚屋换个暖色。
+/// 不随 mod 发原版图片。
 /// </summary>
 public sealed class MartContent
 {
@@ -24,6 +25,19 @@ public sealed class MartContent
 	public const string ShelfId = "AIStardewValley.Core_Shelf";
 
 	public const string RegisterId = "AIStardewValley.Core_Register";
+
+	public const string SmallId = "AIStardewValley.Core_ShelfSmall";
+
+	public const string ColdId = "AIStardewValley.Core_ColdCase";
+
+	public const string WarmId = "AIStardewValley.Core_WarmCase";
+
+	public const string BinId = "AIStardewValley.Core_PromoBin";
+
+	public const string CabinetId = "AIStardewValley.Core_Cabinet";
+
+	/// <summary>家具数据用 / 分段，所以贴图名里只能用反斜杠。</summary>
+	public const string FurnitureTexture = "Mods\\AIStardewValley.Core\\MartFurniture";
 
 	public const string ShelfQualified = "(F)" + ShelfId;
 
@@ -40,6 +54,21 @@ public sealed class MartContent
 	public const int RegisterPrice = 800;
 
 	private readonly IModHelper _helper;
+
+	/// <summary>店里的货架家具：ID、种类、贴图大小、占地、贴图序号（拼好的贴图每行 16 格）。</summary>
+	public sealed record Fixture(string Id, AISV.Core.Store.ShelfKind Kind, string Size, string Box, int Index, Func<string> Name);
+
+	public static readonly Fixture[] Fixtures =
+	{
+		new Fixture(ShelfId, AISV.Core.Store.ShelfKinds.Shelf, "3 3", "3 2", 0, () => Tr.Get("mart.kind.shelf", "白货架")),
+		new Fixture(SmallId, AISV.Core.Store.ShelfKinds.Small, "2 3", "2 2", 3, () => Tr.Get("mart.kind.shelfSmall", "窄货架")),
+		new Fixture(ColdId, AISV.Core.Store.ShelfKinds.Cold, "4 3", "4 2", 5, () => Tr.Get("mart.kind.cold", "玻璃冷柜")),
+		new Fixture(WarmId, AISV.Core.Store.ShelfKinds.Warm, "4 3", "4 2", 9, () => Tr.Get("mart.kind.warm", "保温柜")),
+		new Fixture(BinId, AISV.Core.Store.ShelfKinds.Bin, "2 2", "2 1", 13, () => Tr.Get("mart.kind.bin", "促销桶")),
+		new Fixture(CabinetId, AISV.Core.Store.ShelfKinds.Cabinet, "3 4", "3 2", 48, () => Tr.Get("mart.kind.cabinet", "木柜"))
+	};
+
+	public static Fixture? FixtureOf(AISV.Core.Store.ShelfKind kind) => Fixtures.FirstOrDefault(f => f.Kind == kind);
 
 	public MartContent(IModHelper helper)
 	{
@@ -81,7 +110,7 @@ public sealed class MartContent
 					DrawOffset = shed.DrawOffset,
 					SortTileOffset = shed.SortTileOffset,
 					HumanDoor = shed.HumanDoor,
-					IndoorMap = shed.IndoorMap,
+					IndoorMap = MartInterior.MapName,
 					IndoorMapType = shed.IndoorMapType,
 					BuildCost = Cost,
 					BuildDays = 2,
@@ -104,12 +133,23 @@ public sealed class MartContent
 		{
 			e.LoadFrom(Compose, AssetLoadPriority.Exclusive);
 		}
+		else if (e.NameWithoutLocale.IsEquivalentTo(FurnitureTexture))
+		{
+			e.LoadFrom(() => MartShelves.Compose(_helper), AssetLoadPriority.Exclusive);
+		}
+		else if (e.NameWithoutLocale.IsEquivalentTo(MartInterior.Asset))
+		{
+			e.LoadFrom(() => MartInterior.Build(_helper), AssetLoadPriority.Exclusive);
+		}
 		else if (e.NameWithoutLocale.IsEquivalentTo("Data/Furniture"))
 		{
 			e.Edit(asset =>
 			{
 				IDictionary<string, string> data = asset.AsDictionary<string, string>().Data;
-				data[ShelfId] = Copy(data, new[] { "Oak Table", "Walnut Table", "Birch Table" }, "2 2", Tr.Get("mart.shelf", "陈列台"), ShelfPrice);
+				foreach (Fixture f in Fixtures)
+				{
+					data[f.Id] = $"{f.Id}/other/{f.Size}/{f.Box}/1/{f.Kind.Price}/-1/{f.Name().Replace("/", " ")}/{f.Index}/{FurnitureTexture}/true";
+				}
 				data[RegisterId] = Copy(data, new[] { "Oak End Table", "Walnut End Table", "Birch End Table" }, "1 1", Tr.Get("mart.register", "收银台"), RegisterPrice);
 			}, AssetEditPriority.Late);
 		}
@@ -119,7 +159,7 @@ public sealed class MartContent
 			{
 				if (asset.AsDictionary<string, ShopData>().Data.TryGetValue("Carpenter", out ShopData? shop))
 				{
-					foreach ((string id, int price) in new[] { (ShelfQualified, ShelfPrice), (RegisterQualified, RegisterPrice) })
+					foreach ((string id, int price) in Fixtures.Select(f => ("(F)" + f.Id, f.Kind.Price)))
 					{
 						if (shop.Items.All(i => i.Id != id))
 						{

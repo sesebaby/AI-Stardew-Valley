@@ -29,6 +29,9 @@ public static class HeadBubbles
 
 	public static Func<string, string> Display { get; set; } = name => name;
 
+	/// <summary>替身（店里的顾客、店员、离家出走的孩子）显示真人的名字。</summary>
+	private static string Who(StardewValley.NPC npc) => npc.modData.TryGetValue("AIStardewValley.Core/Real", out string? real) ? real : npc.Name;
+
 	/// <summary>同一个人再说话就换掉上一句。</summary>
 	public static void Show(NPC npc, string text, int durationMs)
 	{
@@ -69,10 +72,10 @@ public static class HeadBubbles
 			float alpha = (float)Math.Clamp(Math.Min(s.Elapsed / 150.0, (s.Duration - s.Elapsed) / 250.0), 0, 1);
 			if (s.Thought)
 			{
-				DrawThought(b, Head(s.Npc), Display(s.Npc.Name), s.Text, alpha);
+				DrawThought(b, Head(s.Npc), Display(Who(s.Npc)), s.Text, alpha);
 				continue;
 			}
-			DrawBubble(b, Head(s.Npc), Display(s.Npc.Name), s.Text, mine: false, alpha);
+			DrawBubble(b, Head(s.Npc), Display(Who(s.Npc)), s.Text, mine: false, alpha);
 		}
 	}
 

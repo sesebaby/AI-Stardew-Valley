@@ -5,78 +5,6 @@ using AISV.Core.Storage;
 
 namespace AISV.Core.Store;
 
-/// <summary>货架上的一样货（顾客挑货时看的）。</summary>
-public readonly record struct Offer(string ItemId, int Price, int BasePrice, int Quality, int Stock, int Taste, bool Needed);
-
-/// <summary>顾客挑货：喜欢的、用得着的、便宜的、品质好的更想买；买不起的不买。</summary>
-public static class CustomerDemand
-{
-	/// <summary>游戏的送礼喜好：0 最爱、2 喜欢、4 不喜欢、6 讨厌、8 一般。</summary>
-	public static double TasteWeight(int taste) => taste switch
-	{
-		0 => 3.0,
-		2 => 1.8,
-		4 => 0.3,
-		6 => 0.05,
-		_ => 1.0
-	};
-
-	/// <summary>价格吸引力：比原价便宜越多越想买，贵一倍基本不买。</summary>
-	public static double PriceWeight(int price, int basePrice)
-	{
-		if (basePrice <= 0)
-		{
-			return 1;
-		}
-		double ratio = price / (double)basePrice;
-		return Math.Clamp(1.6 - ratio * 0.8, 0.05, 1.4);
-	}
-
-	public static double Score(Offer o, int budget)
-	{
-		if (o.Stock <= 0 || o.Price <= 0 || o.Price > budget)
-		{
-			return 0;
-		}
-		return TasteWeight(o.Taste) * PriceWeight(o.Price, o.BasePrice) * (1 + o.Quality * 0.15) * (o.Needed ? 1.6 : 1);
-	}
-
-	/// <summary>挑一样买（roll 是 [0,1) 的随机数）；什么都不想买返回 -1。买几件：预算够时最多 3 件。</summary>
-	public static (int Index, int Qty) Pick(IReadOnlyList<Offer> offers, int budget, double roll)
-	{
-		double[] scores = offers.Select(o => Score(o, budget)).ToArray();
-		double total = scores.Sum();
-		if (total < 0.3)
-		{
-			return (-1, 0);
-		}
-		double at = roll * total;
-		for (int i = 0; i < scores.Length; i++)
-		{
-			at -= scores[i];
-			if (at <= 0 && scores[i] > 0)
-			{
-				Offer o = offers[i];
-				int qty = Math.Max(1, Math.Min(Math.Min(o.Stock, 3), budget / Math.Max(1, o.Price)));
-				return (i, o.Taste == 0 ? qty : 1);
-			}
-		}
-		return (-1, 0);
-	}
-
-	/// <summary>这半小时来几位顾客：货越多样、价格越公道来得越多（0～3）。</summary>
-	public static int Arrivals(int kinds, double avgPriceRatio, double share, double roll)
-	{
-		if (kinds <= 0)
-		{
-			return 0;
-		}
-		double expected = Math.Min(2.5, 0.6 + kinds * 0.15) * Math.Clamp(1.6 - avgPriceRatio * 0.6, 0.3, 1.3) * Math.Clamp(share * 2.2, 0.6, 1.4);
-		int n = (int)expected;
-		return Math.Min(3, n + (roll < expected - n ? 1 : 0));
-	}
-}
-
 /// <summary>Pierre 和 Joja 的经营状况：正常 → 吃紧 → 亏损 → 停业整顿（只在 AI星露谷 的经济里）。</summary>
 public static class Competition
 {
@@ -176,6 +104,30 @@ public sealed class MartState
 
 	/// <summary>这些天的份额（三家，按天）。</summary>
 	public List<DayShare> Shares { get; set; } = new List<DayShare>();
+
+	/// <summary>店型（general / greengrocer / fishmonger / florist / deli / workshop / curio）。</summary>
+	public string ShopType { get; set; } = "general";
+
+	/// <summary>上次换店型是哪天（一周只能换一次）。</summary>
+	public int ShopTypeDay { get; set; } = -100;
+
+	/// <summary>累计营业额（店的经验，决定等级）。</summary>
+	public int Xp { get; set; }
+
+	/// <summary>顾客评价（最多留 80 条）。</summary>
+	public List<Review> Reviews { get; set; } = new List<Review>();
+
+	/// <summary>海报和橱窗。</summary>
+	public List<Promotion> Promotions { get; set; } = new List<Promotion>();
+
+	/// <summary>还没送到的进货单。</summary>
+	public List<Order> Orders { get; set; } = new List<Order>();
+
+	/// <summary>最近送到的进货（留 40 笔）：从 Pierre 进的货会帮他一把。</summary>
+	public List<Order> Delivered { get; set; } = new List<Order>();
+
+	/// <summary>今天用过喇叭没有。</summary>
+	public int MegaphoneDay { get; set; } = -1;
 }
 
 public sealed class RivalState
@@ -198,6 +150,12 @@ public sealed class Clerk
 	public int Wage { get; set; }
 
 	public int HiredDay { get; set; }
+
+	/// <summary>岗位：cashier 收银 / stocker 理货 / greeter 迎宾。</summary>
+	public string Role { get; set; } = Staff.Cashier;
+
+	/// <summary>合同到哪天（含这天）；0 = 没写期限（旧存档）。</summary>
+	public int Until { get; set; }
 }
 
 public sealed class DayShare

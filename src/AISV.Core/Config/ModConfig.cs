@@ -510,6 +510,9 @@ public sealed class ModConfig
 	/// <summary>偷来的东西放在店里卖，买的人可能认出来。</summary>
 	public bool StolenGoodsNoticed { get; set; } = true;
 
+	/// <summary>小超市收银小游戏：顾客排到柜台前等你来收银找零（关掉就自动结账）。</summary>
+	public bool MartCheckoutGame { get; set; } = true;
+
 	/// <summary>装了 Farmer's Store 时和它对接：不抢彼此的村民，它那边的成交也记进村民的账本。</summary>
 	public bool FarmersStoreLink { get; set; } = true;
 

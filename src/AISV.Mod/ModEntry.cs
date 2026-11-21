@@ -541,6 +541,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				AdjustMood = _social.Moods.Adjust,
 				Gossip = (text, knowers) => _social.Gossip.AddLowKey(text, knowers.ToList(), "farmer_store", "mart-" + GameState.Today.TotalDays + "-" + text.GetHashCode(), GameState.Today),
 				OpenShelf = AISV.UI.Store.MartScreens.OpenShelf,
+				OpenCheckout = AISV.UI.Store.MartScreens.OpenCheckout,
 				OpenApp = () => AISV.UI.Store.MartScreens.OpenApp(_shell),
 				AskArgument = AISV.UI.Store.MartScreens.AskArgument
 			};
@@ -548,13 +549,17 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_ledger.ShopShare = _mart.ShareLeft;
 			_shell.Mart = _mart;
 			AISV.Game.Store.MartShopGate.Apply(harmony, _mart, _log);
-			helper.ConsoleCommands.Add("aisv_store", "小超市调试。\n用法：aisv_store dump | customer | brawl <Pierre|Morris> | state <Pierre|Joja> <0-3> | uninstall", (_, args) => _log.Info(Context.IsWorldReady ? StoreCommand(args) : "先进存档。"));
+			helper.ConsoleCommands.Add("aisv_store", "小超市调试。\n用法：aisv_store dump | build [x y] | customer | restock | review | brawl <Pierre|Morris> | state <Pierre|Joja> <0-3> | uninstall", (_, args) => _log.Info(Context.IsWorldReady ? StoreCommand(args) : "先进存档。"));
 			helper.Events.GameLoop.UpdateTicked += (_, _) =>
 			{
 				_mart.OnUpdateTicked();
 				_mart.TickFly();
 			};
-			helper.Events.Player.Warped += (_, e) => _mart.OnWarped(e);
+			helper.Events.Player.Warped += (_, e) =>
+			{
+				_mart.OnWarped(e);
+				_mart.OnShopWarped(e);
+			};
 			_spousePlan = new SpousePlanner(() => _config, store, _schedules, _ledger, _mart, () => _social.Feelings, _log)
 			{
 				Ai = _ai,
@@ -962,6 +967,16 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				return _mart.DebugBuild(args.Length > 2 && int.TryParse(args[1], out int bx) ? bx : 58, args.Length > 2 && int.TryParse(args[2], out int by) ? by : 20);
 			case "customer":
 				return _mart.DebugCustomer();
+			case "fx":
+				return _mart.DebugFixtures(args.Length > 1 ? args[1] : "/dev/shm/aisv/fx.png");
+			case "counter":
+				return _mart.DebugCounter();
+			case "shelf":
+				return _mart.DebugShelf(args.Length > 1 && int.TryParse(args[1], out int si) ? si : 0);
+			case "restock":
+				return $"补了 {_mart.Restock()} 件。";
+			case "review":
+				return string.Join("\n", _mart.Reviews.TakeLast(8).Select(r => $"{r.Npc} {r.Stars}★ {r.Reason} {r.Text}"));
 			case "brawl":
 				return _mart.ForceConfront(args.Length > 1 ? args[1] : "Pierre");
 			case "state" when args.Length > 2 && int.TryParse(args[2], out int h) && _mart.State is AISV.Core.Store.MartState s:
@@ -977,10 +992,12 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				return $"{rival} 的经营状况设成了 {AISV.Game.Store.MartService.HealthName(r.Health)}。";
 			case "uninstall":
 				return _mart.Uninstall();
+			case "export":
+				return AISV.Game.Store.MapExport.Run(Helper, args.Length > 1 ? args[1] : "/dev/shm/aisv/maps", args.Length > 2 ? args.Skip(2).ToArray() : new[] { "SeedShop", "JojaMart", "Shed2", "Shed" });
 			default:
 				AISV.Core.Store.MartState? st = _mart.State;
 				var sales = _mart.Sales.All;
-				return $"小超市 {AISV.Game.Store.MartService.Buildings().Count()} 间，陈列台 {AISV.Game.Store.MartService.AllShelves().Count()} 张，钱箱 {st?.Cashbox ?? 0}g，口碑 {st?.Reputation ?? 0}，成交 {sales.Count} 笔（COS {sales.Count(x => x.Source == AISV.Core.Store.StoreSale.Cos)}）；"
+				return $"小超市 {AISV.Game.Store.MartService.Buildings().Count()} 间，货架 {AISV.Game.Store.MartService.AllShelves().Count()} 个，钱箱 {st?.Cashbox ?? 0}g，口碑 {st?.Reputation ?? 0}，{_mart.Stars:0.0} 星，{_mart.Type.Id} {_mart.Level} 级，成交 {sales.Count} 笔（COS {sales.Count(x => x.Source == AISV.Core.Store.StoreSale.Cos)}）；"
 					+ $"Pierre {AISV.Game.Store.MartService.HealthName(_mart.Health(AISV.Core.Store.Competition.Pierre))} {(int)(_mart.ShareLeft(AISV.Core.Store.Competition.Pierre) * 100)}%，Joja {AISV.Game.Store.MartService.HealthName(_mart.Health(AISV.Core.Store.Competition.Joja))} {(int)(_mart.ShareLeft(AISV.Core.Store.Competition.Joja) * 100)}%；"
 					+ "最近：" + string.Join("；", sales.TakeLast(5).Select(x => $"{x.Source} {x.Buyer} {x.ItemName}×{x.Qty} {x.Total}g{(x.Reclaimed ? "（认出赃物）" : "")}"));
 		}

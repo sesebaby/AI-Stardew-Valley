@@ -19,6 +19,8 @@ public static class MartScreens
 
 	public static void OpenShelf(Furniture shelf) => Game1.activeClickableMenu = new ShelfMenu(shelf);
 
+	public static void OpenCheckout(AISV.Game.Store.CheckoutRequest req) => Game1.activeClickableMenu = new CheckoutMenu(req);
+
 	/// <summary>上门理论时"讲道理"：上面是对方的话，下面写你的回应；关掉或不回就当没说。</summary>
 	public static void AskArgument(NPC npc, string line, Action<string?> done)
 	{

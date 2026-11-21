@@ -268,6 +268,7 @@ public static class GmcmSettings
 		api.AddBoolOption(manifest, () => get().FarmerMart, v => get().FarmerMart = v, () => Tr.Get("shell.settings.martOn", "农夫小超市"), () => Tr.Get("shell.settings.martOnNote", "去 Robin 的木匠铺建一间，放货架上架，村民会来买"));
 		api.AddNumberOption(manifest, () => get().FarmerMartOpen, v => get().FarmerMartOpen = v, () => Tr.Get("shell.settings.martOpen", "几点开门"), min: 600, max: 1400, interval: 100);
 		api.AddNumberOption(manifest, () => get().FarmerMartClose, v => get().FarmerMartClose = v, () => Tr.Get("shell.settings.martClose", "几点打烊"), min: 1200, max: 2400, interval: 100);
+		api.AddBoolOption(manifest, () => get().MartCheckoutGame, v => get().MartCheckoutGame = v, () => Tr.Get("shell.settings.martCheckout", "收银小游戏"), () => Tr.Get("shell.settings.martCheckoutNote", "你在店里时顾客到柜台排队，点柜台收银找零，又快又对有小费；关掉就自动结账"));
 		api.AddBoolOption(manifest, () => get().MartCompetition, v => get().MartCompetition = v, () => Tr.Get("shell.settings.martCompete", "和 Pierre、Joja 抢生意"),
 			() => Tr.Get("shell.settings.martCompeteNote", "抢得多了他们会吃紧，甚至停业整顿；只在 AI星露谷 的经济里，不改原版剧情，种子一定买得到"));
 		api.AddBoolOption(manifest, () => get().AllowBrawl, v => get().AllowBrawl = v, () => Tr.Get("shell.settings.brawl", "上门理论时可以动手"), () => Tr.Get("shell.settings.brawlNote", "卡通式打飞，不伤人；会被罚款、上周报"));

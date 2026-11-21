@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using AISV.Core.Ai;
 using AISV.Core.Config;
@@ -20,20 +19,19 @@ using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Objects;
-using StardewValley.Pathfinding;
 using SObject = StardewValley.Object;
 
 namespace AISV.Game.Store;
 
 /// <summary>
-/// 农夫小超市：陈列台上架定价、营业时间里村民进店买东西（你在店里时真的走进来挑货、到收银台结账，不在时后台结算）、
-/// 和 Pierre / Joja 抢生意、对手吃不消时上门理论、偷来的东西可能被认出来、雇店员。
+/// 农夫小超市：照皮埃尔杂货店的样子开一间店。几种货架（白货架、冷柜、保温柜、促销桶、木柜）各放各的货，
+/// 货有新鲜度、存放温度、来路，每天有行情；选店型、进货、贴海报、雇店员；营业时间里村民按自己的类型来买东西，
+/// 你在店里时他们真的走进来挑货、到柜台排队，你来收银找零；不在时后台结算。买完会留评价，评价决定口碑和客流。
+/// 还会和 Pierre / Joja 抢生意、对手吃不消时上门理论、偷来的东西可能被认出来。
 /// 顾客是替身：真人在原地藏起来，替身在店里走，走完放回去，不打乱他们的日程。只在单人或主机上。
 /// </summary>
 public sealed partial class MartService
 {
-	public const string PriceKey = "AIStardewValley.Core/PricePct";
-
 	public const string ShopperReason = "mart";
 
 	public const string ClerkReason = "mart_clerk";
@@ -80,11 +78,14 @@ public sealed partial class MartService
 	/// <summary>传成八卦：说法、知道的人。</summary>
 	public Action<string, IReadOnlyList<string>>? Gossip { get; set; }
 
-	/// <summary>界面层：打开陈列台的定价窗口。</summary>
+	/// <summary>界面层：打开货架（上架、定价、取下）。</summary>
 	public Action<Furniture>? OpenShelf { get; set; }
 
 	/// <summary>界面层：打开小超市应用。</summary>
 	public Action? OpenApp { get; set; }
+
+	/// <summary>界面层：收银小游戏。</summary>
+	public Action<CheckoutRequest>? OpenCheckout { get; set; }
 
 	/// <summary>界面层：上门理论时"讲道理"——显示对方的话，让玩家打一段回应。</summary>
 	public Action<NPC, string, Action<string?>>? AskArgument { get; set; }
@@ -93,6 +94,8 @@ public sealed partial class MartService
 	public Func<bool>? SpouseMinding { get; set; }
 
 	public MartState? State => _store()?.Get(MartState.Path, MartState.Doc);
+
+	private void Dirty() => _store()?.MarkDirty(MartState.Path);
 
 	private bool Host => _config().FarmerMart && Context.IsWorldReady && Context.IsMainPlayer;
 
@@ -106,11 +109,9 @@ public sealed partial class MartService
 
 	public static bool IsShop(GameLocation? l) => l != null && Shops().Contains(l);
 
-	public static IEnumerable<Furniture> Shelves(GameLocation l) => l.furniture.Where(f => f.QualifiedItemId == MartContent.ShelfQualified);
+	public static IEnumerable<Furniture> Shelves(GameLocation l) => l.furniture.Where(MartShelves.IsShelf);
 
 	public static IEnumerable<(GameLocation Shop, Furniture Shelf)> AllShelves() => Shops().SelectMany(l => Shelves(l).Select(f => (l, f)));
-
-	public static Furniture? Register(GameLocation l) => l.furniture.FirstOrDefault(f => f.QualifiedItemId == MartContent.RegisterQualified);
 
 	public bool HasShop => Shops().Any();
 
@@ -133,29 +134,23 @@ public sealed partial class MartService
 		return Math.Max(1, (int)(o.Price * q * 2));
 	}
 
-	public static int Percent(Furniture f) => f.modData.TryGetValue(PriceKey, out string? v) && int.TryParse(v, out int p) ? Math.Clamp(p, 50, 200) : 100;
-
-	public static void SetPercent(Furniture f, int pct) => f.modData[PriceKey] = Math.Clamp(pct, 50, 200).ToString();
-
-	public static int UnitPrice(Furniture f) => f.heldObject.Value is SObject o ? Math.Max(1, BasePrice(o) * Percent(f) / 100) : 0;
-
 	/// <summary>店里一共有几样货、平均贵几成（给竞争和来客用）。</summary>
 	public (int Kinds, double Ratio) Offerings()
 	{
-		List<Furniture> stocked = AllShelves().Select(s => s.Shelf).Where(f => f.heldObject.Value is SObject { Stack: > 0 }).ToList();
+		List<SObject> stocked = AllShelves().SelectMany(s => MartShelves.Goods(s.Shelf)).ToList();
 		if (stocked.Count == 0)
 		{
 			return (0, 1);
 		}
-		double ratio = stocked.Average(f => Percent(f) / 100.0);
+		double ratio = stocked.Average(o => MartShelves.Percent(o) / 100.0);
 		if (State is MartState s && s.ConcedeUntil >= Today)
 		{
 			ratio *= 1.2;
 		}
-		return (stocked.Select(f => f.heldObject.Value!.QualifiedItemId).Distinct().Count(), ratio);
+		return (stocked.Select(o => o.QualifiedItemId).Distinct().Count(), ratio);
 	}
 
-	// ---------------- 点陈列台、收银台 ----------------
+	// ---------------- 点货架、柜台、库房 ----------------
 
 	public void OnButtonPressed(ButtonPressedEventArgs e, IInputHelper input)
 	{
@@ -164,16 +159,26 @@ public sealed partial class MartService
 			return;
 		}
 		Vector2 tile = e.Cursor.GrabTile;
-		Furniture? f = Game1.currentLocation.furniture.FirstOrDefault(x => (x.QualifiedItemId == MartContent.ShelfQualified || x.QualifiedItemId == MartContent.RegisterQualified)
+		if (Vector2.Distance(Game1.player.Tile, tile) > 2.5f)
+		{
+			return;
+		}
+		if (MartInterior.IsCounter((int)tile.X, (int)tile.Y))
+		{
+			input.Suppress(e.Button);
+			ClickCounter();
+			return;
+		}
+		Furniture? f = Game1.currentLocation.furniture.FirstOrDefault(x => (MartShelves.IsShelf(x) || x.QualifiedItemId == MartContent.RegisterQualified)
 			&& x.GetBoundingBox().Contains((int)tile.X * 64 + 32, (int)tile.Y * 64 + 32));
-		if (f == null || Vector2.Distance(Game1.player.Tile, tile) > 2.5f)
+		if (f == null)
 		{
 			return;
 		}
 		input.Suppress(e.Button);
 		if (f.QualifiedItemId == MartContent.RegisterQualified)
 		{
-			ClickRegister();
+			ClickCounter();
 		}
 		else
 		{
@@ -181,14 +186,19 @@ public sealed partial class MartService
 		}
 	}
 
-	private void ClickRegister()
+	/// <summary>点柜台：有人排队就收银；没人排队时取出钱箱里的钱，再没有就打开小超市应用。</summary>
+	private void ClickCounter()
 	{
+		if (ServeNext())
+		{
+			return;
+		}
 		MartState? s = State;
 		if (s != null && s.Cashbox > 0)
 		{
 			int cash = s.Cashbox;
 			s.Cashbox = 0;
-			_store()?.MarkDirty(MartState.Path);
+			Dirty();
 			Game1.player.Money += cash;
 			Game1.playSound("purchaseRepeat");
 			Hints.Hud(Tr.Get("mart.cashOut", "从钱箱里取出 {{gold}}g。", ("gold", cash)));
@@ -197,54 +207,36 @@ public sealed partial class MartService
 		OpenApp?.Invoke();
 	}
 
+	/// <summary>拿着能卖的东西点货架：放上去（这个货架不收这类货就说一声）；空手点：打开货架。</summary>
 	private void ClickShelf(Furniture f)
 	{
-		Item? held = Game1.player.ActiveItem;
-		SObject? onShelf = f.heldObject.Value;
-		if (held is SObject o && held is not Furniture && !o.bigCraftable.Value && o.canBeShipped() || held is SObject { Category: SObject.CookingCategory or SObject.artisanGoodsCategory } && held is not Furniture)
+		if (Game1.player.ActiveItem is SObject held && MartShelves.Sellable(held))
 		{
-			SObject item = (SObject)held;
-			if (onShelf == null)
+			int n = MartShelves.Add(f, held, held.Stack, Origins.Farm);
+			if (n > 0)
 			{
-				f.heldObject.Value = item;
-				Game1.player.removeItemFromInventory(item);
-				SetPercent(f, Percent(f));
-				Game1.playSound("woodyStep");
-				Hints.Once("ShelfHint", Tr.Get("mart.shelfHint", "上架了！空手点陈列台可以改价钱或取下；营业时间里村民会来买。"), 9000);
-				OpenShelf?.Invoke(f);
-				return;
-			}
-			if (onShelf.canStackWith(item))
-			{
-				int left = onShelf.addToStack(item);
-				if (left <= 0)
+				held.Stack -= n;
+				if (held.Stack <= 0)
 				{
-					Game1.player.removeItemFromInventory(item);
-				}
-				else
-				{
-					item.Stack = left;
+					Game1.player.removeItemFromInventory(held);
 				}
 				Game1.playSound("woodyStep");
+				MartShelves.RefreshDisplay(Game1.currentLocation);
+				Hints.Tip("ShelfHint", Tr.Get("mart.tipShelf", "货架上架和定价"));
 				return;
 			}
+			if (n < 0)
+			{
+				Hints.Hud(Tr.Get("mart.wrongShelf", "{{shelf}}不放{{item}}这类东西。", ("shelf", ShelfName(f)), ("item", held.DisplayName)));
+				return;
+			}
+			Hints.Hud(Tr.Get("mart.shelfFull", "{{shelf}}放满了。", ("shelf", ShelfName(f))));
+			return;
 		}
 		OpenShelf?.Invoke(f);
 	}
 
-	/// <summary>把陈列台上的货收回背包（放不下就掉在脚边）。</summary>
-	public static void TakeBack(Furniture f)
-	{
-		if (f.heldObject.Value is SObject o)
-		{
-			f.heldObject.Value = null;
-			if (!Game1.player.addItemToInventoryBool(o))
-			{
-				Game1.createItemDebris(o, Game1.player.getStandingPosition(), -1);
-			}
-			Game1.playSound("pickUpItem");
-		}
-	}
+	public static string ShelfName(Furniture f) => MartShelves.Kind(f) is ShelfKind k && MartContent.FixtureOf(k) is MartContent.Fixture x ? x.Name() : f.DisplayName;
 
 	// ---------------- 每天 ----------------
 
@@ -257,27 +249,31 @@ public sealed partial class MartService
 		foreach (Building b in Buildings().Where(b => !b.isUnderConstruction()))
 		{
 			string id = b.id.Value.ToString();
-			if (!s.Welcomed.Contains(id))
+			if (b.GetIndoors() is GameLocation inside)
 			{
-				s.Welcomed.Add(id);
-				_store()!.MarkDirty(MartState.Path);
-				Welcome();
+				if (!s.Welcomed.Contains(id))
+				{
+					s.Welcomed.Add(id);
+					Dirty();
+					Furnish(inside);
+					Welcome();
+				}
+				EnsureStockroom(inside);
 			}
 		}
+		Deliver(s);
+		ExpirePromotions(s);
+		ExpireContracts(s);
 		UpdateCompetition(s);
 		_rivalNoticeDay = -1;
 	}
 
-	/// <summary>刚建好：送两张陈列台和一个收银台，弹一页说明。</summary>
+	/// <summary>刚建好：店里已经摆好货架，弹一页说明。</summary>
 	private void Welcome()
 	{
-		foreach (string id in new[] { MartContent.ShelfQualified, MartContent.ShelfQualified, MartContent.RegisterQualified })
-		{
-			Game1.player.addItemByMenuIfNecessary(ItemRegistry.Create(id));
-		}
-		Hints.Hud(Tr.Get("mart.welcome", "农夫小超市建好了！送你两张陈列台和一个收银台。"), 8000);
+		Hints.Hud(Tr.Get("mart.welcome", "农夫小超市建好了！货架、冷柜和柜台都摆好了。"), 8000);
 		Game1.player.mailReceived.Add("AISV_MartBuilt");
-		_log.Info("农夫小超市建好了，送了开店礼包。");
+		_log.Info("农夫小超市建好了，摆好了开店的货架。");
 	}
 
 	public void OnDayEnding()
@@ -307,30 +303,55 @@ public sealed partial class MartService
 			return;
 		}
 		TryConfront(time);
+		StockerRounds(time);
+		SpawnMegaphone();
 		if (time % 100 != 0 && time % 100 != 30)
 		{
 			return;
 		}
-		(int kinds, double ratio) = Offerings();
-		double share = State?.Shares.LastOrDefault()?.Ours ?? 0.2;
-		int arrivals = CustomerDemand.Arrivals(kinds, ratio, Math.Max(0.2, share), _random.NextDouble());
-		if (State?.Clerks.Count > 0)
-		{
-			arrivals += _random.NextDouble() < 0.3 ? 1 : 0;
-		}
+		int arrivals = Traffic.Arrivals(ExpectedCustomers(time), _random.NextDouble());
 		for (int i = 0; i < arrivals; i++)
 		{
-			if (Customer() is not NPC buyer)
-			{
-				break;
-			}
-			GameLocation shop = Shops().First();
-			if (Game1.currentLocation == shop && _visits.Count < 3 && StartVisit(buyer, shop))
-			{
-				continue;
-			}
-			SellTo(buyer, shop, live: false);
+			Arrive();
 		}
+	}
+
+	/// <summary>来一位顾客：你在店里就真的进门（店里最多 4 位），不在就后台逛一圈。</summary>
+	private bool Arrive()
+	{
+		if (Customer() is not NPC buyer)
+		{
+			return false;
+		}
+		GameLocation shop = Shops().First();
+		if (Game1.currentLocation == shop && _visits.Count < 4 && StartVisit(buyer, shop))
+		{
+			return true;
+		}
+		Background(buyer, shop);
+		return true;
+	}
+
+	/// <summary>这半小时预计来几位（客流规则 + 店型本事 + 迎宾）。</summary>
+	private double ExpectedCustomers(int time)
+	{
+		MartState? s = State;
+		(int kinds, double ratio) = Offerings();
+		double share = s?.Shares.LastOrDefault()?.Ours ?? 0.2;
+		bool weekend = Game1.Date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+		bool eve = Utility.isFestivalDay(Game1.dayOfMonth + 1, Game1.season);
+		double promo = s == null ? 0 : Promotions.TrafficBonus(s.Promotions, Today);
+		if (OnDuty(Staff.Greeter))
+		{
+			promo += 0.1;
+		}
+		ShopType type = ShopTypes.Get(s?.ShopType);
+		int level = ShopTypes.Level(s?.Xp ?? 0);
+		if (level >= 5 && (type == ShopTypes.Florist && weekend || type == ShopTypes.Deli && (time is >= 1100 and < 1300 or >= 1700 and < 1900)))
+		{
+			promo += 0.2;
+		}
+		return Traffic.Expected(kinds, ratio, Math.Max(0.2, share), time, weekend, Game1.isRaining, eve, s == null ? 3 : ReviewRules.Average(s.Reviews), promo);
 	}
 
 	/// <summary>调试：马上叫一位顾客（你在店里就真的进门，不在就后台结算）。</summary>
@@ -345,7 +366,7 @@ public sealed partial class MartService
 		{
 			return $"{buyer.Name} 进店了。";
 		}
-		SellTo(buyer, shop, live: false);
+		Background(buyer, shop);
 		return $"{buyer.Name} 在后台逛了一圈。";
 	}
 
@@ -360,24 +381,74 @@ public sealed partial class MartService
 		return pool.Count == 0 ? null : pool[_random.Next(pool.Count)];
 	}
 
-	/// <summary>这位顾客挑一样货（没有想买的返回 null）。</summary>
-	private (Furniture Shelf, int Qty)? Choose(NPC buyer, GameLocation shop)
+	/// <summary>店里所有在卖的货（货架、第几格、货）。</summary>
+	private static List<(Furniture Shelf, int Slot, SObject Item)> Stock(GameLocation shop)
 	{
-		List<Furniture> shelves = Shelves(shop).Where(f => f.heldObject.Value is SObject { Stack: > 0 }).ToList();
-		if (shelves.Count == 0 || _ledger.Wallet(buyer.Name) is not { } w)
+		List<(Furniture, int, SObject)> list = new List<(Furniture, int, SObject)>();
+		foreach (Furniture f in Shelves(shop))
 		{
-			return null;
+			StardewValley.Inventories.Inventory slots = MartShelves.Slots(f);
+			for (int i = 0; i < slots.Count; i++)
+			{
+				if (slots[i] is SObject o && o.Stack > 0)
+				{
+					list.Add((f, i, o));
+				}
+			}
 		}
-		List<Offer> offers = shelves.Select(f =>
+		return list;
+	}
+
+	/// <summary>
+	/// 这位顾客想买什么：先定是哪类顾客，再照喜好、价格、品质、新鲜度、温度、行情、店型、促销给每样货打分，挑一篮子（还没拿下货架）。
+	/// </summary>
+	private (Archetype Type, List<Pick> Picks, bool Wanted) Plan(NPC buyer, GameLocation shop)
+	{
+		MartState? s = State;
+		List<(Furniture Shelf, int Slot, SObject Item)> stock = Stock(shop);
+		ShopType type = ShopTypes.Get(s?.ShopType);
+		int level = ShopTypes.Level(s?.Xp ?? 0);
+		HashSet<string> groups = stock.Select(x => MartShelves.Group(x.Item)).ToHashSet();
+		Archetype a = Archetypes.Pick(buyer.Name, type, Game1.timeOfDay, groups, _random.NextDouble());
+		if (stock.Count == 0 || _ledger.Wallet(buyer.Name) is not { } w)
 		{
-			SObject o = f.heldObject.Value!;
+			return (a, new List<Pick>(), false);
+		}
+		MarketDay market = Market.For(Today, Game1.seasonIndex, Game1.isRaining);
+		List<Promotion> promos = s?.Promotions ?? new List<Promotion>();
+		List<Offer> offers = stock.Select(x =>
+		{
+			SObject o = x.Item;
+			string group = MartShelves.Group(o);
 			int taste = Safe(() => buyer.getGiftTasteForThisItem(o), 8);
-			bool needed = buyer.Name == "Gus" && o.Category is SObject.VegetableCategory or SObject.FruitsCategory or SObject.EggCategory or SObject.MilkCategory;
-			return new Offer(o.QualifiedItemId, UnitPrice(f), BasePrice(o), o.Quality, o.Stack, taste, needed);
+			bool needed = buyer.Name == "Gus" && group is AISV.Core.Store.Goods.Vegetable or AISV.Core.Store.Goods.Fruit or AISV.Core.Store.Goods.Animal;
+			string stage = MartShelves.Stage(x.Shelf, o, longerChilled: type == ShopTypes.Fishmonger && level >= 5);
+			double boost = Freshness.Appeal(stage) * market.Of(group) * ShopTypes.Demand(type, group, level) * Promotions.PosterBoost(promos, group, Today)
+				* Promotions.WindowBoost(promos, o.QualifiedItemId, Today) * (MartShelves.Kind(x.Shelf)?.Attention ?? 1) * (MartShelves.WrongTemp(x.Shelf, o) ? 0.75 : 1);
+			double tolerance = Origins.Premium(MartShelves.Origin(o), group) + ShopTypes.Tolerance(type, group, level) + Perk(type, level, o, group);
+			return new Offer(o.QualifiedItemId, MartShelves.UnitPrice(o), BasePrice(o), o.Quality, o.Stack, taste, needed, group, boost, tolerance);
 		}).ToList();
-		int budget = Math.Max(30, w.Gold / 3);
-		(int index, int qty) = CustomerDemand.Pick(offers, budget, _random.NextDouble());
-		return index < 0 ? null : (shelves[index], qty);
+		int budget = Math.Max(80, w.Gold / 2);
+		List<Pick> picks = CustomerDemand.Basket(offers, a, budget, _random).Select(p => new Pick { Shelf = stock[p.Index].Shelf, Slot = stock[p.Index].Slot, ItemId = stock[p.Index].Item.QualifiedItemId, Qty = p.Qty }).ToList();
+		return (a, picks, offers.Any(o => a.Groups.Contains(o.Group)));
+	}
+
+	/// <summary>店型 5 级的本事里和价格有关的：蔬果店自家种的、工坊店金星以上、珍宝店的矿石文物，顾客多接受一成价。</summary>
+	private static double Perk(ShopType type, int level, SObject o, string group)
+	{
+		if (level < 5)
+		{
+			return 0;
+		}
+		if (type == ShopTypes.Greengrocer && MartShelves.Origin(o) != Origins.Supplier && type.Groups.Contains(group))
+		{
+			return 0.1;
+		}
+		if (type == ShopTypes.Workshop && o.Quality >= 2 && group == AISV.Core.Store.Goods.Artisan)
+		{
+			return 0.1;
+		}
+		return type == ShopTypes.Curio && type.Groups.Contains(group) ? 0.1 : 0;
 	}
 
 	private static T Safe<T>(Func<T> f, T fallback)
@@ -392,93 +463,140 @@ public sealed partial class MartService
 		}
 	}
 
-	/// <summary>成交（或认出赃物拿回去）。live：替身就在店里，冒一句话。</summary>
-	private void SellTo(NPC buyer, GameLocation shop, bool live, NPC? speaker = null, (Furniture Shelf, int Qty)? choice = null)
+	/// <summary>从货架上拿下来放进篮子（货被别人买走了就拿不到）。</summary>
+	private static Line? TakeLine(Pick p)
 	{
-		if ((choice ?? Choose(buyer, shop)) is not (Furniture shelf, int qty) || shelf.heldObject.Value is not SObject stock || State is not MartState s)
+		StardewValley.Inventories.Inventory slots = MartShelves.Slots(p.Shelf);
+		if (p.Slot >= slots.Count || slots[p.Slot] is not SObject o || o.QualifiedItemId != p.ItemId)
 		{
-			if (_ledger.Wallet(buyer.Name) is { } w)
-			{
-				w.ShoppedDay = Today;
-			}
-			return;
+			return null;
 		}
-		qty = Math.Min(qty, stock.Stack);
-		int price = UnitPrice(shelf);
-		SObject sold = (SObject)stock.getOne();
-		sold.Stack = qty;
-		stock.Stack -= qty;
-		if (stock.Stack <= 0)
+		string stage = MartShelves.Stage(p.Shelf, o);
+		bool wrong = MartShelves.WrongTemp(p.Shelf, o);
+		SObject? taken = MartShelves.Take(p.Shelf, p.Slot, p.Qty);
+		return taken == null ? null : new Line { Shelf = p.Shelf, Item = taken, Price = MartShelves.UnitPrice(taken), Stage = stage, WrongTemp = wrong };
+	}
+
+	/// <summary>没买成：货放回货架（放不回去就进库房）。</summary>
+	private static void PutBack(Line l)
+	{
+		int n = MartShelves.Add(l.Shelf, l.Item, l.Item.Stack, MartShelves.Origin(l.Item));
+		if (n < l.Item.Stack)
 		{
-			shelf.heldObject.Value = null;
-		}
-		StoreSale sale = new StoreSale
-		{
-			Source = StoreSale.Ours,
-			TxId = $"{Today}-{s.NextTx++}",
-			Buyer = buyer.Name,
-			ItemId = sold.QualifiedItemId,
-			ItemName = sold.DisplayName,
-			Qty = qty,
-			Quality = sold.Quality,
-			UnitPrice = price,
-			MarketPrice = BasePrice(sold),
-			Stolen = sold.modData.TryGetValue("StardewThief/IsStolen", out string? st) && st == "true",
-			StolenFrom = sold.modData.TryGetValue("StardewThief/StolenFrom", out string? from) ? from : "",
-			StolenDay = sold.modData.TryGetValue("StardewThief/StolenDay", out string? sd) && int.TryParse(sd, out int d) ? d : 0,
-			Day = Today,
-			Time = Game1.timeOfDay
-		};
-		bool caught = sale.Stolen && _config().StolenGoodsNoticed && CheckStolen(sale, buyer);
-		if (caught)
-		{
-			sale.Reclaimed = true;
-		}
-		_store()!.MarkDirty(MartState.Path);
-		Sales.Record(sale);
-		if (caught)
-		{
-			Caught(sale, buyer, speaker ?? (live ? buyer : null));
-			return;
-		}
-		bool attended = Game1.currentLocation == shop || s.Clerks.Count > 0 || SpouseMinding?.Invoke() == true;
-		if (attended)
-		{
-			Game1.player.Money += sale.Total;
-		}
-		else
-		{
-			s.Cashbox += sale.Total;
-		}
-		s.Reputation = Math.Clamp(s.Reputation + (Percent(shelf) <= 100 ? 1 : Percent(shelf) >= 150 ? -1 : 0), -100, 100);
-		if (Game1.currentLocation == shop)
-		{
-			Game1.playSound("purchase");
-			Hints.Hud(Tr.Get("mart.sold", "{{name}}买了{{item}} ×{{n}}，+{{gold}}g", ("name", Display(buyer.Name)), ("item", sale.ItemName), ("n", qty), ("gold", sale.Total)), 4000);
-			if (speaker != null)
-			{
-				Comment(speaker, buyer, sale);
-			}
+			l.Item.Stack -= Math.Max(0, n);
+			MartShelves.Stockroom().Add(l.Item);
 		}
 	}
 
+	/// <summary>你不在店里：按同样的规则挑货、结账、留评价。</summary>
+	private void Background(NPC buyer, GameLocation shop)
+	{
+		(Archetype a, List<Pick> picks, bool wanted) = Plan(buyer, shop);
+		List<Line> lines = picks.Select(TakeLine).Where(l => l != null).ToList()!;
+		if (_ledger.Wallet(buyer.Name) is { } w)
+		{
+			w.ShoppedDay = Today;
+		}
+		if (lines.Count == 0)
+		{
+			// 店里根本没有想要的那类货才算"没找到"；有但嫌贵、钱不够的就不留评价。
+			if (!wanted && _random.NextDouble() < 0.3)
+			{
+				WriteReview(buyer, a, lines, found: false, wait: 0, checkout: 0);
+			}
+			return;
+		}
+		Settle(buyer, lines, live: false, speaker: null, tip: 0);
+		WriteReview(buyer, a, lines, found: true, wait: _random.Next(2, 9), checkout: 0);
+	}
+
+	/// <summary>
+	/// 结账：每一样记一笔成交（偷来的可能当场被认出、拿走不付钱）；钱进你身上（你在店里、有收银员或配偶看店）或者钱箱。返回实收多少。
+	/// </summary>
+	private int Settle(NPC buyer, List<Line> lines, bool live, NPC? speaker, int tip)
+	{
+		if (State is not MartState s)
+		{
+			return 0;
+		}
+		GameLocation? shop = Shops().FirstOrDefault();
+		int total = 0;
+		foreach (Line l in lines)
+		{
+			SObject sold = l.Item;
+			StoreSale sale = new StoreSale
+			{
+				Source = StoreSale.Ours,
+				TxId = $"{Today}-{s.NextTx++}",
+				Buyer = buyer.Name,
+				ItemId = sold.QualifiedItemId,
+				ItemName = sold.DisplayName,
+				Qty = sold.Stack,
+				Quality = sold.Quality,
+				UnitPrice = l.Price,
+				MarketPrice = BasePrice(sold),
+				Stolen = sold.modData.TryGetValue("StardewThief/IsStolen", out string? st) && st == "true",
+				StolenFrom = sold.modData.TryGetValue("StardewThief/StolenFrom", out string? from) ? from : "",
+				StolenDay = sold.modData.TryGetValue("StardewThief/StolenDay", out string? sd) && int.TryParse(sd, out int d) ? d : 0,
+				Day = Today,
+				Time = Game1.timeOfDay
+			};
+			bool caught = sale.Stolen && _config().StolenGoodsNoticed && CheckStolen(sale, buyer);
+			sale.Reclaimed = caught;
+			Sales.Record(sale);
+			if (caught)
+			{
+				Caught(sale, buyer, speaker);
+				continue;
+			}
+			total += sale.Total;
+		}
+		total += tip;
+		s.Xp += total;
+		bool attended = live || Game1.currentLocation == shop || OnDuty(Staff.Cashier) || SpouseMinding?.Invoke() == true;
+		if (attended)
+		{
+			Game1.player.Money += total;
+		}
+		else
+		{
+			s.Cashbox += total;
+		}
+		Dirty();
+		if (Game1.currentLocation == shop && total > 0)
+		{
+			Game1.playSound("purchase");
+			string items = string.Join(Tr.Get("list.sep", "、"), lines.Select(l => $"{l.Item.DisplayName}×{l.Item.Stack}"));
+			Hints.Hud(Tr.Get("mart.sold", "{{name}}买了{{item}}，+{{gold}}g", ("name", Display(buyer.Name)), ("item", items), ("gold", total)), 4000);
+			if (speaker != null && lines.Count > 0)
+			{
+				Comment(speaker, buyer, lines[0], total);
+			}
+		}
+		if (shop != null && Game1.currentLocation == shop)
+		{
+			MartShelves.RefreshDisplay(shop);
+		}
+		return total;
+	}
+
 	/// <summary>偶尔说一句对店的看法（AI 用不了就不说）。</summary>
-	private void Comment(NPC speaker, NPC buyer, StoreSale sale)
+	private void Comment(NPC speaker, NPC buyer, Line line, int total)
 	{
 		if (Ai is not IAiSender ai || !_config().AiOn || _random.NextDouble() > 0.35)
 		{
 			return;
 		}
-		string system = $"这次只用{Language?.Invoke() ?? "中文"}回答。\n\n你是{Display(buyer.Name)}。\n{Persona?.Invoke(buyer.Name) ?? ""}\n\n# 现在\n你在{Game1.player.Name}开的农夫小超市里，刚花 {sale.Total}g 买了{sale.ItemName}×{sale.Qty}（原价大约 {sale.MarketPrice}g 一个）。\n\n# 输出\n顺口说一句对这家店或这样东西的看法，20 个字以内，不加引号。";
+		string system = $"这次只用{Language?.Invoke() ?? "中文"}回答。\n\n你是{Display(buyer.Name)}。\n{Persona?.Invoke(buyer.Name) ?? ""}\n\n# 现在\n你在{Game1.player.Name}开的农夫小超市里，刚付了 {total}g，买了{line.Item.DisplayName}等东西（原价大约 {BasePrice(line.Item)}g 一个）。\n\n# 输出\n顺口说一句对这家店或这样东西的看法，20 个字以内，不加引号。";
 		Task.Run(async () =>
 		{
 			try
 			{
 				AiResult r = await ai.SendAsync(new ChatRequest("store_comment", system, "说一句。", 200, 0.9)).ConfigureAwait(false);
-				string? line = r.Ok ? ChildPrompts.Clean(r.Text) : null;
-				if (line != null)
+				string? said = r.Ok ? ChildPrompts.Clean(r.Text) : null;
+				if (said != null)
 				{
-					MainThread.Run(() => NpcSpeech.Say(speaker, line));
+					MainThread.Run(() => NpcSpeech.Say(speaker, said));
 				}
 			}
 			catch (Exception ex)
@@ -543,4 +661,50 @@ public sealed partial class MartService
 	{
 		_ledger.OnStorePurchase(sale);
 	}
+}
+
+/// <summary>顾客想买的一样（还在货架上）。</summary>
+public sealed class Pick
+{
+	public Furniture Shelf = null!;
+
+	public int Slot;
+
+	public string ItemId = "";
+
+	public int Qty;
+}
+
+/// <summary>篮子里的一样（已经从货架上拿下来）。</summary>
+public sealed class Line
+{
+	public Furniture Shelf = null!;
+
+	public SObject Item = null!;
+
+	public int Price;
+
+	public string Stage = Freshness.Normal;
+
+	public bool WrongTemp;
+
+	public int Total => Price * Item.Stack;
+}
+
+/// <summary>给收银小游戏的：谁、买了什么、总价、递过来多少钱；Done(找了多少, 用了几秒)，Cancel = 先不收。</summary>
+public sealed class CheckoutRequest
+{
+	public NPC Customer = null!;
+
+	public string Name = "";
+
+	public List<Line> Lines = new List<Line>();
+
+	public int Total;
+
+	public int Paid;
+
+	public Action<int, double> Done = (_, _) => { };
+
+	public Action Cancel = () => { };
 }

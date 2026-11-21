@@ -66,7 +66,9 @@ public sealed partial class MartService
 		}
 		(int kinds, double ratio) = Offerings();
 		bool joja = JojaOpen;
-		(double p, double j, double o) = Competition.Shares(kinds, ratio, s.Reputation, joja);
+		// 从 Pierre 进货等于照顾他的生意：最近一周每进 3000g 的货，他的份额底子多 1（最多 0.6）。
+		double support = Math.Min(0.6, s.Delivered.Where(d => d.Supplier == "Pierre" && Today - d.Day < 7).Sum(d => d.Cost) / 3000.0);
+		(double p, double j, double o) = Competition.Shares(kinds, ratio, s.Reputation, joja, pierreBoost: support);
 		s.Shares.Add(new DayShare { Day = Today, Pierre = p, Joja = j, Ours = o });
 		s.Shares.RemoveAll(d => Today - d.Day > 28);
 		foreach (string rival in new[] { Competition.Pierre, Competition.Joja })

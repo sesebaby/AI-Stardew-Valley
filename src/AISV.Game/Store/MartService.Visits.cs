@@ -6,22 +6,24 @@ using AISV.Core.Text;
 using AISV.Game.Npcs;
 using AISV.Game.Social;
 using Microsoft.Xna.Framework;
+using StardewModdingAPI;
+using StardewModdingAPI.Events;
 using StardewValley;
-using StardewValley.Buildings;
 using StardewValley.Objects;
 using StardewValley.Pathfinding;
+using SObject = StardewValley.Object;
 
 namespace AISV.Game.Store;
 
-/// <summary>店里走动的顾客和店员：都是替身，真人在原地藏起来，走完放回去。</summary>
+/// <summary>店里走动的顾客和店员：都是替身，真人在原地藏起来，走完放回去。顾客挑完货到柜台排队，你来收银。</summary>
 public sealed partial class MartService
 {
 	private enum Stage
 	{
 		ToShelf,
 		Browse,
-		ToRegister,
-		Pay,
+		ToQueue,
+		Waiting,
 		Leave,
 		Done
 	}
@@ -34,9 +36,16 @@ public sealed partial class MartService
 
 		public GameLocation Shop = null!;
 
-		public Furniture Shelf = null!;
+		public Archetype Type = Archetypes.All[0];
 
-		public int Qty;
+		public List<Pick> Picks = new List<Pick>();
+
+		/// <summary>要去看的货架（按顺序）。</summary>
+		public List<Furniture> Stops = new List<Furniture>();
+
+		public int Stop;
+
+		public List<Line> Lines = new List<Line>();
 
 		public Stage Stage;
 
@@ -45,9 +54,27 @@ public sealed partial class MartService
 		public int Wait;
 
 		public int Ticks;
+
+		/// <summary>在柜台前排了多少帧。</summary>
+		public int Queued;
+
+		/// <summary>收银窗口开着（正在给这位结账）。</summary>
+		public bool Serving;
+
+		public bool Settled;
+
+		public Point Spot;
+
+		/// <summary>店里有这位想要的那类货（没买成也不算"没找到"）。</summary>
+		public bool Wanted;
 	}
 
+	/// <summary>顾客最多排多久（帧）：45 秒没人收银就放下东西走人。</summary>
+	private const int Patience = 45 * 60;
+
 	private readonly List<Visit> _visits = new List<Visit>();
+
+	private readonly List<Visit> _queue = new List<Visit>();
 
 	private readonly Dictionary<string, NPC> _clerkClones = new Dictionary<string, NPC>(StringComparer.OrdinalIgnoreCase);
 
@@ -58,8 +85,12 @@ public sealed partial class MartService
 		return w == null ? new Point(shop.Map.Layers[0].LayerWidth / 2, shop.Map.Layers[0].LayerHeight - 3) : new Point(w.X, w.Y - 1);
 	}
 
-	/// <summary>家具前面（下方）能站人的一格。</summary>
-	private static Point Front(Furniture f) => new Point((int)f.TileLocation.X, (int)f.TileLocation.Y + Math.Max(1, f.getTilesHigh()));
+	/// <summary>货架前面（下方正中）能站人的一格。</summary>
+	private static Point Front(Furniture f)
+	{
+		Rectangle box = f.GetBoundingBox();
+		return new Point(box.Center.X / 64, box.Bottom / 64);
+	}
 
 	/// <summary>照真人的样子做一个替身（同一张图、同一个名字显示）。</summary>
 	public static NPC Clone(NPC real, GameLocation where, Point tile, string reason)
@@ -77,26 +108,55 @@ public sealed partial class MartService
 		return clone;
 	}
 
+	/// <summary>顾客进门：先想好买什么，按货架一个个去看；什么都不想买的也进来转一圈。</summary>
 	private bool StartVisit(NPC buyer, GameLocation shop)
 	{
-		if (Choose(buyer, shop) is not (Furniture shelf, int qty))
+		(Archetype a, List<Pick> picks, bool wanted) = Plan(buyer, shop);
+		List<Furniture> stops = picks.Select(p => p.Shelf).Distinct().ToList();
+		if (stops.Count == 0)
 		{
-			return false;
+			List<Furniture> shelves = Shelves(shop).ToList();
+			if (shelves.Count == 0)
+			{
+				return false;
+			}
+			stops.Add(shelves[_random.Next(shelves.Count)]);
 		}
-		Point entry = Entry(shop);
-		NPC clone = Clone(buyer, shop, entry, ShopperReason);
-		Visit v = new Visit { Real = buyer, Clone = clone, Shop = shop, Shelf = shelf, Qty = qty, Stage = Stage.ToShelf };
-		if (!Walk(v, Front(shelf), 0))
+		NPC clone = Clone(buyer, shop, Entry(shop), ShopperReason);
+		Visit v = new Visit { Real = buyer, Clone = clone, Shop = shop, Type = a, Picks = picks, Stops = stops, Stage = Stage.ToShelf, Wanted = wanted };
+		if (!Walk(v, Front(stops[0]), 0))
 		{
 			shop.characters.Remove(clone);
 			return false;
 		}
 		buyer.IsInvisible = true;
 		NpcBusy.Hold(buyer.Name, ShopperReason);
+		if (_ledger.Wallet(buyer.Name) is { } w)
+		{
+			w.ShoppedDay = Today;
+		}
 		_visits.Add(v);
 		Game1.playSound("doorClose");
+		Greet(clone);
+		if (picks.Count > 0 && _random.NextDouble() < 0.5)
+		{
+			NpcSpeech.Say(clone, Need(a), 3500);
+		}
 		return true;
 	}
+
+	/// <summary>进门时顺口说一句想买什么（按顾客类型）。</summary>
+	private static string Need(Archetype a) => a.Id switch
+	{
+		Archetypes.Cook => Tr.Get("mart.need.cook", "买点菜回去做饭。"),
+		Archetypes.FruitLover => Tr.Get("mart.need.fruit", "有新鲜水果吗？"),
+		Archetypes.FishBuyer => Tr.Get("mart.need.fish", "今天的鱼新鲜吗？"),
+		Archetypes.Gifter => Tr.Get("mart.need.gift", "想挑件东西送人。"),
+		Archetypes.Hungry => Tr.Get("mart.need.hungry", "饿了，有现成吃的吗？"),
+		Archetypes.Connoisseur => Tr.Get("mart.need.connoisseur", "看看有没有好东西。"),
+		Archetypes.Collector => Tr.Get("mart.need.collector", "听说你这里有矿石？"),
+		_ => Tr.Get("mart.need.browse", "随便看看。")
+	};
 
 	private static bool Walk(Visit v, Point to, int facing)
 	{
@@ -110,9 +170,18 @@ public sealed partial class MartService
 		return true;
 	}
 
-	/// <summary>每帧推进店里的顾客：到货架前看一会儿 → 去收银台 → 结账 → 出门。走不通就当场结算。</summary>
+	/// <summary>每帧推进店里的顾客：看货架 → 拿货 → 排队 → 收银 → 出门。走不通就当场结算。</summary>
 	public void OnUpdateTicked()
 	{
+		TickStocker();
+		if (Game1.ticks % 30 == 0 && _config().FarmerMart && Context.IsWorldReady && IsShop(Game1.currentLocation))
+		{
+			MartShelves.EnsureDisplay(Game1.currentLocation);
+			if (!Game1.currentLocation.temporarySprites.Any(t => t.id == PosterSpriteId))
+			{
+				ShowPoster(Game1.currentLocation);
+			}
+		}
 		if (_visits.Count == 0)
 		{
 			return;
@@ -120,39 +189,53 @@ public sealed partial class MartService
 		foreach (Visit v in _visits.ToList())
 		{
 			v.Ticks++;
-			if (v.Ticks > 60 * 60)
+			if (v.Ticks > 60 * 150 && v.Stage != Stage.Waiting)
 			{
-				Finish(v, sell: v.Stage < Stage.Pay);
+				Finish(v, sell: true);
 				continue;
 			}
 			switch (v.Stage)
 			{
 				case Stage.ToShelf when v.Arrived:
 					v.Stage = Stage.Browse;
-					v.Wait = 90;
+					v.Wait = 70 + _random.Next(60);
 					v.Clone.faceDirection(0);
-					v.Clone.doEmote(_random.NextDouble() < 0.5 ? 32 : 40);
+					if (_random.NextDouble() < 0.4)
+					{
+						v.Clone.doEmote(_random.NextDouble() < 0.5 ? 32 : 40);
+					}
 					break;
 				case Stage.Browse when --v.Wait <= 0:
-					if (Register(v.Shop) is Furniture reg && Walk(v, Front(reg), 0))
+					Furniture here = v.Stops[v.Stop];
+					foreach (Pick p in v.Picks.Where(p => p.Shelf == here))
 					{
-						v.Stage = Stage.ToRegister;
+						if (TakeLine(p) is Line l)
+						{
+							v.Lines.Add(l);
+						}
+					}
+					MartShelves.RefreshDisplay(v.Shop);
+					if (++v.Stop < v.Stops.Count && Walk(v, Front(v.Stops[v.Stop]), 0))
+					{
+						v.Stage = Stage.ToShelf;
+					}
+					else if (v.Lines.Count > 0)
+					{
+						JoinQueue(v);
 					}
 					else
 					{
-						v.Stage = Stage.Pay;
+						v.Clone.doEmote(v.Wanted ? 8 : 28);
+						if (!v.Wanted)
+						{
+							WriteReview(v.Real, v.Type, v.Lines, found: false, wait: 0, checkout: 0);
+						}
+						Leave(v);
 					}
 					break;
-				case Stage.ToRegister when v.Arrived:
-					v.Stage = Stage.Pay;
-					break;
-				case Stage.Pay:
-					SellTo(v.Real, v.Shop, live: true, v.Clone, (v.Shelf, v.Qty));
-					v.Stage = Stage.Leave;
-					if (!Walk(v, Entry(v.Shop), 2))
-					{
-						Finish(v, sell: false);
-					}
+				case Stage.ToQueue:
+				case Stage.Waiting:
+					Queueing(v);
 					break;
 				case Stage.Leave when v.Arrived:
 					Finish(v, sell: false);
@@ -161,32 +244,223 @@ public sealed partial class MartService
 		}
 	}
 
+	private void JoinQueue(Visit v)
+	{
+		_queue.Add(v);
+		v.Stage = Stage.ToQueue;
+		v.Spot = new Point(-1, -1);
+		Reposition();
+	}
+
+	/// <summary>队伍里每个人走到自己的位置（前面的人走了就往前挪）。</summary>
+	private void Reposition()
+	{
+		for (int i = 0; i < _queue.Count; i++)
+		{
+			Visit v = _queue[i];
+			Point spot = MartInterior.Queue[Math.Min(i, MartInterior.Queue.Length - 1)];
+			if (spot != v.Spot)
+			{
+				v.Spot = spot;
+				if (!Walk(v, spot, 0))
+				{
+					v.Clone.setTileLocation(spot.ToVector2());
+					v.Arrived = true;
+				}
+			}
+		}
+	}
+
+	/// <summary>排队：排到柜台前，有收银员（或配偶、或关掉了收银小游戏）就自动结账，否则等你点柜台；等太久就走。</summary>
+	private void Queueing(Visit v)
+	{
+		// 开着菜单（收银、货架）时游戏是停的，不算顾客干等。
+		if (!v.Serving && Game1.activeClickableMenu == null)
+		{
+			v.Queued++;
+		}
+		bool head = _queue.FirstOrDefault() == v;
+		if (v.Stage == Stage.ToQueue && v.Arrived)
+		{
+			v.Stage = Stage.Waiting;
+			v.Clone.faceDirection(0);
+			if (head && !AutoCheckout)
+			{
+				v.Clone.doEmote(16);
+				Hints.Tip("MartCheckout", Tr.Get("mart.tipCheckout", "柜台收银找零"));
+			}
+		}
+		if (v.Stage != Stage.Waiting || v.Serving)
+		{
+			return;
+		}
+		if (head && AutoCheckout && v.Queued > 90)
+		{
+			Pay(v, checkout: OnDuty(Staff.Cashier) ? ReviewRules.CheckoutPerfect : 0, tip: 0);
+			return;
+		}
+		if (v.Queued > Patience)
+		{
+			v.Clone.doEmote(12);
+			NpcSpeech.Say(v.Clone, Tr.Get("mart.gaveUp", "等太久了，不买了。"), 3000);
+			foreach (Line l in v.Lines)
+			{
+				PutBack(l);
+			}
+			MartShelves.RefreshDisplay(v.Shop);
+			WriteReview(v.Real, v.Type, v.Lines, found: true, wait: v.Queued / 60, checkout: 0);
+			v.Lines.Clear();
+			_queue.Remove(v);
+			Reposition();
+			Leave(v);
+		}
+	}
+
+	/// <summary>不用你收银：有收银员当班、配偶看店，或者设置里关掉了收银小游戏。</summary>
+	private bool AutoCheckout => OnDuty(Staff.Cashier) || SpouseMinding?.Invoke() == true || !_config().MartCheckoutGame;
+
+	/// <summary>点柜台：给排在最前面、已经站到柜台前的人结账。没人排队返回 false。</summary>
+	private bool ServeNext()
+	{
+		Visit? v = _queue.FirstOrDefault();
+		if (v == null)
+		{
+			return false;
+		}
+		if (v.Stage != Stage.Waiting || v.Serving)
+		{
+			Hints.Hud(Tr.Get("mart.comingToCounter", "{{name}}正走过来。", ("name", Display(v.Real.Name))), 2000);
+			return true;
+		}
+		int total = v.Lines.Sum(l => l.Total);
+		if (OpenCheckout == null)
+		{
+			Pay(v, checkout: 0, tip: 0);
+			return true;
+		}
+		v.Serving = true;
+		int paid = Checkout.Paid(total, _random.NextDouble());
+		OpenCheckout(new CheckoutRequest
+		{
+			Customer = v.Clone,
+			Name = Display(v.Real.Name),
+			Lines = v.Lines,
+			Total = total,
+			Paid = paid,
+			Done = (given, seconds) =>
+			{
+				v.Serving = false;
+				(bool ok, int tip) = Checkout.Result(total, paid, given, seconds);
+				if (!ok)
+				{
+					v.Clone.doEmote(8);
+					NpcSpeech.Say(v.Clone, given < paid - total ? Tr.Get("mart.shortChange", "找的钱不对吧？少了。") : Tr.Get("mart.overChange", "你多找给我了，喏，还你。"), 3000);
+				}
+				else if (tip > 0)
+				{
+					NpcSpeech.Say(v.Clone, Tr.Get("mart.keepChange", "真快！零头不用找了。"), 3000);
+				}
+				Pay(v, checkout: ok ? seconds <= 20 ? ReviewRules.CheckoutPerfect : 0 : ReviewRules.CheckoutWrong, tip: tip);
+			},
+			Cancel = () => v.Serving = false
+		});
+		return true;
+	}
+
+	/// <summary>付钱、留评价、出门。</summary>
+	private void Pay(Visit v, int checkout, int tip)
+	{
+		if (v.Settled)
+		{
+			return;
+		}
+		v.Settled = true;
+		Settle(v.Real, v.Lines, live: true, speaker: v.Clone, tip: tip);
+		WriteReview(v.Real, v.Type, v.Lines, found: true, wait: v.Queued / 60, checkout: checkout);
+		_queue.Remove(v);
+		Reposition();
+		Leave(v);
+	}
+
+	private void Leave(Visit v)
+	{
+		v.Stage = Stage.Leave;
+		if (!Walk(v, Entry(v.Shop), 2))
+		{
+			Finish(v, sell: false);
+		}
+	}
+
+	/// <summary>收回替身。sell：还没结账的按后台结账（你走出店、换天时）。</summary>
 	private void Finish(Visit v, bool sell)
 	{
-		if (sell)
+		if (sell && !v.Settled)
 		{
-			SellTo(v.Real, v.Shop, live: false, choice: (v.Shelf, v.Qty));
+			foreach (Pick p in v.Picks.Where(p => v.Lines.All(l => l.Shelf != p.Shelf) && v.Stops.IndexOf(p.Shelf) >= v.Stop))
+			{
+				if (TakeLine(p) is Line l)
+				{
+					v.Lines.Add(l);
+				}
+			}
+			if (v.Lines.Count > 0)
+			{
+				v.Settled = true;
+				Settle(v.Real, v.Lines, live: false, speaker: null, tip: 0);
+				WriteReview(v.Real, v.Type, v.Lines, found: true, wait: v.Queued / 60, checkout: 0);
+			}
 		}
 		v.Stage = Stage.Done;
+		_queue.Remove(v);
 		v.Shop.characters.Remove(v.Clone);
 		v.Real.IsInvisible = false;
 		NpcBusy.Release(v.Real.Name);
 		_visits.Remove(v);
 	}
 
-	/// <summary>换天、存档、回标题：店里的替身全部收回。</summary>
+	/// <summary>换天、存档、回标题、打烊：店里的替身全部收回（没结账的后台结掉）。</summary>
 	public void CleanupVisits()
 	{
 		foreach (Visit v in _visits.ToList())
 		{
-			Finish(v, sell: false);
+			Finish(v, sell: Context.IsWorldReady);
 		}
+		_queue.Clear();
 		NpcBusy.ReleaseAll(ShopperReason);
+	}
+
+	/// <summary>进店：把货画上货架、贴上海报；走出店：店里的顾客后台结账收回。</summary>
+	public void OnShopWarped(WarpedEventArgs e)
+	{
+		if (!e.IsLocalPlayer || !_config().FarmerMart)
+		{
+			return;
+		}
+		if (IsShop(e.NewLocation))
+		{
+			MartShelves.RefreshDisplay(e.NewLocation);
+			ShowPoster(e.NewLocation);
+			Hints.Tip("MartInside", Tr.Get("mart.tipInside", "农夫小超市"));
+		}
+		if (IsShop(e.OldLocation) && !IsShop(e.NewLocation))
+		{
+			CleanupVisits();
+		}
 	}
 
 	// ---------------- 店员 ----------------
 
-	/// <summary>营业时间里店员在收银台后面站着（真人藏起来，算在上班）；打烊就回去。</summary>
+	/// <summary>这个岗位现在有人当班吗。</summary>
+	private bool OnDuty(string role) => State?.Clerks.Any(c => c.Role == role && _clerkClones.ContainsKey(c.Npc)) == true;
+
+	private static Point Post(string role, int index) => role switch
+	{
+		Staff.Cashier => index == 0 ? MartInterior.Cashier : MartInterior.Cashier + new Point(2, 0),
+		Staff.Greeter => MartInterior.Greeter,
+		_ => new Point(11, 8)
+	};
+
+	/// <summary>营业时间里店员到岗（真人藏起来，算在上班）；打烊就回去。合同到期的不来。</summary>
 	private void ClerkShift(int time)
 	{
 		if (State is not MartState s || !HasShop)
@@ -201,16 +475,17 @@ public sealed partial class MartService
 			{
 				continue;
 			}
-			if (open && !_clerkClones.ContainsKey(c.Npc) && !real.IsInvisible && !NpcBusy.IsBySources(c.Npc))
+			bool working = open && (c.Until == 0 || c.Until >= Today) && c.HiredDay < Today;
+			if (working && !_clerkClones.ContainsKey(c.Npc) && !real.IsInvisible && !NpcBusy.IsBySources(c.Npc))
 			{
-				Point at = Register(shop) is Furniture reg ? new Point((int)reg.TileLocation.X, (int)reg.TileLocation.Y - 1) : Entry(shop);
-				NPC clone = Clone(real, shop, at, ClerkReason);
+				int index = s.Clerks.Where(x => x.Role == c.Role).ToList().IndexOf(c);
+				NPC clone = Clone(real, shop, Post(c.Role, index), ClerkReason);
 				clone.faceDirection(2);
 				real.IsInvisible = true;
 				NpcBusy.Hold(c.Npc, ClerkReason);
 				_clerkClones[c.Npc] = clone;
 			}
-			else if (!open && _clerkClones.TryGetValue(c.Npc, out NPC? clone))
+			else if (!working && _clerkClones.TryGetValue(c.Npc, out NPC? clone))
 			{
 				clone.currentLocation?.characters.Remove(clone);
 				_clerkClones.Remove(c.Npc);
@@ -220,9 +495,46 @@ public sealed partial class MartService
 		}
 	}
 
+	/// <summary>迎宾看到有人进门：打个招呼。</summary>
+	private void Greet(NPC customer)
+	{
+		Clerk? g = State?.Clerks.FirstOrDefault(c => c.Role == Staff.Greeter && _clerkClones.ContainsKey(c.Npc));
+		if (g != null && _clerkClones[g.Npc] is NPC clone && _random.NextDouble() < 0.6)
+		{
+			clone.faceGeneralDirection(customer.Position);
+			NpcSpeech.Say(clone, Tr.Get("mart.welcomeIn", "欢迎光临！"), 2500);
+		}
+	}
+
+	private int _stockerTick;
+
+	/// <summary>理货员在货架之间走来走去。</summary>
+	private void TickStocker()
+	{
+		if (++_stockerTick % 600 != 0 || State is not MartState s)
+		{
+			return;
+		}
+		foreach (Clerk c in s.Clerks.Where(c => c.Role == Staff.Stocker))
+		{
+			if (_clerkClones.TryGetValue(c.Npc, out NPC? clone) && clone.controller == null && clone.currentLocation is GameLocation shop)
+			{
+				List<Furniture> shelves = Shelves(shop).ToList();
+				if (shelves.Count > 0)
+				{
+					clone.controller = new PathFindController(clone, shop, Front(shelves[_random.Next(shelves.Count)]), 0);
+					if (clone.controller.pathToEndPoint == null)
+					{
+						clone.controller = null;
+					}
+				}
+			}
+		}
+	}
+
 	private NPC? _spouseClone;
 
-	/// <summary>配偶来看店：站在收银台后面（真人藏起来）；off 时收回。</summary>
+	/// <summary>配偶来看店：站在柜台后面（真人藏起来）；off 时收回。</summary>
 	public bool SpouseShift(NPC? real, bool on)
 	{
 		if (!on)
@@ -244,25 +556,33 @@ public sealed partial class MartService
 			return false;
 		}
 		GameLocation shop = Shops().First();
-		Point at = Register(shop) is Furniture reg ? new Point((int)reg.TileLocation.X + 1, (int)reg.TileLocation.Y - 1) : Entry(shop);
-		_spouseClone = Clone(real, shop, at, ClerkReason);
+		_spouseClone = Clone(real, shop, MartInterior.Cashier + new Point(OnDuty(Staff.Cashier) ? 2 : 0, 0), ClerkReason);
 		_spouseClone.faceDirection(2);
 		real.IsInvisible = true;
 		NpcBusy.Hold(real.Name, ClerkReason);
 		return true;
 	}
 
-	/// <summary>配偶把自己做的东西摆到一张空陈列台上（没有空台就不摆）。</summary>
+	/// <summary>配偶把自己做的东西摆上能放的货架（放不下就不摆）。</summary>
 	public bool StockSpouseWork(string npc, string itemId, int qty)
 	{
-		Furniture? empty = AllShelves().Select(s => s.Shelf).FirstOrDefault(f => f.heldObject.Value == null);
-		if (empty == null || ItemRegistry.Create(itemId, qty, allowNull: true) is not StardewValley.Object o)
+		if (ItemRegistry.Create(itemId, qty, allowNull: true) is not SObject o)
 		{
 			return false;
 		}
 		o.modData[SpouseWorkKey] = npc;
-		empty.heldObject.Value = o;
-		return true;
+		foreach ((GameLocation shop, Furniture f) in AllShelves())
+		{
+			if (MartShelves.Add(f, o, o.Stack, Origins.Spouse) > 0)
+			{
+				if (Game1.currentLocation == shop)
+				{
+					MartShelves.RefreshDisplay(shop);
+				}
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public const string SpouseWorkKey = "AIStardewValley.Core/SpouseWork";
@@ -282,66 +602,6 @@ public sealed partial class MartService
 		NpcBusy.ReleaseAll(ClerkReason);
 	}
 
-	/// <summary>能雇谁：4 心以上的大人，不是 Pierre 和 Morris；Joja 不行了时 Sam 和 Shane 更愿意来（工钱少一点）。</summary>
-	public IReadOnlyList<(string Npc, int Wage)> ClerkCandidates()
-	{
-		MartState? s = State;
-		int joja = s?.Rivals.TryGetValue(Competition.Joja, out RivalState? r) == true ? r!.Health : 0;
-		return Utility.getAllVillagers().Where(n => n.CanSocialize && !Kids.IsChild(n) && _npcs.IsEnabled(n) && n.Name != "Pierre" && n.Name != "Morris"
-				&& Game1.player.getFriendshipHeartLevelForNPC(n.Name) >= 4 && s?.Clerks.All(c => c.Npc != n.Name) != false)
-			.Select(n => (n.Name, Wage: (n.Name is "Sam" or "Shane") && joja >= Competition.Losing ? 150 : 250))
-			.OrderBy(x => x.Wage).ThenBy(x => Display(x.Name)).ToList();
-	}
-
-	public bool Hire(string npc, int wage)
-	{
-		if (State is not MartState s || s.Clerks.Count >= 2 || s.Clerks.Any(c => c.Npc == npc))
-		{
-			return false;
-		}
-		s.Clerks.Add(new Clerk { Npc = npc, Wage = wage, HiredDay = Today });
-		_store()!.MarkDirty(MartState.Path);
-		Gossip?.Invoke(Tr.Get("mart.hiredGossip", "{{name}}到{{farmer}}的店里帮忙了。", ("name", Display(npc)), ("farmer", Game1.player.Name)), new[] { npc });
-		return true;
-	}
-
-	public void Fire(string npc)
-	{
-		if (State is MartState s && s.Clerks.RemoveAll(c => c.Npc == npc) > 0)
-		{
-			_store()!.MarkDirty(MartState.Path);
-			if (_clerkClones.TryGetValue(npc, out NPC? clone))
-			{
-				clone.currentLocation?.characters.Remove(clone);
-				_clerkClones.Remove(npc);
-			}
-			if (Game1.getCharacterFromName(npc) is NPC real)
-			{
-				real.IsInvisible = false;
-			}
-			NpcBusy.Release(npc);
-		}
-	}
-
-	/// <summary>晚上发工钱：先从钱箱扣，不够从你的钱里扣，再不够就欠着不发（店员心情变差）。</summary>
-	private void PayClerks(MartState s)
-	{
-		foreach (Clerk c in s.Clerks)
-		{
-			int fromBox = Math.Min(s.Cashbox, c.Wage);
-			s.Cashbox -= fromBox;
-			int fromMe = Math.Min(Game1.player.Money, c.Wage - fromBox);
-			Game1.player.Money -= fromMe;
-			int paid = fromBox + fromMe;
-			_ledger.Pay(c.Npc, paid, Tr.Get("mart.wageNote", "在农夫小超市上班的工钱"));
-			if (paid < c.Wage)
-			{
-				AdjustMood?.Invoke(c.Npc, -8);
-			}
-		}
-		_store()!.MarkDirty(MartState.Path);
-	}
-
 	/// <summary>读档时：以前没收回的替身清掉（比如上次游戏崩了）。</summary>
 	public static void Sweep()
 	{
@@ -349,68 +609,5 @@ public sealed partial class MartService
 		{
 			l.characters.RemoveWhere(c => c != null && c.modData.TryGetValue(NpcBusy.StandInKey, out string? why) && why is ShopperReason or ClerkReason or RivalReason);
 		}
-	}
-
-	/// <summary>卸 mod 之前：店换成原版大棚屋，陈列台上的货收回背包（放不下的放进箱子）。</summary>
-	/// <summary>调试：在农场 (x,y) 立刻建好一间、摆好两张陈列台和收银台、上一点货。</summary>
-	public string DebugBuild(int x, int y)
-	{
-		Farm farm = Game1.getFarm();
-		if (!farm.buildStructure(MartContent.BuildingId, new Vector2(x, y), Game1.player, out Building? b, magicalConstruction: true, skipSafetyChecks: true) || b?.GetIndoors() is not GameLocation inside)
-		{
-			return $"({x},{y}) 放不下。";
-		}
-		State?.Welcomed.Add(b.id.Value.ToString());
-		_store()?.MarkDirty(MartState.Path);
-		Furniture reg = Furniture.GetFurnitureInstance(MartContent.RegisterId, new Vector2(8, 6));
-		Furniture a = Furniture.GetFurnitureInstance(MartContent.ShelfId, new Vector2(4, 9));
-		Furniture c = Furniture.GetFurnitureInstance(MartContent.ShelfId, new Vector2(12, 9));
-		a.heldObject.Value = ItemRegistry.Create<StardewValley.Object>("(O)24", 10);
-		c.heldObject.Value = ItemRegistry.Create<StardewValley.Object>("(O)176", 6);
-		inside.furniture.Add(reg);
-		inside.furniture.Add(a);
-		inside.furniture.Add(c);
-		return $"在 ({x},{y}) 建好了 {inside.NameOrUniqueName}，门 {b.getPointForHumanDoor()}。";
-	}
-
-	public string Uninstall()
-	{
-		int buildings = 0, items = 0;
-		foreach (Building b in Buildings().ToList())
-		{
-			if (b.GetIndoors() is GameLocation l)
-			{
-				foreach (Furniture f in l.furniture.Where(f => f.QualifiedItemId is MartContent.ShelfQualified or MartContent.RegisterQualified).ToList())
-				{
-					if (f.heldObject.Value is StardewValley.Object o)
-					{
-						f.heldObject.Value = null;
-						Game1.player.team.GetOrCreateGlobalInventory("AIStardewValley.Core/Uninstalled").Add(o);
-						items++;
-					}
-					l.furniture.Remove(f);
-				}
-			}
-			b.buildingType.Value = "Big Shed";
-			buildings++;
-		}
-		if (items > 0)
-		{
-			StardewValley.Inventories.Inventory box = Game1.player.team.GetOrCreateGlobalInventory("AIStardewValley.Core/Uninstalled");
-			StardewValley.Objects.Chest chest = new StardewValley.Objects.Chest(true);
-			foreach (Item i in box.Where(i => i != null).ToList())
-			{
-				if (!Game1.player.addItemToInventoryBool(i))
-				{
-					chest.addItem(i);
-				}
-			}
-			box.Clear();
-			if (chest.Items.Count > 0)
-			{
-				Game1.getFarm().objects[Game1.player.Tile + new Vector2(1, 0)] = chest;
-			}
-		}
-		return $"{buildings} 间小超市换成了大棚屋，收回了 {items} 样货。陈列台和收银台已拿掉，现在可以卸载 mod 了。";
 	}
 }
