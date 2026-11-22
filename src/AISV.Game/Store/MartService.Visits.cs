@@ -438,6 +438,10 @@ public sealed partial class MartService
 		}
 		if (IsShop(e.NewLocation))
 		{
+			if (Host && State is MartState s)
+			{
+				OpenNewShops(s);
+			}
 			MartShelves.RefreshDisplay(e.NewLocation);
 			ShowPoster(e.NewLocation);
 			Hints.Tip("MartInside", Tr.Get("mart.tipInside", "农夫小超市"));

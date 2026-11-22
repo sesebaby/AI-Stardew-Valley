@@ -246,6 +246,25 @@ public sealed partial class MartService
 		{
 			return;
 		}
+		OpenNewShops(s);
+		Deliver(s);
+		ExpirePromotions(s);
+		ExpireContracts(s);
+		UpdateCompetition(s);
+		_rivalNoticeDay = -1;
+	}
+
+	/// <summary>刚建好：店里已经摆好货架，弹一页说明。</summary>
+	private void Welcome()
+	{
+		Hints.Hud(Tr.Get("mart.welcome", "农夫小超市建好了！货架、冷柜和柜台都摆好了。"), 8000);
+		Game1.player.mailReceived.Add("AISV_MartBuilt");
+		_log.Info("农夫小超市建好了，摆好了开店的货架。");
+	}
+
+	/// <summary>刚建好的店摆上货架和库房。平时早上做；当天建好（比如作弊菜单的立刻建造）时，进门那一刻做。</summary>
+	private void OpenNewShops(MartState s)
+	{
 		foreach (Building b in Buildings().Where(b => !b.isUnderConstruction()))
 		{
 			string id = b.id.Value.ToString();
@@ -261,19 +280,6 @@ public sealed partial class MartService
 				EnsureStockroom(inside);
 			}
 		}
-		Deliver(s);
-		ExpirePromotions(s);
-		ExpireContracts(s);
-		UpdateCompetition(s);
-		_rivalNoticeDay = -1;
-	}
-
-	/// <summary>刚建好：店里已经摆好货架，弹一页说明。</summary>
-	private void Welcome()
-	{
-		Hints.Hud(Tr.Get("mart.welcome", "农夫小超市建好了！货架、冷柜和柜台都摆好了。"), 8000);
-		Game1.player.mailReceived.Add("AISV_MartBuilt");
-		_log.Info("农夫小超市建好了，摆好了开店的货架。");
 	}
 
 	public void OnDayEnding()
