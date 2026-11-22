@@ -403,10 +403,16 @@ public sealed partial class MartService
 
 		public int Ticks;
 
+		/// <summary>挨打的画面（有专门的图时）：对手本人先藏起来，用这个代替。</summary>
+		public TemporaryAnimatedSprite? Pose;
+
 		public Action Done = () => { };
 	}
 
 	private Punch? _punch;
+
+	/// <summary>专门的图是 32×32 一格，放大 4 倍画；脚底对齐村民站的那一格的底边、左右居中。</summary>
+	private static Vector2 PoseAt(NPC n) => n.Position + new Vector2(-32f, -64f + n.yJumpOffset);
 
 	// 原版：闪一下屏、玩家出拳（第 15 帧 650 毫秒、往前探 8 像素）、clubhit、对手跳起并每 25 毫秒退 4 像素共 8 次，
 	// 停 200 毫秒、clubSmash、对手抖 1 秒。下面按 60 帧/秒换算。
@@ -427,10 +433,19 @@ public sealed partial class MartService
 		me.Position += away * 8f;
 		Game1.playSound("clubhit");
 		clone.jump();
+		TemporaryAnimatedSprite? pose = null;
+		if (Content.BrawlArt(real.Name) is Microsoft.Xna.Framework.Graphics.Texture2D art)
+		{
+			// 第 0 格：挨拳后仰（背对玩家那样往后倒）。
+			pose = new TemporaryAnimatedSprite(null, new Rectangle(0, 0, 32, 32), 99999f, 1, 1, PoseAt(clone), false, away.X < 0, (clone.StandingPixel.Y + 1) / 10000f, 0f, Color.White, 4f, 0f, 0f, 0f) { texture = art };
+			clone.currentLocation.temporarySprites.Add(pose);
+			clone.IsInvisible = true;
+		}
 		_punch = new Punch
 		{
 			Clone = clone,
 			Away = away,
+			Pose = pose,
 			Done = () =>
 			{
 				int fine = Math.Min(Game1.player.Money, Math.Clamp(Game1.player.Money / 10, 200, 1000));
@@ -472,14 +487,35 @@ public sealed partial class MartService
 		{
 			Game1.player.Position -= p.Away * 8f;
 		}
+		if (p.Pose != null)
+		{
+			p.Pose.Position = PoseAt(p.Clone);
+		}
 		if (p.Ticks == SmashTick)
 		{
 			Game1.playSound("clubSmash");
 			p.Clone.shake(1000);
+			if (p.Pose != null)
+			{
+				// 第 1 格：坐在地上，头上冒星星，抖一秒。
+				p.Pose.sourceRect = new Rectangle(32, 0, 32, 32);
+				p.Pose.sourceRectStartingPos = new Vector2(32, 0);
+				p.Pose.shakeIntensity = 1f;
+			}
+		}
+		if (p.Ticks == SmashTick + 60 && p.Pose != null)
+		{
+			p.Pose.shakeIntensity = 0f;
 		}
 		if (p.Ticks >= DoneTick)
 		{
 			_punch = null;
+			if (p.Pose != null)
+			{
+				// 爬起来：换回村民自己的样子再走。
+				p.Clone.currentLocation?.temporarySprites.Remove(p.Pose);
+				p.Clone.IsInvisible = false;
+			}
 			p.Done();
 		}
 	}

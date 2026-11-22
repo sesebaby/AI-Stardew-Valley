@@ -212,12 +212,27 @@ public sealed class MartContent
 	/// <summary>mod 自带的外观图（112 宽，门在正中，底边对齐地基）。</summary>
 	public const string ArtFile = "assets/store/farmer_mart.png";
 
+	private Texture2D? LoadArt() => LoadPng(ArtFile);
+
+	private readonly Dictionary<string, Texture2D?> _brawlArt = new Dictionary<string, Texture2D?>();
+
+	/// <summary>动手时对手的两帧（32×32 一格：挨拳后仰、坐在地上冒星星）；没有这张图返回 null，照常用村民自己的贴图。</summary>
+	public Texture2D? BrawlArt(string npc)
+	{
+		if (!_brawlArt.TryGetValue(npc, out Texture2D? tex))
+		{
+			string file = $"assets/store/brawl_{npc.ToLowerInvariant()}.png";
+			_brawlArt[npc] = tex = System.IO.File.Exists(System.IO.Path.Combine(_helper.DirectoryPath, file)) ? LoadPng(file) : null;
+		}
+		return tex;
+	}
+
 	/// <summary>直接用 MonoGame 读 png（不经过 SMAPI 的图片解码），再预乘透明度；读不了返回 null。</summary>
-	private Texture2D? LoadArt()
+	private Texture2D? LoadPng(string file)
 	{
 		try
 		{
-			using System.IO.FileStream stream = System.IO.File.OpenRead(System.IO.Path.Combine(_helper.DirectoryPath, ArtFile));
+			using System.IO.FileStream stream = System.IO.File.OpenRead(System.IO.Path.Combine(_helper.DirectoryPath, file));
 			Texture2D tex = Texture2D.FromStream(Game1.graphics.GraphicsDevice, stream);
 			Color[] px = new Color[tex.Width * tex.Height];
 			tex.GetData(px);
