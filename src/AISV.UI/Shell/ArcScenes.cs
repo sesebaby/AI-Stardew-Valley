@@ -160,8 +160,8 @@ internal sealed class TitleCard : IClickableMenu
 		Hearth.Ink(b, _title, pos, Color.Gold, scale, Game1.dialogueFont);
 		if (_subtitle != null)
 		{
-			Vector2 sub = Game1.smallFont.MeasureString(_subtitle);
-			b.DrawString(Game1.smallFont, _subtitle, new Vector2((vw - sub.X) / 2f, pos.Y + size.Y + 24f), Color.White * 0.8f);
+			Vector2 sub = Hearth.Measure(_subtitle);
+			Hearth.Ink(b, _subtitle, new Vector2((vw - sub.X) / 2f, pos.Y + size.Y + 24f), Color.White * 0.8f);
 		}
 		drawMouse(b);
 	}

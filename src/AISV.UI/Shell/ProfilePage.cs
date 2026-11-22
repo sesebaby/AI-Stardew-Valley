@@ -223,7 +223,8 @@ internal sealed class ProfilePage : ShellPage
 		Hearth.FillRounded(b, cake, Hearth.RosePale, 20);
 		bool set = _day > 0;
 		string date = set ? ShellText.Season(_season) + " " + Tr.Get("profile.day", "{{day}} 日", ("day", _day)) : Tr.Get("profile.notSet", "还没设");
-		b.DrawString(Game1.dialogueFont, date, new Vector2(cake.Center.X - Game1.dialogueFont.MeasureString(date).X / 2f, cake.Center.Y - Game1.dialogueFont.MeasureString(date).Y / 2f), set ? Hearth.Rose : Hearth.QuillPale);
+		Vector2 dateSize = Hearth.Measure(date, 1f, Game1.dialogueFont);
+		Hearth.Ink(b, date, new Vector2(cake.Center.X - dateSize.X / 2f, cake.Center.Y - dateSize.Y / 2f), set ? Hearth.Rose : Hearth.QuillPale, 1f, Game1.dialogueFont);
 		int cy = cake.Bottom + 44;
 		const int stepW = 40 + 4 + 120 + 4 + 40;
 		int sx = r.Center.X - (stepW * 2 + 24) / 2;
