@@ -22,7 +22,7 @@ namespace AISV.Game.Store;
 /// <summary>
 /// 和 Pierre、Joja 抢生意：每天按三家店的吸引力分镇上的购物，一周份额掉得多了对手就吃紧 → 亏损 → 停业整顿。
 /// 只改 AI星露谷 自己的经济：营业时间变短、少几样杂货、门口贴告示、心情和话题变；原版剧情标记不动，种子一样不少。
-/// 亏损以后对手会找上门理论：讲道理 / 让一步 / 动手（卡通式打飞，不伤人，但要罚款、上周报）。
+/// 亏损以后对手会找上门理论：讲道理 / 让一步 / 动手（像原版过场那样一拳，不伤人，但要罚款、上周报）。
 /// </summary>
 public sealed partial class MartService
 {
@@ -393,46 +393,46 @@ public sealed partial class MartService
 		Leave(real, clone, angry: false);
 	}
 
-	private sealed class Flight
+	/// <summary>一拳的过程：照原版莉亚 14 心事件里打凯尔那一拳的节奏，按帧推进。</summary>
+	private sealed class Punch
 	{
 		public NPC Clone = null!;
 
-		/// <summary>每帧水平移动多少（高低由原版的 jump 管，影子留在地上）。</summary>
-		public Vector2 Velocity;
+		/// <summary>从玩家指向对手的方向（单位向量），对手往这边退、玩家往这边探身。</summary>
+		public Vector2 Away;
 
 		public int Ticks;
-
-		public int Facing;
 
 		public Action Done = () => { };
 	}
 
-	private Flight? _flight;
+	private Punch? _punch;
 
-	/// <summary>卡通式打飞：对手嗖地往门口弹飞出去、转着圈，落在门外冒星星，不受伤。后果：掉一颗心、镇长罚款、上周报、镇上传开。</summary>
+	// 原版：闪一下屏、玩家出拳（第 15 帧 650 毫秒、往前探 8 像素）、clubhit、对手跳起并每 25 毫秒退 4 像素共 8 次，
+	// 停 200 毫秒、clubSmash、对手抖 1 秒。下面按 60 帧/秒换算。
+	private const int PushTicks = 12, SmashTick = 24, DoneTick = 84;
+
+	/// <summary>动手：玩家一拳，对手被打得往后退、跳起、抖一下，然后气呼呼地走出门。后果：掉一颗心、镇长罚款、上周报、镇上传开。</summary>
 	private void Brawl(string rival, NPC real, NPC clone)
 	{
-		Game1.playSound("clubhit");
-		Game1.player.faceGeneralDirection(clone.getStandingPosition(), 0, false, false);
-		GameLocation shop = clone.currentLocation;
-		Vector2 door = Entry(shop).ToVector2() * 64f;
+		Farmer me = Game1.player;
+		me.faceGeneralDirection(clone.getStandingPosition(), 0, false, false);
 		clone.controller = null;
 		clone.Halt();
-		// 原版的跳：抛物线和影子都由游戏自己画；起跳扬一团土。
-		clone.jump(FlyJump);
-		shop.temporarySprites.Add(new TemporaryAnimatedSprite(5, clone.Position, Color.White, 8, false, 50f));
-		_flight = new Flight
+		clone.faceGeneralDirection(me.getStandingPosition(), 0, false, false);
+		Vector2 away = clone.getStandingPosition() - me.getStandingPosition();
+		away = away == Vector2.Zero ? new Vector2(0, 1) : Vector2.Normalize(away);
+		Game1.flashAlpha = 0.25f;
+		me.FarmerSprite.animateOnce(new[] { new FarmerSprite.AnimationFrame(15, 650, secondaryArm: false, flip: false) });
+		me.Position += away * 8f;
+		Game1.playSound("clubhit");
+		clone.jump();
+		_punch = new Punch
 		{
 			Clone = clone,
-			Velocity = (door - clone.Position) / FlyTicks,
-			Facing = clone.FacingDirection,
+			Away = away,
 			Done = () =>
 			{
-				clone.Position = door;
-				clone.faceDirection(2);
-				Game1.playSound("dirtyHit");
-				shop.temporarySprites.Add(new TemporaryAnimatedSprite(5, door, Color.White, 8, false, 50f));
-				clone.doEmote(28);
 				int fine = Math.Min(Game1.player.Money, Math.Clamp(Game1.player.Money / 10, 200, 1000));
 				Game1.player.Money -= fine;
 				Content.LastFine = fine;
@@ -448,39 +448,41 @@ public sealed partial class MartService
 					}
 					_store()!.MarkDirty(MartState.Path);
 				}
-				Gossip?.Invoke(Tr.Get("mart.brawlGossip", "{{farmer}}在自己店里和{{name}}动了手，{{name}}被“嗖”地打飞出门，镇长罚了 {{gold}}g。", ("farmer", Game1.player.Name), ("name", Display(real.Name)), ("gold", fine)), new[] { real.Name, "Lewis" });
-				Hints.Hud(Tr.Get("mart.brawlHud", "{{name}}被打飞出门，晕乎乎地爬起来走了。罚款 {{gold}}g，明天会收到镇长的信。", ("name", Display(real.Name)), ("gold", fine)), 10000);
+				Gossip?.Invoke(Tr.Get("mart.brawlGossip", "{{farmer}}在自己店里和{{name}}动了手，一拳把{{name}}打得连退好几步，镇长罚了 {{gold}}g。", ("farmer", Game1.player.Name), ("name", Display(real.Name)), ("gold", fine)), new[] { real.Name, "Lewis" });
+				Hints.Hud(Tr.Get("mart.brawlHud", "{{name}}挨了一拳，晕乎乎地走了。罚款 {{gold}}g，明天会收到镇长的信。", ("name", Display(real.Name)), ("gold", fine)), 10000);
 				Leave(real, clone, angry: true);
 			}
 		};
 	}
 
-	/// <summary>每帧推进打飞动画（ModEntry 的 UpdateTicked 调）。</summary>
+	/// <summary>每帧推进这一拳（ModEntry 的 UpdateTicked 调）。</summary>
 	public void TickFly()
 	{
-		if (_flight is not Flight f)
+		if (_punch is not Punch p)
 		{
 			return;
 		}
-		f.Ticks++;
-		f.Clone.Position += f.Velocity;
-		// 在空中打转：像原版人物转圈那样轮流换朝向，不旋转贴图。
-		if (f.Ticks % 4 == 0)
+		p.Ticks++;
+		if (p.Ticks <= PushTicks && p.Ticks % 3 != 0)
 		{
-			f.Facing = (f.Facing + 1) % 4;
-			f.Clone.faceDirection(f.Facing);
+			// 每 25 毫秒退 4 像素：60 帧里大约每帧 2.7 像素，三帧里走两帧，正好两格出头不到。
+			p.Clone.Position += p.Away * 4f;
 		}
-		if (f.Ticks >= FlyTicks)
+		if (p.Ticks == 4)
 		{
-			_flight = null;
-			f.Done();
+			Game1.player.Position -= p.Away * 8f;
+		}
+		if (p.Ticks == SmashTick)
+		{
+			Game1.playSound("clubSmash");
+			p.Clone.shake(1000);
+		}
+		if (p.Ticks >= DoneTick)
+		{
+			_punch = null;
+			p.Done();
 		}
 	}
-
-	/// <summary>起跳速度和飞行帧数：原版 jump 每帧减 0.5，滞空 = 初速 × 4 帧；12 大约 0.8 秒、最高两格多。</summary>
-	private const float FlyJump = 12f;
-
-	private const int FlyTicks = 48;
 
 	private void Leave(NPC real, NPC clone, bool angry)
 	{
@@ -488,13 +490,33 @@ public sealed partial class MartService
 		{
 			clone.doEmote(12);
 		}
-		DelayedAction.functionAfterDelay(() =>
+		void Gone()
 		{
 			clone.currentLocation?.characters.Remove(clone);
 			real.IsInvisible = false;
 			NpcBusy.Release(real.Name);
 			_confronting = false;
-		}, 1200);
+		}
+		// 自己走出门；走不过去就在门口消失。
+		GameLocation? shop = clone.currentLocation;
+		DelayedAction.functionAfterDelay(() =>
+		{
+			if (shop == null)
+			{
+				Gone();
+				return;
+			}
+			clone.controller = new StardewValley.Pathfinding.PathFindController(clone, shop, Entry(shop), 2, (c, l) =>
+			{
+				Game1.playSound("doorClose");
+				Gone();
+			});
+			if (clone.controller.pathToEndPoint == null)
+			{
+				clone.controller = null;
+				Gone();
+			}
+		}, angry ? 900 : 300);
 	}
 
 	/// <summary>让对手说一句（AI 用不了时用固定的话）。</summary>

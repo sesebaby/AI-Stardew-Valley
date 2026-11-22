@@ -356,7 +356,7 @@ internal sealed class SettingsPage : ShellPage
 					new ChoiceRow(Tr.Get("shell.settings.martClose", "几点打烊"), "", MartCloses.Select(Clock).ToArray(), c => Nearest(MartCloses, c.FarmerMartClose), (c, i) => c.FarmerMartClose = MartCloses[i]) { Shown = c => c.FarmerMart },
 					new ToggleRow(Tr.Get("shell.settings.martCheckout", "收银小游戏"), Tr.Get("shell.settings.martCheckoutNote", "你在店里时顾客到柜台排队，点柜台收银找零，又快又对有小费；关掉就自动结账"), c => c.MartCheckoutGame, (c, v) => c.MartCheckoutGame = v) { Shown = c => c.FarmerMart },
 					new ToggleRow(Tr.Get("shell.settings.martCompete", "和 Pierre、Joja 抢生意"), Tr.Get("shell.settings.martCompeteNote", "抢得多了他们会吃紧，甚至停业整顿；只在 AI星露谷 的经济里，不改原版剧情，种子一定买得到"), c => c.MartCompetition, (c, v) => c.MartCompetition = v) { Shown = c => c.FarmerMart },
-					new ToggleRow(Tr.Get("shell.settings.brawl", "上门理论时可以动手"), Tr.Get("shell.settings.brawlNote", "卡通式打飞，不伤人；会被罚款、上周报"), c => c.AllowBrawl, (c, v) => c.AllowBrawl = v) { Shown = c => c.FarmerMart && c.MartCompetition },
+					new ToggleRow(Tr.Get("shell.settings.brawl", "上门理论时可以动手"), Tr.Get("shell.settings.brawlNote", "像原版过场那样一拳，不伤人；会被罚款、上周报"), c => c.AllowBrawl, (c, v) => c.AllowBrawl = v) { Shown = c => c.FarmerMart && c.MartCompetition },
 					new ToggleRow(Tr.Get("shell.settings.stolenNoticed", "赃物可能被认出来"), Tr.Get("shell.settings.stolenNoticedNote", "偷来的东西放在店里卖，失主和熟人可能认出来"), c => c.StolenGoodsNoticed, (c, v) => c.StolenGoodsNoticed = v),
 					new ToggleRow(Tr.Get("shell.settings.cosLink", "和 Farmer's Store 对接"), Tr.Get("shell.settings.cosLinkNote", "装了 Farmer's Store 时：两边不抢村民，它那边的成交也记进村民账本；两家店可以同时开"), c => c.FarmersStoreLink, (c, v) => c.FarmersStoreLink = v)
 				})

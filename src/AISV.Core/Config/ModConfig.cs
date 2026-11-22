@@ -504,7 +504,7 @@ public sealed class ModConfig
 	/// <summary>小超市和 Pierre、Joja 抢生意：抢得多了他们会吃紧，甚至停业整顿（只在 AI星露谷 的经济里，不改原版剧情）。</summary>
 	public bool MartCompetition { get; set; } = true;
 
-	/// <summary>对手找上门理论时有"动手"这个选项（卡通式打飞，不伤人）。</summary>
+	/// <summary>对手找上门理论时有"动手"这个选项（像原版过场那样一拳，不伤人）。</summary>
 	public bool AllowBrawl { get; set; } = true;
 
 	/// <summary>偷来的东西放在店里卖，买的人可能认出来。</summary>

@@ -119,6 +119,8 @@ public static class MartInterior
 			Put(buildings, Counter.X + i, Counter.Y + 1, body[i]);
 		}
 		map.Properties["Warp"] = $"{DoorX} 15 Farm 0 0";
+		// 夜里店里点灯（原版地图的 Light 属性：x y 种类，1 是灯笼那种暖光），不然天一黑整间店漆黑。
+		map.Properties["Light"] = "4 6 1 9 6 1 14 6 1 4 10 1 9 10 1 14 10 1";
 		foreach (string p in new[] { "AmbientLight", "AmbientNightLight" })
 		{
 			if (shed.Properties.TryGetValue(p, out xTile.ObjectModel.PropertyValue? v))
