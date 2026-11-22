@@ -114,7 +114,8 @@ public sealed partial class MartService
 			NPC? rival = Game1.getCharacterFromName("Pierre");
 			string summary = Tr.Get("mart.fenceSummary", "{{farmer}}的小超市在卖{{owner}}家被偷的{{item}}，被{{name}}当场认了出来。", ("farmer", Game1.player.Name), ("owner", Display(owner)), ("item", sale.ItemName), ("name", Display(buyer.Name)));
 			Witness(new Observation("fenced_goods", Game1.player.Name, buyer.Name, at.NameOrUniqueName, summary, real.Tile,
-				Observation.Map(("owners", owner), ("item", sale.ItemName), ("style", style.ToString().ToLowerInvariant()), ("strike", strike.ToString())),
+				Observation.Map(("owners", owner), ("item", sale.ItemName), ("style", style.ToString().ToLowerInvariant()), ("strike", strike.ToString()),
+					("locationDisplay", Tr.Get("mart.fencePlace", "{{farmer}}的小超市", ("farmer", Game1.player.Name)))),
 				AlsoLocation: rival?.currentLocation?.NameOrUniqueName, AlsoTile: rival?.Tile));
 		}
 
@@ -124,7 +125,8 @@ public sealed partial class MartService
 			? Tr.Get("mart.caughtGossipArrest", "{{farmer}}又在自己店里卖赃物，这回是{{owner}}家的{{item}}，被{{name}}认了出来——这一季都第三回了，听说直接被带走了，店也封了。", ("farmer", Game1.player.Name), ("owner", Display(owner)), ("item", sale.ItemName), ("name", Display(buyer.Name)))
 			: strike == 2
 				? Tr.Get("mart.caughtGossipAgain", "{{farmer}}的店又被认出卖赃物了，{{owner}}家的{{item}}，{{name}}当场闹了起来。镇长罚了 {{gold}}g，还让店停业整顿。", ("farmer", Game1.player.Name), ("owner", Display(owner)), ("item", sale.ItemName), ("name", Display(buyer.Name)), ("gold", fine))
-				: Tr.Get("mart.caughtGossip", "{{name}}在{{farmer}}的店里认出了{{owner}}家被偷的{{item}}，当场吵了起来，镇长罚了{{farmer}} {{gold}}g。", ("name", Display(buyer.Name)), ("farmer", Game1.player.Name), ("owner", Display(owner)), ("item", sale.ItemName), ("gold", fine));
+				: Tr.Get("mart.caughtGossip", "{{name}}在{{farmer}}的店里认出了{{owner}}家被偷的{{item}}，当场吵了起来，镇长罚了{{farmer}} {{gold}}g。", ("name", Display(buyer.Name)), ("farmer", Game1.player.Name),
+					("owner", string.Equals(owner, buyer.Name, StringComparison.OrdinalIgnoreCase) ? Tr.Get("mart.ownerSelf", "自己") : Display(owner)), ("item", sale.ItemName), ("gold", fine));
 		Gossip?.Invoke(gossip, new[] { buyer.Name, owner, "Lewis" }.Distinct(StringComparer.OrdinalIgnoreCase).ToArray());
 		_reacting = false;
 	}

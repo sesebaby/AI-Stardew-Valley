@@ -390,7 +390,11 @@ public sealed class Feelings
 		{
 			sb.AppendLine(line);
 		}
-		sb.Append("你现在").Append(meter.ToneFor(tier)).Append("。要是话赶话正好说到这儿，就照你的口气、按你心里有几分把握把它讲出来；话题对不上就别生拉硬扯，你这人本来就不爱提的话，憋着不说也行。");
+		sb.Append("你现在").Append(meter.ToneFor(tier));
+		// 到了最高一档就憋不住了：这回开口先说它，不再等话头。
+		sb.Append(tier >= Math.Max(2, meter.TierCount)
+			? "。这事你憋不住，这回一开口就先说它，照你的口气、按你心里有几分把握讲出来，原本想聊的先放一放。"
+			: "。要是话赶话正好说到这儿，就照你的口气、按你心里有几分把握把它讲出来；话题对不上就别生拉硬扯，你这人本来就不爱提的话，憋着不说也行。");
 		return sb.ToString();
 	}
 

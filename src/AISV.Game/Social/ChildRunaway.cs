@@ -171,7 +171,7 @@ public sealed class ChildRunaway
 		standIn.HideShadow = false;
 		farm.characters.Add(standIn);
 		standIn.currentLocation = farm;
-		standIn.walkInSquare(3, 3, 4000);
+		Wander(standIn, hide.Value);
 		child.IsInvisible = true;
 		_run = new Run
 		{
@@ -194,6 +194,13 @@ public sealed class ChildRunaway
 		_log.Info($"{child.Name} 跑到农场上玩去了（藏在 {hide.Value}）。");
 		Announce(child);
 		return true;
+	}
+
+	/// <summary>在藏身点附近转悠。按事件演员造出来的 NPC 没有原地中心点（默认在地图左上角），要自己设上，不然会一路走远。</summary>
+	private static void Wander(NPC standIn, Point at)
+	{
+		standIn.lastCrossroad = new Rectangle(at.X * 64, at.Y * 64, 64, 64);
+		standIn.walkInSquare(3, 3, 4000);
 	}
 
 	private void Announce(Child child)
@@ -349,7 +356,7 @@ public sealed class ChildRunaway
 				r.Clue = Between(r.Home, p);
 				r.ClueSeen = false;
 				Game1.warpCharacter(r.StandIn, farm, p.ToVector2());
-				r.StandIn.walkInSquare(3, 3, 4000);
+				Wander(r.StandIn, p);
 				_log.Debug($"{r.Child.Name} 换了个地方藏：{p}。");
 			}
 		}
@@ -436,7 +443,8 @@ public sealed class ChildRunaway
 			}
 			MainThread.Run(() =>
 			{
-				Game1.DrawDialogue(new StardewValley.Dialogue(r.StandIn, null, line ?? fallback));
+				// 用真孩子当说话人：原版孩子没有头像，对话框就不画空的头像框（和孩子聊天时一样）。
+				Game1.DrawDialogue(new StardewValley.Dialogue(r.Child, null, line ?? fallback));
 				Game1.afterDialogues = () => Finish(points, found: true);
 			});
 		});

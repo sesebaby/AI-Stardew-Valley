@@ -735,9 +735,13 @@
         "confront": { "weight": 1.5, "roles": ["relative"] }
       },
       "wording": {
-        "clear": "{actor}的小超市在卖{ownersPlain}家被偷的{p:item}，被{target}当场认了出来",
-        "partial": "{actor}店里卖的{p:item}来路不正，被失主认出来了",
-        "faint": "听说有人在自己店里卖赃物，被抓了个现行",
+        "byTier": {
+          "5": "{actor}的小超市在卖{ownersPlain}家被偷的{p:item}，被{target}当场认了出来，镇长还罚了钱",
+          "4": "{actor}的小超市在卖{ownersPlain}家被偷的{p:item}，被{target}当场认了出来",
+          "3": "听说{actor}店里卖的{p:item}来路不正，被失主认出来了",
+          "2": "听人说{actor}在自己店里卖赃物，被抓了个现行",
+          "1": "隐约听说有人在自己店里卖赃物，被抓了个现行"
+        },
         "recalled": "{actor}在店里卖过{ownersPlain}家被偷的{p:item}"
       },
       "rules": [

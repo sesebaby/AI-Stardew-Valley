@@ -923,6 +923,16 @@ public sealed class AwarenessSystem
 
 	private static string RewardName(string? item) => string.IsNullOrWhiteSpace(item) ? "" : ItemRegistry.GetDataOrErrorItem(item).DisplayName;
 
+	/// <summary>只看一眼（不用掉）：这位村民有没有待说的心事，或者心里搁着的那条。</summary>
+	public bool HasFeelingToShare(string npc)
+	{
+		if (!Enabled || string.IsNullOrWhiteSpace(npc) || !Context.IsWorldReady)
+		{
+			return false;
+		}
+		return (!_approaches.IsNpcBusy(npc) && _pending.Values.Any(x => !x.Said && Same(x.Npc, npc))) || Feelings.PeekAside(npc, NowMinute) != null;
+	}
+
 	/// <summary>
 	/// "你亲眼见过的事"。带心事时：有待说的（没在走过来的路上）就当引子用掉，否则取放在心里的那条，再没有就看刚才旁观的事。
 	/// </summary>

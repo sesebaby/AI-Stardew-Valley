@@ -250,7 +250,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				Remember = (spouse, text) => _social.Gossip.AddLowKey(text, new[] { spouse }, "family", "runaway-" + GameState.Today.TotalDays, GameState.Today)
 			};
 			_conversations.StandInClicked = _runaway.TryFound;
-			helper.ConsoleCommands.Add("aisv_child", "孩子调试。\n用法：aisv_child runaway | end | list | talk", (_, args) =>
+			helper.ConsoleCommands.Add("aisv_child", "孩子调试。\n用法：aisv_child runaway | end | list | talk | add [名字] [boy]", (_, args) =>
 			{
 				if (!Context.IsWorldReady)
 				{
@@ -269,6 +269,21 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 						StardewValley.Game1.warpCharacter(kid, StardewValley.Game1.currentLocation, StardewValley.Game1.player.Tile + new Microsoft.Xna.Framework.Vector2(1, 0));
 					}
 					kid.checkAction(StardewValley.Game1.player, StardewValley.Game1.currentLocation);
+					return;
+				}
+				if (args.Length > 0 && args[0] == "add")
+				{
+					// 调试：直接放一个会走路的孩子进家里，测聊天和离家出走不用等好几季。
+					StardewValley.Locations.FarmHouse house = StardewValley.Utility.getHomeOfFarmer(StardewValley.Game1.player);
+					StardewValley.Characters.Child added = new StardewValley.Characters.Child(args.Length > 1 ? args[1] : "小豆", args.Length > 2 && args[2] == "boy", false, StardewValley.Game1.player)
+					{
+						Age = 3
+					};
+					added.currentLocation = house;
+					Microsoft.Xna.Framework.Point spot = house.getRandomOpenPointInHouse(StardewValley.Game1.random, 2);
+					added.Position = StardewValley.Utility.PointToVector2(spot == Microsoft.Xna.Framework.Point.Zero ? house.getKitchenStandingSpot() : spot) * 64f;
+					house.characters.Add(added);
+					_log.Info($"家里多了个会走路的孩子 {added.Name}。");
 					return;
 				}
 				if (args.Length > 0 && args[0] == "end")
@@ -325,6 +340,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			helper.ConsoleCommands.Add("aisv_drama", "社交剧情调试。\n用法：aisv_drama [status] | hostility | <村民>", (_, args) => DramaCommand(args));
 			_dialogue.PostResolutionLine = _arcs.PostResolutionLine;
 			_dialogue.HasPostResolutionLine = _arcs.HasPostResolutionLine;
+			_dialogue.HasFeelingToShare = _awareness.HasFeelingToShare;
 			_npcs.Eligibility.SetExpelledCheck(_arcs.Expulsions.IsExpelled);
 			ShopPatches.Apply(harmony, _arcs.Shops.IsDetached, _log);
 			_shell.Arcs = _arcs;
@@ -955,7 +971,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				string counts = string.Join("，", AISV.Core.Companions.SpouseTasks.Chores.Select(t => $"{t} {FarmChoreExecutor.Count(t)}"));
 				return $"配偶 {_spousePlan.Spouse()?.Name ?? "无"}，第 {log?.Day} 天：{(log == null ? "" : AISV.Core.Companions.SpouseDayPlan.Describe(log.Items))}\n"
 					+ string.Join("\n", log?.Items.Select(i => $"  {i.Time} {i.Task} {i.State} {i.Did}/{i.Amount} {i.Note}") ?? Array.Empty<string>())
-					+ $"\n活：{counts}\n昨天：{log?.Yesterday}";
+					+ $"\n活：{counts}（动物共 {StardewValley.Game1.getFarm().getAllFarmAnimals().Count} 只）\n昨天：{log?.Yesterday}";
 		}
 	}
 

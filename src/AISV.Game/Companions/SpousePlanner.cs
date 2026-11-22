@@ -39,6 +39,9 @@ public sealed class SpousePlanner
 
 	public const string ChoreReason = "spouse_chore";
 
+	/// <summary>替身走过去最多花这么多分钟（游戏时间），超时就后台做完。</summary>
+	private const int WalkTimeoutMinutes = 60;
+
 	public const string KidsReason = "spouse_kids";
 
 	public const string OverlayOwner = "spouse_plan";
@@ -83,6 +86,7 @@ public sealed class SpousePlanner
 		public bool Inside;
 		public bool Leaving;
 		public int Rounds;
+		public int Started;
 	}
 
 	public SpousePlanner(Func<ModConfig> config, Func<DocumentStore?> store, ScheduleOverlayService schedules, LedgerService ledger, MartService mart, Func<EmotionalMemory?> memory, ILog log)
@@ -483,7 +487,7 @@ public sealed class SpousePlanner
 			if (clone.controller.pathToEndPoint != null)
 			{
 				spouse.IsInvisible = true;
-				_worker = new Worker { Clone = clone, Real = spouse, Item = item, Inside = false };
+				_worker = new Worker { Clone = clone, Real = spouse, Item = item, Inside = false, Started = time };
 				_worker.Leaving = false;
 				_doorTarget = door;
 				return;
@@ -566,6 +570,13 @@ public sealed class SpousePlanner
 			// 替身被收回了（换地图、存档）：剩下的后台做完。
 			item.Did += FarmChoreExecutor.Do(item.Task, Math.Max(0, item.Amount - item.Did), Store);
 			Done(spouse, item);
+			return;
+		}
+		if (!w.Arrived && !w.Leaving && Utility.CalculateMinutesBetweenTimes(w.Started, time) >= WalkTimeoutMinutes)
+		{
+			// 走了一小时还没到（被挡住、路断了）：收回替身，剩下的后台做完。
+			_log.Debug($"配偶日程：{spouse.Name} 去干 {item.Task} 的路上耽搁太久，改成后台做完。");
+			EndWorker();
 			return;
 		}
 		if (!w.Arrived || w.Leaving)

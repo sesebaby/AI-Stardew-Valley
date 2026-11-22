@@ -248,10 +248,10 @@ public sealed partial class ConversationController
 		}
 	}
 
-	/// <summary>玩家先开口：不生成开场白，直接打开空着的回复框。今天有非说不可的话（故事收尾、初次见面、心事件后续）时返回 false，照常由 TA 先说。</summary>
+	/// <summary>玩家先开口：不生成开场白，直接打开空着的回复框。今天有非说不可的话（故事收尾、初次见面、心事件后续、心里搁着的事）时返回 false，照常由 TA 先说。</summary>
 	private bool TryPlayerFirst(NPC npc, GameLocation location, bool spouse)
 	{
-		DialogueMaterial material = _materials.Build(npc, location?.Name, "");
+		DialogueMaterial material = _materials.Build(npc, location?.Name, "", awarenessFeelings: false);
 		if (_engine.MustSpeakFirst(material))
 		{
 			_log.Debug($"{npc.Name} 今天有话要先说，这次还是 TA 开场。");

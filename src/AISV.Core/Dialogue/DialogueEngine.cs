@@ -293,14 +293,17 @@ public sealed class DialogueEngine
 	/// <summary>只看一眼（不消耗）这位村民有没有故事收尾的话要说。</summary>
 	public Func<string, bool>? HasPostResolutionLine { get; set; }
 
+	/// <summary>村民心里搁着看到的事（找上门、取笑之类），玩家先开口时也让 TA 先说。</summary>
+	public Func<string, bool>? HasFeelingToShare { get; set; }
+
 	/// <summary>
-	/// 玩家先开口模式下，这位村民今天是不是还得自己先说：故事收尾、初次见面、新看过的心事件后续。
+	/// 玩家先开口模式下，这位村民今天是不是还得自己先说：故事收尾、心里搁着的事、初次见面、新看过的心事件后续。
 	/// 这几样只有开场白里才说得出来，跳过就会悄悄丢掉。
 	/// </summary>
 	public bool MustSpeakFirst(DialogueMaterial m)
 	{
 		string npc = m.NpcName;
-		if (HasPostResolutionLine?.Invoke(npc) == true)
+		if (HasPostResolutionLine?.Invoke(npc) == true || HasFeelingToShare?.Invoke(npc) == true)
 		{
 			return true;
 		}
