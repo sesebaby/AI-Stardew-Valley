@@ -454,8 +454,8 @@ internal sealed class MapGroupChat : IGroupView
 			? Tr.Get("group.hintJoined", "继续和{{names}}聊", ("names", MemberNames()))
 			: Tr.Get("group.hintListen", "插话 · {{names}}在聊天", ("names", MemberNames()));
 		const float scale = 0.8f;
-		Vector2 ks = Game1.smallFont.MeasureString(key) * scale;
-		Vector2 ts = Game1.smallFont.MeasureString(text) * scale;
+		Vector2 ks = Hearth.Measure(key, scale);
+		Vector2 ts = Hearth.Measure(text, scale);
 		int keyW = (int)ks.X + 20;
 		int w = keyW + 12 + (int)ts.X + 24;
 		Rectangle r = new Rectangle(Game1.uiViewport.Width / 2 - w / 2, Game1.uiViewport.Height - 168, w, 40);

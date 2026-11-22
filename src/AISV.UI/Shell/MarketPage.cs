@@ -25,7 +25,7 @@ internal sealed class MarketPage : ShellPage
 
 	private static readonly Color DownSoft = new Color(222, 241, 226);
 
-	private const int RowHeight = 84;
+	private const int RowHeight = 90;
 
 	private readonly Scroller _scroll = new Scroller();
 
@@ -163,7 +163,7 @@ internal sealed class MarketPage : ShellPage
 		float pw = Hearth.Width(price), bw = Hearth.Width(basis, 0.62f);
 		int priceRight = pill.X - 14;
 		Hearth.InkBold(b, price, new Vector2(priceRight - pw, r.Y + 12), up || down ? tone : Hearth.Quill);
-		Hearth.Ink(b, basis, new Vector2(priceRight - bw, r.Bottom - 30), Hearth.QuillPale, 0.62f);
+		Hearth.Ink(b, basis, new Vector2(priceRight - bw, r.Bottom - 36), Hearth.QuillPale, 0.62f);
 		int sparkW = Math.Min(140, r.Width / 6);
 		int sparkRight = priceRight - (int)Math.Max(pw, bw) - 18;
 		if (sparkW >= 60)

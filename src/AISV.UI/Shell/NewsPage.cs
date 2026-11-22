@@ -138,10 +138,10 @@ internal sealed class NewsPage : ShellPage
 		string title = Tr.Get("news.paperTitle", "鹈鹕镇周报");
 		SpriteFont font = Game1.dialogueFont;
 		float ts = Math.Min(1.6f, 72f / Math.Max(1f, font.MeasureString("鹈").Y));
-		Vector2 size = font.MeasureString(title) * ts;
+		Vector2 size = Hearth.Measure(title, ts, font);
 		Vector2 tp = new Vector2(r.Center.X - size.X / 2, r.Y + 8);
-		b.DrawString(font, title, tp + new Vector2(2f, 2f), Rule, 0f, Vector2.Zero, ts, SpriteEffects.None, 1f);
-		b.DrawString(font, title, tp, Ink, 0f, Vector2.Zero, ts, SpriteEffects.None, 1f);
+		Hearth.Ink(b, title, tp + new Vector2(2f, 2f), Rule, ts, font);
+		Hearth.Ink(b, title, tp, Ink, ts, font);
 		int wing = (int)Math.Min(160, (r.Width - size.X) / 2 - pad - 24);
 		if (wing > 40)
 		{

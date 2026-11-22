@@ -862,7 +862,7 @@ internal sealed class MessengerPage : ShellPage
 		if (_status.Length > 0)
 		{
 			string s = Hearth.Truncate(_status, r.Right - 20 - toggleHit.Right - 30, 0.72f);
-			Vector2 size = Game1.smallFont.MeasureString(s) * 0.72f;
+			Vector2 size = Hearth.Measure(s, 0.72f);
 			Hearth.Ink(b, s, new Vector2(r.Right - 20 - size.X, r.Y + 10), Hearth.Rust, 0.72f);
 		}
 		const int bw = 112;
@@ -870,7 +870,7 @@ internal sealed class MessengerPage : ShellPage
 		_box.Bounds = new Rectangle(r.X + 20, r.Y + 42, send.X - 12 - (r.X + 20), r.Bottom - 14 - (r.Y + 42));
 		_box.Draw(b);
 		string count = _box.Text.Length + "/" + MessengerRules.MaxMessageChars;
-		Vector2 cs = Game1.smallFont.MeasureString(count) * 0.7f;
+		Vector2 cs = Hearth.Measure(count, 0.7f);
 		Hearth.Ink(b, count, new Vector2(_box.Bounds.Right - cs.X - 12, _box.Bounds.Bottom - cs.Y - 6), Hearth.QuillPale, 0.7f);
 		bool canSend = service.Check(c.NpcName, _box.Text) == SendBlock.None || Ctx.Ai?.NeedsLogin == true;
 		Hearth.PressPlate(b, send, Tr.Get("reply.send", "发送"), primary: true, hover: Hearth.Hover(send), disabled: !canSend);

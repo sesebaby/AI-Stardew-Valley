@@ -2,6 +2,7 @@ using System;
 using AISV.Core.Stories;
 using AISV.Core.Text;
 using AISV.Game.Stories;
+using AISV.UI.Theme;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -153,10 +154,10 @@ internal sealed class TitleCard : IClickableMenu
 		int vw = Game1.uiViewport.Width, vh = Game1.uiViewport.Height;
 		b.Draw(Game1.fadeToBlackRect, new Rectangle(0, 0, vw, vh), Color.Black);
 		float scale = vw < 900 ? 0.85f : 1f;
-		Vector2 size = Game1.dialogueFont.MeasureString(_title) * scale;
+		Vector2 size = Hearth.Measure(_title, scale, Game1.dialogueFont);
 		Vector2 pos = new Vector2((vw - size.X) / 2f, (vh - size.Y) / 2f - (_subtitle != null ? 34 : 0));
-		b.DrawString(Game1.dialogueFont, _title, pos + new Vector2(3f, 3f), Color.Black * 0.85f, 0f, Vector2.Zero, scale, SpriteEffects.None, 1f);
-		b.DrawString(Game1.dialogueFont, _title, pos, Color.Gold, 0f, Vector2.Zero, scale, SpriteEffects.None, 1f);
+		Hearth.Ink(b, _title, pos + new Vector2(3f, 3f), Color.Black * 0.85f, scale, Game1.dialogueFont);
+		Hearth.Ink(b, _title, pos, Color.Gold, scale, Game1.dialogueFont);
 		if (_subtitle != null)
 		{
 			Vector2 sub = Game1.smallFont.MeasureString(_subtitle);

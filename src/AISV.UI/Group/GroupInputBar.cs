@@ -206,7 +206,7 @@ internal sealed class GroupInputBar : IClickableMenu
 		DrawLog(b);
 		_box.Draw(b);
 		string count = _box.Text.Length + "/" + MaxChars;
-		Vector2 cs = Game1.smallFont.MeasureString(count) * 0.7f;
+		Vector2 cs = Hearth.Measure(count, 0.7f);
 		Hearth.Ink(b, count, new Vector2(_box.Bounds.Right - cs.X - 12, _box.Bounds.Bottom - cs.Y - 6), _box.Text.Length >= MaxChars ? Hearth.Berry : Hearth.QuillPale, 0.7f);
 		int mx = Game1.getMouseX(), my = Game1.getMouseY();
 		Hearth.PressPlate(b, _leaveButton, Tr.Get("group.leave", "离开"), hover: _leaveButton.Contains(mx, my));

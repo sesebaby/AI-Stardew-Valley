@@ -194,7 +194,7 @@ internal sealed class ResidentsPage : ShellPage
 		Hearth.InkBold(b, title, new Vector2(r.X + 20, r.Y + 12), Hearth.Quill, 1.05f);
 		int titleW = (int)Hearth.Width(title, 1.05f);
 		string invite = Tr.Get("residents.invite", "本群群号：1464326733，欢迎鹈鹕镇居民加入");
-		Vector2 inviteSize = invite.Length == 0 ? Vector2.Zero : Game1.smallFont.MeasureString(invite) * 0.9f;
+		Vector2 inviteSize = invite.Length == 0 ? Vector2.Zero : Hearth.Measure(invite, 0.9f);
 		int inviteW = invite.Length == 0 ? 0 : (int)inviteSize.X + 24;
 		if (inviteW > 0)
 		{
@@ -311,7 +311,7 @@ internal sealed class ResidentsPage : ShellPage
 		_box.Bounds = new Rectangle(r.X + 20, r.Y + 34, send.X - 12 - (r.X + 20), r.Bottom - 16 - (r.Y + 34));
 		_box.Draw(b);
 		string count = _box.Text.Length + "/" + ResidentsGroup.MaxPostChars;
-		Vector2 cs = Game1.smallFont.MeasureString(count) * 0.7f;
+		Vector2 cs = Hearth.Measure(count, 0.7f);
 		Hearth.Ink(b, count, new Vector2(_box.Bounds.Right - cs.X - 12, _box.Bounds.Bottom - cs.Y - 6), Hearth.QuillPale, 0.7f);
 		bool canSend = service != null && ResidentsGroup.Check(_box.Text, service.IsAiAvailable, service.IsBusy, service.PostsLeft, _members.Count) == ResidentsBlock.None || Ctx.Ai?.NeedsLogin == true;
 		Hearth.PressPlate(b, send, Tr.Get("reply.send", "发送"), primary: true, hover: Hearth.Hover(send), disabled: !canSend);

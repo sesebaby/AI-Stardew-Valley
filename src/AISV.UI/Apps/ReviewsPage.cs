@@ -73,8 +73,8 @@ internal sealed class ReviewsPage : ShellPage
 		y += 14;
 		float avg = FarmerReviews.Average(_all.Select(e => e.Review.Stars));
 		string big = avg.ToString("0.0");
-		b.DrawString(Game1.dialogueFont, big, new Vector2(x, y), Hearth.Quill, 0f, Vector2.Zero, 1.6f, SpriteEffects.None, 1f);
-		int bw = (int)(Game1.dialogueFont.MeasureString(big).X * 1.6f);
+		Hearth.Ink(b, big, new Vector2(x, y), Hearth.Quill, 1.6f, Game1.dialogueFont);
+		int bw = (int)Hearth.Measure(big, 1.6f, Game1.dialogueFont).X;
 		Hearth.Ink(b, "/ 5", new Vector2(x + bw + 10, y + 42), Hearth.QuillPale, 0.8f);
 		y += 92;
 		Stars(b, x, y, FarmerReviews.StarFill(avg), 2);

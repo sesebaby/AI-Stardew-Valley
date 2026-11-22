@@ -601,12 +601,12 @@ internal sealed class SettingsPage : ShellPage
 			Hearth.FillRounded(b, Hearth.Inflate(r, -2), Hearth.Honey, 10);
 		}
 		string note = row.Status?.Invoke(config) is { Length: > 0 } status ? status : row.Note;
-		int ty = note.Length > 0 ? r.Y + 12 : r.Y + 24;
+		int ty = note.Length > 0 ? r.Y + 8 : r.Y + 24;
 		Hearth.Ink(b, row.Label, new Vector2(r.X + 20, ty), Hearth.Quill, 0.88f);
 		if (note.Length > 0)
 		{
 			string shown = Hearth.Truncate(note, r.Width - 300, 0.7f);
-			Hearth.Ink(b, shown, new Vector2(r.X + 20, r.Y + 42), Hearth.QuillPale, 0.7f);
+			Hearth.Ink(b, shown, new Vector2(r.X + 20, r.Y + 38), Hearth.QuillPale, 0.7f);
 			// 说明一行放不下被截掉时，鼠标停在这一行上显示全文（英文、德文常常放不下）。
 			if (shown != note && Hearth.Hover(r, _detail))
 			{

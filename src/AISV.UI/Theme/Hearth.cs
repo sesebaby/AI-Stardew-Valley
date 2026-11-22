@@ -393,13 +393,18 @@ public static class Hearth
 		}
 	}
 
+	/// <summary>原版字体只有整数倍、整像素位置画才清楚，缩到 0.8 这类小数倍时笔画会粘在一起：小于 1.5 一律按 1 倍，再大取整。</summary>
+	public static float Crisp(float scale) => scale < 1.5f ? 1f : MathF.Round(scale);
+
 	public static void Ink(SpriteBatch b, string text, Vector2 pos, Color color, float scale = 1f, SpriteFont? font = null)
 	{
 		if (!string.IsNullOrEmpty(text))
 		{
-			b.DrawString(font ?? Game1.smallFont, text, pos, color, 0f, Vector2.Zero, scale, SpriteEffects.None, 1f);
+			b.DrawString(font ?? Game1.smallFont, text, new Vector2(MathF.Round(pos.X), MathF.Round(pos.Y)), color, 0f, Vector2.Zero, Crisp(scale), SpriteEffects.None, 1f);
 		}
 	}
+
+	public static Vector2 Measure(string text, float scale = 1f, SpriteFont? font = null) => (font ?? Game1.smallFont).MeasureString(text ?? "") * Crisp(scale);
 
 	/// <summary>游戏字体没有粗体，错开一像素画两遍。</summary>
 	public static void InkBold(SpriteBatch b, string text, Vector2 pos, Color color, float scale = 1f)
@@ -412,12 +417,12 @@ public static class Hearth
 	{
 		if (!string.IsNullOrEmpty(text))
 		{
-			Vector2 size = Game1.smallFont.MeasureString(text) * scale;
+			Vector2 size = Measure(text, scale);
 			Ink(b, text, new Vector2((int)(r.Center.X - size.X / 2f), (int)(r.Center.Y - size.Y / 2f) + 2), color, scale);
 		}
 	}
 
-	public static float Width(string text, float scale = 1f) => Game1.smallFont.MeasureString(text ?? "").X * scale;
+	public static float Width(string text, float scale = 1f) => Measure(text, scale).X;
 
 	public static string Truncate(string text, float maxWidth, float scale = 1f)
 	{
@@ -452,14 +457,14 @@ public static class Hearth
 			{
 				lines.Add("");
 			}
-			lines.AddRange(Wrap(p, (int)(width / scale)).Split('\n'));
+			lines.AddRange(Wrap(p, (int)(width / Crisp(scale))).Split('\n'));
 		}
 		return lines;
 	}
 
 	public static int LineHeight(SpriteFont? font = null) => (int)(font ?? Game1.smallFont).MeasureString("Ay").Y;
 
-	public static int LineHeight(float scale) => (int)(Game1.smallFont.LineSpacing * scale);
+	public static int LineHeight(float scale) => (int)(Game1.smallFont.LineSpacing * Crisp(scale));
 
 	public static void Hearts(SpriteBatch b, Vector2 pos, int hearts, int max, int size = 14)
 	{

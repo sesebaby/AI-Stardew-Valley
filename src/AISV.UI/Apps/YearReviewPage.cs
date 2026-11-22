@@ -267,7 +267,7 @@ internal sealed class YearReviewPage : ShellPage
 			Hearth.FillRounded(b, t, Color.Lerp(stats[i].Tint, Color.White, 0.88f), 14);
 			Hearth.FillRounded(b, new Rectangle(t.X, t.Y, 6, t.Height), stats[i].Tint, 3);
 			string v = stats[i].Value.ToString();
-			b.DrawString(Game1.dialogueFont, v, new Vector2(t.X + 26, t.Y + 22), Color.Lerp(stats[i].Tint, Hearth.Quill, 0.35f), 0f, Vector2.Zero, 1.3f, SpriteEffects.None, 1f);
+			Hearth.Ink(b, v, new Vector2(t.X + 26, t.Y + 22), Color.Lerp(stats[i].Tint, Hearth.Quill, 0.35f), 1.3f, Game1.dialogueFont);
 			Hearth.Ink(b, Hearth.Truncate(stats[i].Label, t.Width - 40, 0.78f), new Vector2(t.X + 26, t.Bottom - 44), Hearth.QuillSoft, 0.78f);
 		}
 		int y = r.Y + 190;
@@ -305,7 +305,7 @@ internal sealed class YearReviewPage : ShellPage
 			Hearth.FillRounded(b, block, Color.Lerp(theme, Color.White, rank == 0 ? 0.55f : 0.75f), 10);
 			string place = (rank + 1).ToString();
 			Vector2 ps = Game1.dialogueFont.MeasureString(place);
-			b.DrawString(Game1.dialogueFont, place, new Vector2(cx - ps.X / 2f, block.Y + Math.Max(2, (stand - ps.Y) / 2f)), Color.White, 0f, Vector2.Zero, 1f, SpriteEffects.None, 1f);
+			Hearth.Ink(b, place, new Vector2(cx - ps.X / 2f, block.Y + Math.Max(2, (stand - ps.Y) / 2f)), Color.White, 1f, Game1.dialogueFont);
 			Rectangle avatar = new Rectangle(cx - av / 2, block.Y - av - 66, av, av);
 			if (rank == 0)
 			{
@@ -332,7 +332,7 @@ internal sealed class YearReviewPage : ShellPage
 		int y = r.Y;
 		Hearth.Ink(b, Tr.Get("year.gifts.most", "送得最多的是"), new Vector2(tx, y), Hearth.QuillSoft, 0.76f);
 		y += 28;
-		b.DrawString(Game1.dialogueFont, Hearth.Truncate(g.Item, w / 1.1f, 1f), new Vector2(tx, y), Color.Lerp(theme, Hearth.Quill, 0.5f), 0f, Vector2.Zero, 1.1f, SpriteEffects.None, 1f);
+		Hearth.Ink(b, Hearth.Truncate(g.Item, w / 1.1f, 1f), new Vector2(tx, y), Color.Lerp(theme, Hearth.Quill, 0.5f), 1.1f, Game1.dialogueFont);
 		y += 64;
 		string times = g.Count == 1 ? Tr.Get("year.gifts.once", "只送过一回，给了{{name}}。", ("name", Ctx.Display(g.Recipient)))
 			: Tr.Get("year.gifts.times", "一共送了 {{count}} 回，{{name}}收到的最多。", ("count", g.Count), ("name", Ctx.Display(g.Recipient)));
@@ -371,7 +371,7 @@ internal sealed class YearReviewPage : ShellPage
 		List<string> lines = Hearth.WrapLines(g.Text, r.Width - 120, 0.95f).Take(6).ToList();
 		Rectangle quote = new Rectangle(r.X, r.Y, r.Width, lines.Count * Hearth.LineHeight(0.95f) + 60);
 		Hearth.FillRounded(b, quote, Color.Lerp(theme, Color.White, 0.88f), 16);
-		b.DrawString(Game1.dialogueFont, "“", new Vector2(quote.X + 16, quote.Y - 6), theme * 0.6f, 0f, Vector2.Zero, 2f, SpriteEffects.None, 1f);
+		Hearth.Ink(b, "“", new Vector2(quote.X + 16, quote.Y - 6), theme * 0.6f, 2f, Game1.dialogueFont);
 		int y = quote.Y + 30;
 		foreach (string line in lines)
 		{
@@ -454,8 +454,8 @@ internal sealed class YearReviewPage : ShellPage
 		Hearth.FillRounded(b, new Rectangle(env.Center.X - 14, env.Center.Y - 4, 28, 28), Hearth.Ember, 14);
 		int tx = env.Right + 36;
 		string count = s.LetterCount.ToString();
-		b.DrawString(Game1.dialogueFont, count, new Vector2(tx, r.Y), Color.Lerp(theme, Hearth.Quill, 0.4f), 0f, Vector2.Zero, 1.6f, SpriteEffects.None, 1f);
-		Hearth.Ink(b, Tr.Get("year.letters.count", "封信寄到了农场"), new Vector2(tx + Game1.dialogueFont.MeasureString(count).X * 1.6f + 14, r.Y + 40), Hearth.QuillSoft, 0.85f);
+		Hearth.Ink(b, count, new Vector2(tx, r.Y), Color.Lerp(theme, Hearth.Quill, 0.4f), 1.6f, Game1.dialogueFont);
+		Hearth.Ink(b, Tr.Get("year.letters.count", "封信寄到了农场"), new Vector2(tx + Hearth.Measure(count, 1.6f, Game1.dialogueFont).X + 14, r.Y + 40), Hearth.QuillSoft, 0.85f);
 		if (s.TopSender != null)
 		{
 			int y = r.Y + 92;

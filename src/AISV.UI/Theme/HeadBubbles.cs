@@ -110,7 +110,7 @@ public static class HeadBubbles
 			return Rectangle.Empty;
 		}
 		string wrapped = Hearth.Wrap("（" + text.Trim() + "）", Width - 40);
-		Vector2 size = Game1.smallFont.MeasureString(wrapped) * 0.9f;
+		Vector2 size = Hearth.Measure(wrapped, 0.9f);
 		int nameH = name.Length > 0 ? 22 : 0;
 		int w = (int)Math.Max(size.X, name.Length > 0 ? Hearth.Width(name, 0.65f) : 0) + 32;
 		int h = (int)size.Y + 18 + nameH;
@@ -127,7 +127,7 @@ public static class HeadBubbles
 		{
 			Hearth.Ink(b, name, new Vector2(r.X + 16, r.Y + 7), new Color(110, 106, 100) * alpha, 0.65f);
 		}
-		b.DrawString(Game1.smallFont, wrapped, new Vector2(r.X + 16, r.Y + 9 + nameH), new Color(92, 86, 80) * alpha, 0f, Vector2.Zero, 0.9f, SpriteEffects.None, 1f);
+		Hearth.Ink(b, wrapped, new Vector2(r.X + 16, r.Y + 9 + nameH), new Color(92, 86, 80) * alpha, 0.9f);
 		return r;
 	}
 

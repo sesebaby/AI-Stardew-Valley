@@ -55,7 +55,7 @@ public sealed class ShelfMenu : IClickableMenu
 		int rowW = _kind.Slots * (size + gap) - gap;
 		int sx = _panel.X + (w - rowW) / 2;
 		_slots = Enumerable.Range(0, _kind.Slots).Select(i => new Rectangle(sx + i * (size + gap), _panel.Y + 110, size, size)).ToArray();
-		int row = _panel.Y + 300;
+		int row = _panel.Y + 286;
 		_minus = new Rectangle(_panel.X + 40, row, 100, 48);
 		_plus = new Rectangle(_panel.X + 300, row, 100, 48);
 		_take = new Rectangle(_panel.X + 430, row, 150, 48);
@@ -231,13 +231,13 @@ public sealed class ShelfMenu : IClickableMenu
 			Hearth.PressPlate(b, _take, Tr.Get("mart.takeBack", "取下"), hover: _take.Contains(mx, my), scale: 0.8f);
 			Hearth.PressPlate(b, _all, Tr.Get("mart.priceAll", "整架都按这个价"), hover: _all.Contains(mx, my), scale: 0.75f);
 			string tip = pct > 130 ? Tr.Get("mart.tipHigh", "贵了：来的人少，口碑会慢慢变差") : pct < 90 ? Tr.Get("mart.tipLow", "便宜：卖得快，抢 Pierre 和 Joja 的生意更狠") : Tr.Get("mart.tipFair", "公道价");
-			Hearth.Ink(b, tip, new Vector2(_panel.X + 40, _minus.Bottom + 10), Hearth.QuillPale, 0.7f);
+			Hearth.Ink(b, tip, new Vector2(_panel.X + 40, _minus.Bottom + 6), Hearth.QuillPale, 0.7f);
 		}
 		else
 		{
 			Hearth.Ink(b, Tr.Get("mart.slotEmpty", "空格子。点下面背包里的东西上架（右键只放一个）。"), new Vector2(_panel.X + 40, dy), Hearth.QuillSoft, 0.8f);
 		}
-		Hearth.Ink(b, Tr.Get("mart.bagHint", "背包（亮着的是这个货架能放的）"), new Vector2(_bag.xPositionOnScreen, _bag.yPositionOnScreen - 58), Hearth.QuillSoft, 0.7f);
+		Hearth.Ink(b, Tr.Get("mart.bagHint", "背包（亮着的是这个货架能放的）"), new Vector2(_bag.xPositionOnScreen, _bag.yPositionOnScreen - 54), Hearth.QuillSoft, 0.7f);
 		_bag.draw(b);
 		Hearth.PressPlate(b, _done, Tr.Get("mart.done", "好"), primary: true, hover: _done.Contains(mx, my));
 		if (_hover.Length > 0)

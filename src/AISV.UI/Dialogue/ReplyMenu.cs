@@ -282,8 +282,8 @@ public sealed class ReplyMenu : IClickableMenu
 		next = _outings.Invite ? _inviteOutHit.Right + 28 : next;
 		(_dateToggle, _dateHit) = ToggleAt(_outings.Date ? next : -1, DateLabel);
 		next = _outings.Date ? _dateHit.Right + 28 : next;
-		int errandW = _errands ? (int)Game1.smallFont.MeasureString(ErrandLabel).X * 8 / 10 + 32 : 0;
-		int loanW = _loans ? (int)Game1.smallFont.MeasureString(LoanLabel).X * 8 / 10 + 32 : 0;
+		int errandW = _errands ? (int)Hearth.Width(ErrandLabel, 0.8f) + 32 : 0;
+		int loanW = _loans ? (int)Hearth.Width(LoanLabel, 0.8f) + 32 : 0;
 		int pillsW = errandW + loanW + (_errands && _loans ? 10 : 0);
 		// 底下一排放不下时挪到回复框右上角。
 		bool below = next + pillsW < _closeButton.X - 12;
@@ -295,7 +295,7 @@ public sealed class ReplyMenu : IClickableMenu
 		_loanHit = _loans ? new Rectangle(px, py, loanW, below ? 40 : 36) : Rectangle.Empty;
 		int letW = (int)Game1.smallFont.MeasureString(LetThemLabel).X + 48;
 		_letThemButton = new Rectangle(_lineCard.Center.X - letW / 2, _lineCard.Bottom - 64, letW, 48);
-		int nextW = 56 + 12 + (int)(Game1.smallFont.MeasureString(NextIStartLabel).X * 0.8f) + 8;
+		int nextW = 56 + 12 + (int)Hearth.Width(NextIStartLabel, 0.8f) + 8;
 		// 托办件事、借钱挪到上面这一排时，开关让到它们左边。
 		int nextRight = _pillsAbove && pillsW > 0 ? (_errands ? _errandHit.X : _loanHit.X) - 20 : _lineCard.Right + 4;
 		_nextToggle = _nextIStart == null ? Rectangle.Empty : new Rectangle(nextRight - nextW, _lineCard.Bottom + 8, 56, 28);
@@ -475,8 +475,8 @@ public sealed class ReplyMenu : IClickableMenu
 		if (on)
 		{
 			string tip = kind == OutingKind.SpouseDate ? Tr.Get("reply.spouseDateTip", "这句话会当作约会邀请，去不去由对方决定") : Tr.Get("reply.inviteOutTip", "这句话会当作邀约，去不去、去哪由对方决定");
-			Vector2 size = Game1.smallFont.MeasureString(tip) * 0.8f;
-			b.DrawString(Game1.smallFont, tip, new Vector2(_reply.Bounds.Right - size.X - 4, labelY + 4), Hearth.Leaf, 0f, Vector2.Zero, 0.8f, SpriteEffects.None, 1f);
+			Vector2 size = Hearth.Measure(tip, 0.8f);
+			Hearth.Ink(b, tip, new Vector2(_reply.Bounds.Right - size.X - 4, labelY + 4), Hearth.Leaf, 0.8f);
 		}
 	}
 
@@ -683,12 +683,12 @@ public sealed class ReplyMenu : IClickableMenu
 		if (_nextIStart is bool next)
 		{
 			Hearth.Latch(b, _nextToggle, next);
-			b.DrawString(Game1.smallFont, NextIStartLabel, new Vector2(_nextToggle.Right + 10, _nextToggle.Y + 2), next ? Hearth.Leaf : Hearth.QuillSoft, 0f, Vector2.Zero, 0.8f, SpriteEffects.None, 1f);
+			Hearth.Ink(b, NextIStartLabel, new Vector2(_nextToggle.Right + 10, _nextToggle.Y + 2), next ? Hearth.Leaf : Hearth.QuillSoft, 0.8f);
 			if (next && _nextHit.Contains(Game1.getMouseX(), Game1.getMouseY()))
 			{
 				string tip = Tr.Get("reply.nextIStartTip", "下次点村民时不等 TA 开场，直接由你起话题");
-				Vector2 size = Game1.smallFont.MeasureString(tip) * 0.7f;
-				b.DrawString(Game1.smallFont, tip, new Vector2(_lineCard.Right - size.X, _nextHit.Bottom + 2), Hearth.Leaf, 0f, Vector2.Zero, 0.7f, SpriteEffects.None, 1f);
+				Vector2 size = Hearth.Measure(tip, 0.7f);
+				Hearth.Ink(b, tip, new Vector2(_lineCard.Right - size.X, _nextHit.Bottom + 2), Hearth.Leaf, 0.7f);
 			}
 		}
 		if (_proposalKind != null)
@@ -698,8 +698,8 @@ public sealed class ReplyMenu : IClickableMenu
 			if (_proposing)
 			{
 				string tip = _proposalKind == ProposalKind.Marriage ? Tr.Get("reply.proposeMarriageTip", "这句话会当作求婚说出口，答不答应由对方决定") : Tr.Get("reply.proposeDatingTip", "这句话会当作表白说出口，答不答应由对方决定");
-				Vector2 size = Game1.smallFont.MeasureString(tip) * 0.8f;
-				b.DrawString(Game1.smallFont, tip, new Vector2(_reply.Bounds.Right - size.X - 4, labelY + 4), Hearth.Leaf, 0f, Vector2.Zero, 0.8f, SpriteEffects.None, 1f);
+				Vector2 size = Hearth.Measure(tip, 0.8f);
+				Hearth.Ink(b, tip, new Vector2(_reply.Bounds.Right - size.X - 4, labelY + 4), Hearth.Leaf, 0.8f);
 			}
 		}
 		DrawOutingToggle(b, _outings.Invite, _inviteOutToggle, OutingKind.Invite, InviteOutLabel, labelY);
@@ -748,8 +748,8 @@ public sealed class ReplyMenu : IClickableMenu
 	{
 		const float scale = 0.7f;
 		string text = area.Text.Length + "/" + max;
-		Vector2 size = Game1.smallFont.MeasureString(text) * scale;
-		b.DrawString(Game1.smallFont, text, new Vector2(area.Bounds.Right - size.X - 12f, area.Bounds.Bottom - size.Y - 6f), area.Text.Length >= max ? Hearth.Berry : Hearth.QuillPale, 0f, Vector2.Zero, scale, SpriteEffects.None, 1f);
+		Vector2 size = Hearth.Measure(text, scale);
+		Hearth.Ink(b, text, new Vector2(area.Bounds.Right - size.X - 12f, area.Bounds.Bottom - size.Y - 6f), area.Text.Length >= max ? Hearth.Berry : Hearth.QuillPale, scale);
 	}
 
 	private void DrawSpeaker(SpriteBatch b)
