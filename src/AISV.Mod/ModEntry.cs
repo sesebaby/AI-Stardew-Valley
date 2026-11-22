@@ -999,6 +999,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				var sales = _mart.Sales.All;
 				return $"小超市 {AISV.Game.Store.MartService.Buildings().Count()} 间，货架 {AISV.Game.Store.MartService.AllShelves().Count()} 个，钱箱 {st?.Cashbox ?? 0}g，口碑 {st?.Reputation ?? 0}，{_mart.Stars:0.0} 星，{_mart.Type.Id} {_mart.Level} 级，成交 {sales.Count} 笔（COS {sales.Count(x => x.Source == AISV.Core.Store.StoreSale.Cos)}）；"
 					+ $"Pierre {AISV.Game.Store.MartService.HealthName(_mart.Health(AISV.Core.Store.Competition.Pierre))} {(int)(_mart.ShareLeft(AISV.Core.Store.Competition.Pierre) * 100)}%，Joja {AISV.Game.Store.MartService.HealthName(_mart.Health(AISV.Core.Store.Competition.Joja))} {(int)(_mart.ShareLeft(AISV.Core.Store.Competition.Joja) * 100)}%；"
+					+ "建筑：" + string.Join("；", AISV.Game.Store.MartService.Buildings().Select(b => $"{b.tileX.Value},{b.tileY.Value} 门{b.humanDoor.Value} 剩{b.daysOfConstructionLeft.Value}天 魔法{b.magical.Value} 室内{b.GetIndoors()?.NameOrUniqueName ?? "无"} 地图{b.GetIndoors()?.mapPath.Value}")) + "；"
 					+ "最近：" + string.Join("；", sales.TakeLast(5).Select(x => $"{x.Source} {x.Buyer} {x.ItemName}×{x.Qty} {x.Total}g{(x.Reclaimed ? "（认出赃物）" : "")}"));
 		}
 	}

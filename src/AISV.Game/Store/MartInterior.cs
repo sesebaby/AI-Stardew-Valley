@@ -49,7 +49,7 @@ public static class MartInterior
 
 	public static Map Build(IModHelper helper)
 	{
-		Map seed = helper.GameContent.Load<Map>("Maps/SeedShop");
+		Map seed = VanillaSeedShop() ?? helper.GameContent.Load<Map>("Maps/SeedShop");
 		Map shed = helper.GameContent.Load<Map>("Maps/Shed2");
 		Map map = new Map(MapName);
 		TileSheet main = AddSheet(map, seed, "townInterior", "untitled tile sheet");
@@ -129,10 +129,26 @@ public static class MartInterior
 		return map;
 	}
 
+	/// <summary>原版的皮埃尔店地图：SVE 这类 mod 会整张换掉，图块和位置都对不上，所以绕过它们直接读游戏文件。</summary>
+	private static Map? VanillaSeedShop()
+	{
+		try
+		{
+			using var raw = new Microsoft.Xna.Framework.Content.ContentManager(Game1.content.ServiceProvider, Game1.content.RootDirectory);
+			return raw.Load<Map>("Maps/SeedShop");
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
 	private static TileSheet AddSheet(Map map, Map from, string image, string id)
 	{
-		TileSheet source = from.TileSheets.First(t => t.ImageSource.EndsWith(image));
-		TileSheet sheet = new TileSheet(id, map, source.ImageSource, source.SheetSize, source.TileSize);
+		TileSheet? source = from.TileSheets.FirstOrDefault(t => t.ImageSource.EndsWith(image));
+		TileSheet sheet = source != null
+			? new TileSheet(id, map, source.ImageSource, source.SheetSize, source.TileSize)
+			: new TileSheet(id, map, "Maps/" + image, new Size(32, image == "townInterior" ? 70 : 64), new Size(16, 16));
 		map.AddTileSheet(sheet);
 		return sheet;
 	}
