@@ -510,6 +510,9 @@ public sealed class ModConfig
 	/// <summary>偷来的东西放在店里卖，买的人可能认出来。</summary>
 	public bool StolenGoodsNoticed { get; set; } = true;
 
+	/// <summary>同一季第 3 次卖赃物被认出时被带走（装了 Law and Order 关进牢里，没装由镇长押回家），当天结束。关掉只罚款、停业。</summary>
+	public bool FenceArrest { get; set; } = true;
+
 	/// <summary>小超市收银小游戏：顾客排到柜台前等你来收银找零（关掉就自动结账）。</summary>
 	public bool MartCheckoutGame { get; set; } = true;
 

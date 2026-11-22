@@ -55,8 +55,9 @@ public class AwarenessTests
 	{
 		SightingCatalog c = Catalog.Value;
 		Assert.Empty(c.Problems);
-		Assert.Equal(35, c.Types.Count());
+		Assert.Equal(36, c.Types.Count());
 		Assert.Equal(4, c.Meters.Count());
+		Assert.Equal(6, c.Get("fenced_goods").Rules.Count);
 		Assert.Equal(6, c.Get("bomb").Severity);
 		Assert.Equal(-1, c.Get("explosion").ReachTiles);
 		Assert.True(c.Get("bomb").ThroughWalls);

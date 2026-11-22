@@ -175,7 +175,7 @@ internal sealed class FarmerMartPage : ShellPage
 		int day = Game1.Date.TotalDays;
 		int today = m.Sales.On(day, StoreSale.Ours).Sum(v => v.Total);
 		bool open = m.IsOpen(Game1.timeOfDay);
-		Hearth.InkBold(b, open ? Tr.Get("mart.openNow", "营业中") : Tr.Get("mart.closedLabel", "打烊了"), new Vector2(x, y), open ? Hearth.LeafDeep : Hearth.QuillSoft);
+		Hearth.InkBold(b, open ? Tr.Get("mart.openNow", "营业中") : m.Suspended ? Tr.Get("mart.suspendedLabel", "停业整顿") : Tr.Get("mart.closedLabel", "打烊了"), new Vector2(x, y), open ? Hearth.LeafDeep : m.Suspended ? Hearth.Ember : Hearth.QuillSoft);
 		Hearth.Ink(b, Tr.Get("mart.todayLine", "今天卖了 {{gold}}g · 钱箱里 {{cash}}g · 口碑 {{rep}}", ("gold", today), ("cash", s?.Cashbox ?? 0), ("rep", s?.Reputation ?? 0)), new Vector2(x + 140, y + 2), Hearth.Quill, 0.85f);
 		y += 44;
 		Stars(b, x, y + 2, m.Stars);

@@ -115,7 +115,7 @@ public sealed partial class MartService
 
 	public bool HasShop => Shops().Any();
 
-	public bool IsOpen(int time) => time >= OpenAt && time < CloseAt;
+	public bool IsOpen(int time) => !Suspended && time >= OpenAt && time < CloseAt;
 
 	public int OpenAt => _config().FarmerMartOpen;
 
@@ -361,9 +361,10 @@ public sealed partial class MartService
 	}
 
 	/// <summary>调试：马上叫一位顾客（你在店里就真的进门，不在就后台结算）。</summary>
-	public string DebugCustomer()
+	public string DebugCustomer(string? name = null)
 	{
-		if (!HasShop || Customer() is not NPC buyer)
+		NPC? pick = name != null ? Game1.getCharacterFromName(name) : Customer();
+		if (!HasShop || pick is not NPC buyer)
 		{
 			return "没店，或者没有能来的村民。";
 		}
@@ -632,34 +633,6 @@ public sealed partial class MartService
 		string? ha = Game1.characterData.TryGetValue(a, out var da) ? da.Home?.FirstOrDefault()?.Location : null;
 		string? hb = Game1.characterData.TryGetValue(b, out var db) ? db.Home?.FirstOrDefault()?.Location : null;
 		return ha != null && ha == hb;
-	}
-
-	private void Caught(StoreSale sale, NPC buyer, NPC? speaker)
-	{
-		string owner = sale.StolenFrom.Length > 0 ? sale.StolenFrom : buyer.Name;
-		_ledger.Reclaim(owner, sale.ItemId, sale.Qty, sale.Quality);
-		int penalty = _config().CaughtStealingPenalty;
-		Game1.player.changeFriendship(-penalty, buyer);
-		if (!string.Equals(owner, buyer.Name, StringComparison.OrdinalIgnoreCase) && Game1.getCharacterFromName(owner) is NPC victim)
-		{
-			Game1.player.changeFriendship(-penalty / 2, victim);
-		}
-		AdjustMood?.Invoke(buyer.Name, -10);
-		if (State is MartState s)
-		{
-			s.Reputation = Math.Clamp(s.Reputation - 20, -100, 100);
-		}
-		string line = string.Equals(owner, buyer.Name, StringComparison.OrdinalIgnoreCase)
-			? Tr.Get("mart.caughtOwn", "这不是我家丢的{{item}}吗？！怎么在你店里卖？", ("item", sale.ItemName))
-			: Tr.Get("mart.caughtKin", "等等，这{{item}}是{{owner}}家丢的那个吧？", ("item", sale.ItemName), ("owner", Display(owner)));
-		if (speaker != null)
-		{
-			speaker.doEmote(12);
-			NpcSpeech.Say(speaker, line);
-		}
-		Hints.Hud(Tr.Get("mart.caughtHud", "{{name}}认出{{item}}是偷来的，拿走了，没付钱。店的口碑变差了。", ("name", Display(buyer.Name)), ("item", sale.ItemName)), 9000);
-		Gossip?.Invoke(Tr.Get("mart.caughtGossip", "{{name}}在{{farmer}}的店里认出了{{owner}}家被偷的{{item}}。", ("name", Display(buyer.Name)), ("farmer", Game1.player.Name), ("owner", Display(owner)), ("item", sale.ItemName)), new[] { buyer.Name, owner });
-		_log.Info($"{buyer.Name} 认出了赃物 {sale.ItemName}（失主 {owner}）。");
 	}
 
 	/// <summary>COS 那边的成交：认赃物只能事后算后果（它那边的货已经卖出去了）。</summary>

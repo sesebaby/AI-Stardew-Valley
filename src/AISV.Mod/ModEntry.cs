@@ -543,7 +543,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				OpenShelf = AISV.UI.Store.MartScreens.OpenShelf,
 				OpenCheckout = AISV.UI.Store.MartScreens.OpenCheckout,
 				OpenApp = () => AISV.UI.Store.MartScreens.OpenApp(_shell),
-				AskArgument = AISV.UI.Store.MartScreens.AskArgument
+				AskArgument = AISV.UI.Store.MartScreens.AskArgument,
+				Witness = o => _awareness.Record(o)
 			};
 			_mart.Sales.Recorded += _mart.OnSale;
 			_ledger.ShopShare = _mart.ShareLeft;
@@ -965,8 +966,12 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		{
 			case "build":
 				return _mart.DebugBuild(args.Length > 2 && int.TryParse(args[1], out int bx) ? bx : 58, args.Length > 2 && int.TryParse(args[2], out int by) ? by : 20);
+			case "arrest":
+				return _mart.DebugArrest();
+			case "fence" when args.Length > 1:
+				return _mart.DebugFence(args[1], args.Length > 2 ? args[2] : null);
 			case "customer":
-				return _mart.DebugCustomer();
+				return _mart.DebugCustomer(args.Length > 1 ? args[1] : null);
 			case "fx":
 				return _mart.DebugFixtures(args.Length > 1 ? args[1] : "/dev/shm/aisv/fx.png");
 			case "counter":
@@ -1000,7 +1005,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				return $"小超市 {AISV.Game.Store.MartService.Buildings().Count()} 间，货架 {AISV.Game.Store.MartService.AllShelves().Count()} 个，钱箱 {st?.Cashbox ?? 0}g，口碑 {st?.Reputation ?? 0}，{_mart.Stars:0.0} 星，{_mart.Type.Id} {_mart.Level} 级，成交 {sales.Count} 笔（COS {sales.Count(x => x.Source == AISV.Core.Store.StoreSale.Cos)}）；"
 					+ $"Pierre {AISV.Game.Store.MartService.HealthName(_mart.Health(AISV.Core.Store.Competition.Pierre))} {(int)(_mart.ShareLeft(AISV.Core.Store.Competition.Pierre) * 100)}%，Joja {AISV.Game.Store.MartService.HealthName(_mart.Health(AISV.Core.Store.Competition.Joja))} {(int)(_mart.ShareLeft(AISV.Core.Store.Competition.Joja) * 100)}%；"
 					+ "建筑：" + string.Join("；", AISV.Game.Store.MartService.Buildings().Select(b => $"{b.tileX.Value},{b.tileY.Value} 门{b.humanDoor.Value} 剩{b.daysOfConstructionLeft.Value}天 魔法{b.magical.Value} 室内{b.GetIndoors()?.NameOrUniqueName ?? "无"} 地图{b.GetIndoors()?.mapPath.Value}")) + "；"
-					+ "最近：" + string.Join("；", sales.TakeLast(5).Select(x => $"{x.Source} {x.Buyer} {x.ItemName}×{x.Qty} {x.Total}g{(x.Reclaimed ? "（认出赃物）" : "")}"));
+					+ "最近：" + string.Join("；", sales.TakeLast(12).Select(x => $"{x.Source} {x.Buyer} {x.ItemName}×{x.Qty} {x.Total}g{(x.Stolen ? $"（赃，失主{x.StolenFrom}）" : "")}{(x.Reclaimed ? "（认出赃物）" : "")}"));
 		}
 	}
 

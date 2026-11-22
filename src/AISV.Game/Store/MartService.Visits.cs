@@ -174,6 +174,7 @@ public sealed partial class MartService
 	public void OnUpdateTicked()
 	{
 		TickStocker();
+		TickArrest();
 		if (Game1.ticks % 30 == 0 && _config().FarmerMart && Context.IsWorldReady && IsShop(Game1.currentLocation))
 		{
 			MartShelves.EnsureDisplay(Game1.currentLocation);
@@ -445,6 +446,10 @@ public sealed partial class MartService
 			MartShelves.RefreshDisplay(e.NewLocation);
 			ShowPoster(e.NewLocation);
 			Hints.Tip("MartInside", Tr.Get("mart.tipInside", "农夫小超市"));
+			if (Suspended)
+			{
+				Hints.Hud(Tr.Get("mart.suspendedHud", "停业整顿中，还有 {{n}} 天", ("n", ClosedUntil - Today)), 5000);
+			}
 		}
 		if (IsShop(e.OldLocation) && !IsShop(e.NewLocation))
 		{

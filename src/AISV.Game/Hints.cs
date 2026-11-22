@@ -1,3 +1,4 @@
+using System;
 using AISV.Core.Text;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -13,7 +14,29 @@ public static class Hints
 		{
 			return;
 		}
-		Game1.addHUDMessage(new HUDMessage(text) { noIcon = true, timeLeft = ms });
+		Game1.addHUDMessage(new HUDMessage(Fit(text)) { noIcon = true, timeLeft = ms });
+	}
+
+	/// <summary>HUD 只放一句短的：太长就截到第一句，还放不下就截断加"…"（详细的放进手机 > 使用帮助）。</summary>
+	private static string Fit(string text)
+	{
+		int max = Math.Max(300, Game1.uiViewport.Width - 260);
+		bool fits(string t) => Game1.smallFont.MeasureString(t).X <= max;
+		if (fits(text))
+		{
+			return text;
+		}
+		int stop = text.IndexOfAny(new[] { '。', '！', '？', '.', '!', '?' });
+		if (stop > 0 && fits(text[..(stop + 1)]))
+		{
+			return text[..(stop + 1)];
+		}
+		string cut = text;
+		while (cut.Length > 1 && !fits(cut + "…"))
+		{
+			cut = cut[..^1];
+		}
+		return cut + "…";
 	}
 
 	/// <summary>这条用法提示还没给过这位玩家时显示，并记下来（存在存档里，换存档会再提示一次）。</summary>

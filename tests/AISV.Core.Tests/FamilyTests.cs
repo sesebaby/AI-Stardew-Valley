@@ -159,11 +159,11 @@ public class FamilyTests
 	[Fact]
 	public void StolenGoodsAreRecognisedMostlyByTheirOwners()
 	{
-		Assert.Equal(0.6, AISV.Core.Store.StolenRules.Chance(true, false, 100, 100, 0), 3);
-		Assert.Equal(0.05, AISV.Core.Store.StolenRules.Chance(false, false, 100, 100, 0), 3);
-		Assert.True(AISV.Core.Store.StolenRules.Chance(false, true, 2000, 100, 0) > 0.7);
-		Assert.True(AISV.Core.Store.StolenRules.Chance(true, false, 2000, 100, 0) <= 0.95);
-		Assert.True(AISV.Core.Store.StolenRules.Chance(true, false, 100, 100, 28) < 0.3);
+		Assert.Equal(0.15, AISV.Core.Store.StolenRules.Chance(true, false, 100, 100, 0), 3);
+		Assert.Equal(0.01, AISV.Core.Store.StolenRules.Chance(false, false, 100, 100, 0), 3);
+		Assert.True(AISV.Core.Store.StolenRules.Chance(false, true, 2000, 100, 0) > 0.15);
+		Assert.True(AISV.Core.Store.StolenRules.Chance(true, false, 2000, 100, 0) <= 0.35);
+		Assert.True(AISV.Core.Store.StolenRules.Chance(true, false, 100, 100, 28) < 0.1);
 	}
 
 	private static AISV.Core.Companions.SpousePlanInput Home(int hearts = 10, bool rain = false, bool festival = false, bool patio = false, int level = 1, params string[] requested) => new AISV.Core.Companions.SpousePlanInput

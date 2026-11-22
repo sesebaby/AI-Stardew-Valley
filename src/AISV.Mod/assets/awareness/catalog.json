@@ -729,6 +729,26 @@
         { "name": "pick_caught_red", "when": { "role": ["target"], "payload": { "caught": "true" } }, "set": { "confront": 3 } }
       ]
     },
+    "fenced_goods": {
+      "severity": 9, "fadeDays": 28, "reachTiles": 6, "minCertainty": 2,
+      "meters": {
+        "confront": { "weight": 1.5, "roles": ["relative"] }
+      },
+      "wording": {
+        "clear": "{actor}的小超市在卖{ownersPlain}家被偷的{p:item}，被{target}当场认了出来",
+        "partial": "{actor}店里卖的{p:item}来路不正，被失主认出来了",
+        "faint": "听说有人在自己店里卖赃物，被抓了个现行",
+        "recalled": "{actor}在店里卖过{ownersPlain}家被偷的{p:item}"
+      },
+      "rules": [
+        { "name": "fence_owner_hot", "when": { "role": ["target"], "payload": { "style": "hot" } }, "set": { "confront": 3.2 } },
+        { "name": "fence_owner_hurt", "when": { "role": ["target"], "payload": { "style": "hurt" } }, "set": { "confront": 2.2 } },
+        { "name": "fence_owner_snide", "when": { "role": ["target"], "payload": { "style": "snide" } }, "set": { "humor": 2.6, "confront": 1.2 } },
+        { "name": "fence_owner_cold", "when": { "role": ["target"], "payload": { "style": "cold" } }, "set": { "confront": 0 } },
+        { "name": "fence_rival_gloat", "when": { "witness": ["Pierre", "Morris"], "role": ["bystander"] }, "set": { "humor": 3.2 } },
+        { "name": "fence_jokers", "when": { "witness": ["Alex", "Sam", "Haley", "Shane", "Gil", "Marlon", "Clint"], "role": ["bystander"] }, "set": { "humor": 1.8 } }
+      ]
+    },
     "burglary": {
       "severity": 10, "fadeDays": 28, "reachTiles": 9, "minCertainty": 2,
       "senses": { "wakesSleepers": true },

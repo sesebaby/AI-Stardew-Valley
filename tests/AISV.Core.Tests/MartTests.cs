@@ -151,4 +151,35 @@ public sealed class MartTests
 		Assert.True(Staff.Wage(Staff.Cashier, 4, true, "Sam", 7) < 200);
 		Assert.True(Staff.Wage(Staff.Cashier, 4, false, "Emily", 28) < 200);
 	}
+
+	[Fact]
+	public void FenceStrikesEscalateAndResetEachSeason()
+	{
+		Assert.Equal(1, FenceRules.Strike(5, 2, 6));
+		Assert.Equal(3, FenceRules.Strike(6, 2, 6));
+		Assert.Equal(300, FenceRules.Fine(35, 1));
+		Assert.Equal(600, FenceRules.Fine(35, 2));
+		Assert.Equal(9000, FenceRules.Fine(2000, 3));
+		Assert.Equal(0, FenceRules.ClosedDays(1));
+		Assert.Equal(3, FenceRules.ClosedDays(2));
+		Assert.Equal(7, FenceRules.ClosedDays(4));
+		Assert.False(FenceRules.Arrest(2, true));
+		Assert.True(FenceRules.Arrest(3, true));
+		Assert.False(FenceRules.Arrest(3, false));
+	}
+
+	[Fact]
+	public void FenceStylesDifferByPersonality()
+	{
+		Assert.Equal(FenceStyle.Hot, FenceRules.StyleOf("Shane"));
+		Assert.Equal(FenceStyle.Cold, FenceRules.StyleOf("Sebastian"));
+		Assert.Equal(FenceStyle.Hurt, FenceRules.StyleOf("penny"));
+		Assert.Equal(FenceStyle.Snide, FenceRules.StyleOf("Alex"));
+		Assert.Null(FenceRules.StyleOf("Ripley"));
+		Assert.Equal(FenceStyle.Snide, FenceRules.Parse(" Snide "));
+		Assert.Equal(FenceStyle.Hot, FenceRules.Parse("???"));
+		Assert.True(FenceRules.FriendshipFactor(FenceStyle.Cold) > FenceRules.FriendshipFactor(FenceStyle.Snide));
+		Assert.Equal(0, FenceRules.Grudge(FenceStyle.Cold));
+		Assert.True(FenceRules.MoodDrop(FenceStyle.Hurt) < FenceRules.MoodDrop(FenceStyle.Snide));
+	}
 }
