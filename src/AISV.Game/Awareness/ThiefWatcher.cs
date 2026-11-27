@@ -75,6 +75,9 @@ public sealed class ThiefWatcher
 	/// <summary>记下了一笔（以后从失主的钱和家当里扣）。</summary>
 	public Action<TheftRecord>? Recorded { get; set; }
 
+	/// <summary>当场被抓（被偷的人或撞见的人）：交给做错事的后果。</summary>
+	public Action<string>? CaughtBy { get; set; }
+
 	public void Attach(IModHelper helper, Harmony harmony)
 	{
 		Installed = helper.ModRegistry.IsLoaded(ModId);
@@ -387,6 +390,10 @@ public sealed class ThiefWatcher
 			_awareness.Record(new Observation("burglary", farmer, spotter.Name, where.NameOrUniqueName, $"{farmer}溜进{owners}翻东西，被{spotter.Name}撞了个正着。", spotter.Tile, d));
 		}
 		LoseFriendship(r);
+		if (r.Caught)
+		{
+			CaughtBy?.Invoke(r.Kind == TheftRecord.Pickpocket ? r.Victims[0] : r.CaughtBy);
+		}
 		if (TheftRules.LossNoticed(r))
 		{
 			NoticedLoss?.Invoke(r, AwarenessSystem.PlaceName(where));

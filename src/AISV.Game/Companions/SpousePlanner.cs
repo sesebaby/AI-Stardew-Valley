@@ -105,6 +105,9 @@ public sealed class SpousePlanner
 
 	public Func<string>? Language { get; set; }
 
+	/// <summary>配偶还在生你的气（调情被看见）：不帮忙干农活。</summary>
+	public Func<string, bool>? Cold { get; set; }
+
 	public Func<string, string>? Display { get; set; }
 
 	public Func<string, string>? Persona { get; set; }
@@ -241,6 +244,11 @@ public sealed class SpousePlanner
 		Allow(c.SpouseGoesOut, SpouseTasks.Visit, SpouseTasks.Shop);
 		Allow(c.SpouseMindsShop, SpouseTasks.MindShop);
 		Allow(c.SpousePlaysWithKids, SpouseTasks.Kids);
+		if (Cold?.Invoke(spouse.Name) == true)
+		{
+			// 还在生你的气：这几天不帮忙干农活。
+			allowed.ExceptWith(SpouseTasks.Chores);
+		}
 		Dictionary<string, int> work = SpouseTasks.Chores.ToDictionary(t => t, FarmChoreExecutor.Count);
 		Farmer p = Game1.player;
 		return new SpousePlanInput

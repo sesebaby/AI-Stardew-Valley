@@ -130,11 +130,12 @@ public sealed class ModEntry : Mod
 			case "screenshot": return Screenshot(a[0]);
 			case "warp": return Warp(a[0], int.Parse(a[1]), int.Parse(a[2]), a.Length > 3 ? int.Parse(a[3]) : 2);
 			case "sleep": return Sleep();
-			case "talk": return Talk(a[0]);
+			case "talk": return Talk(a[0], interact: true);
+			case "near": return Talk(a[0], interact: false);
 			case "click": Game1.activeClickableMenu?.receiveLeftClick(int.Parse(a[0]), int.Parse(a[1])); return Nothing();
 			case "text": Game1.keyboardDispatcher.Subscriber?.RecieveTextInput(string.Join(' ', a)); return Nothing();
 			case "key": Game1.activeClickableMenu?.receiveKeyPress((Microsoft.Xna.Framework.Input.Keys)Enum.Parse(typeof(Microsoft.Xna.Framework.Input.Keys), a[0])); return Nothing();
-			case "close": Game1.exitActiveMenu(); Game1.dialogueUp = false; Game1.currentSpeaker = null; return Nothing();
+			case "close": return Close();
 			case "time": Game1.timeOfDay = int.Parse(a[0]); return Nothing();
 			case "dump-asset": _result = JToken.FromObject(Helper.GameContent.Load<Dictionary<string, string>>(a[0])); return Nothing();
 			case "build-cabin": _result = BuildCabin(int.Parse(a[0]), int.Parse(a[1])); return Nothing();
@@ -316,12 +317,36 @@ public sealed class ModEntry : Mod
 		_shotPath = null;
 	}
 
+	/// <summary>对话框像玩家那样一页页点掉（这样对话结束后的回调会照常执行）；别的菜单直接关。</summary>
+	private IEnumerator Close()
+	{
+		int ticks = 0;
+		while (Game1.activeClickableMenu is DialogueBox box && ++ticks < 600)
+		{
+			if (ticks % 10 == 0)
+			{
+				box.receiveLeftClick(Game1.uiViewport.Width / 2, Game1.uiViewport.Height - 64);
+			}
+			yield return null;
+		}
+		if (Game1.activeClickableMenu != null)
+		{
+			Game1.exitActiveMenu();
+		}
+		_result = Status();
+	}
+
 	private IEnumerator Warp(string location, int x, int y, int facing)
 	{
 		Game1.warpFarmer(location, x, y, facing);
 		yield return null;
-		while (Game1.isWarping || Game1.currentLocation?.NameOrUniqueName != Game1.getLocationFromName(location)?.NameOrUniqueName || !Context.IsPlayerFree)
+		int ticks = 0;
+		while (Game1.isWarping || !(Game1.currentLocation?.NameOrUniqueName == location || Game1.currentLocation?.Name == location) || !Context.IsPlayerFree)
+		{
+			if (++ticks > 60 * 30)
+				throw new TimeoutException("warp timed out, at " + Game1.currentLocation?.NameOrUniqueName);
 			yield return null;
+		}
 		_result = Status();
 	}
 
@@ -351,7 +376,7 @@ public sealed class ModEntry : Mod
 		_result = Status();
 	}
 
-	private IEnumerator Talk(string npcName)
+	private IEnumerator Talk(string npcName, bool interact)
 	{
 		NPC npc = Game1.getCharacterFromName(npcName) ?? throw new InvalidOperationException("no npc " + npcName);
 		if (npc.currentLocation != Game1.currentLocation)
@@ -362,7 +387,8 @@ public sealed class ModEntry : Mod
 		}
 		Game1.player.Position = npc.Position + new Vector2(0, 64);
 		Game1.player.faceDirection(0);
-		npc.checkAction(Game1.player, Game1.currentLocation);
+		if (interact)
+			npc.checkAction(Game1.player, Game1.currentLocation);
 		_result = Status();
 	}
 

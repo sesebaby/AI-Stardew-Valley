@@ -102,7 +102,7 @@ public sealed class AwarenessSystem
 
 	private readonly BystanderHooks _hooks = new BystanderHooks();
 
-	private readonly Queue<(string Npc, string MeterId, int Tier)> _delivered = new Queue<(string, string, int)>();
+	private readonly Queue<(string Npc, string MeterId, int Tier, IReadOnlyList<string> EventIds)> _delivered = new Queue<(string, string, int, IReadOnlyList<string>)>();
 
 	private readonly Dictionary<string, ColdShoulder> _coldShoulders = new Dictionary<string, ColdShoulder>(StringComparer.OrdinalIgnoreCase);
 
@@ -146,6 +146,9 @@ public sealed class AwarenessSystem
 
 	/// <summary>没能走过来时改发消息：(村民, 情况说明, 发出去后) → 发没发。</summary>
 	public Func<string, string, Action, bool>? SendText { get; set; }
+
+	/// <summary>记下了一件有人看见的事（后果从这里接翻垃圾桶、调情）。</summary>
+	public event Action<Observation, Sighting>? Recorded;
 
 	/// <summary>村民正忙别的（比如陪钓）。</summary>
 	public Func<string, bool>? IsBusyElsewhere { get; set; }
@@ -272,14 +275,14 @@ public sealed class AwarenessSystem
 		}
 		while (_delivered.Count > 0)
 		{
-			(string npc, string meter, int tier) = _delivered.Dequeue();
+			(string npc, string meter, int tier, IReadOnlyList<string> ids) = _delivered.Dequeue();
 			if (!Enabled)
 			{
 				continue;
 			}
 			if (_config().NoticingMovesHearts)
 			{
-				ApplyFriendship(npc, meter, tier);
+				ApplyFriendship(npc, meter, tier, Untagged(ids, NoHeartsTag));
 			}
 			int tiers = Catalog.TryGetMeter(meter, out MeterDefinition m) ? m.TierCount : 3;
 			if (FeelingConsequences.EarnsColdShoulder(meter, tier, tiers) && (!_coldShoulders.TryGetValue(npc, out ColdShoulder? cs) || !cs.Used))
@@ -395,6 +398,14 @@ public sealed class AwarenessSystem
 			return null;
 		}
 		report?.Add($"记下了 {type}：{string.Join("、", e.SeenBy.Select(w => $"{w.Who}（{w.Part}，确定度 {w.Sureness}，{string.Join("/", w.Gauges.Select(m => $"{m.Key} {m.Value:0.##}"))}）"))}");
+		try
+		{
+			Recorded?.Invoke(o, e);
+		}
+		catch (Exception ex)
+		{
+			_log.Warn($"看到听到：{type} 的后续处理出错：{ex.Message}");
+		}
 		if (UsesExplicitReaction(def, details))
 		{
 			if (IsMemoryOnly(o))
@@ -524,7 +535,7 @@ public sealed class AwarenessSystem
 				}
 				NpcSpeech.Say(npc, TextTools.CleanForGame(text));
 				Feelings.MarkSpoken(s.Npc, meter.Id, s.Tier, NowMinute);
-				_delivered.Enqueue((s.Npc, meter.Id, s.Tier));
+				_delivered.Enqueue((s.Npc, meter.Id, s.Tier, s.EventIds));
 			});
 		});
 		return true;
@@ -603,7 +614,7 @@ public sealed class AwarenessSystem
 		if (outcome == ApproachOutcome.Spoken || p.Said)
 		{
 			Feelings.MarkSpoken(p.Npc, p.MeterId, p.Tier, now);
-			_delivered.Enqueue((p.Npc, p.MeterId, p.Tier));
+			_delivered.Enqueue((p.Npc, p.MeterId, p.Tier, p.EventIds));
 			if (outcome == ApproachOutcome.Spoken && p.RewardItem != null)
 			{
 				HandOver(p.RewardItem, p.RewardCount);
@@ -630,7 +641,7 @@ public sealed class AwarenessSystem
 		}
 		try
 		{
-			return SendText(p.Npc, p.TextSituation, () => _delivered.Enqueue((p.Npc, p.MeterId, p.Tier)));
+			return SendText(p.Npc, p.TextSituation, () => _delivered.Enqueue((p.Npc, p.MeterId, p.Tier, p.EventIds)));
 		}
 		catch (Exception ex)
 		{
@@ -799,16 +810,32 @@ public sealed class AwarenessSystem
 		{
 			return;
 		}
-		int delta = FeelingConsequences.MoodDelta(s.MeterId, s.Tier, ChildSafety.IsChild(s.Npc, null));
+		int delta = (int)Math.Round(FeelingConsequences.MoodDelta(s.MeterId, s.Tier, ChildSafety.IsChild(s.Npc, null)) * Untagged(s.EventIds, NoMoodTag));
 		if (delta != 0)
 		{
 			AdjustMood(s.Npc, delta);
 		}
 	}
 
-	private void ApplyFriendship(string npcName, string meter, int tier)
+	/// <summary>后果那边已经扣过好感 / 心情的事（Observation 的细节里带这两个标记），这里不再重复扣。</summary>
+	public const string NoHeartsTag = "sh.noHearts";
+
+	public const string NoMoodTag = "sh.noMood";
+
+	/// <summary>这份心事里没带标记的事占几成（全带标记 = 0，不扣）。</summary>
+	private double Untagged(IReadOnlyList<string> eventIds, string tag)
 	{
-		int delta = FeelingConsequences.FriendshipDelta(meter, tier, ChildSafety.IsChild(npcName, null));
+		if (eventIds.Count == 0)
+		{
+			return 1;
+		}
+		int tagged = eventIds.Count(id => Memory.Find(id)?.Detail(tag) == "true");
+		return 1 - tagged / (double)eventIds.Count;
+	}
+
+	private void ApplyFriendship(string npcName, string meter, int tier, double share)
+	{
+		int delta = (int)Math.Round(FeelingConsequences.FriendshipDelta(meter, tier, ChildSafety.IsChild(npcName, null)) * share);
 		Farmer player = Game1.player;
 		if (delta == 0 || player == null || Game1.getCharacterFromName(npcName) is not NPC npc)
 		{
@@ -966,7 +993,7 @@ public sealed class AwarenessSystem
 					leadIds = aside.EventIds;
 					if (first)
 					{
-						_delivered.Enqueue((npc, aside.MeterId, aside.Tier));
+						_delivered.Enqueue((npc, aside.MeterId, aside.Tier, aside.EventIds));
 					}
 				}
 				else if (!_approaches.IsNpcBusy(npc) && _hooks.Pick(npc, Memory.MemoriesOf(npc, day), PlayerName, day, time, SmallTalk) is AwarenessMemoryItem hook)

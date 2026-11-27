@@ -129,6 +129,9 @@ public sealed class Debt
 
 	public bool Gossiped { get; set; }
 
+	/// <summary>到期没还已经算进后果了（每笔只算一次）。</summary>
+	public bool Reported { get; set; }
+
 	/// <summary>在店里赊的账（不是开口借的钱）。</summary>
 	public bool Tab { get; set; }
 

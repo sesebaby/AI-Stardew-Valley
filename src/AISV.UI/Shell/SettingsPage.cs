@@ -358,8 +358,22 @@ internal sealed class SettingsPage : ShellPage
 					new ToggleRow(Tr.Get("shell.settings.martCompete", "和 Pierre、Joja 抢生意"), Tr.Get("shell.settings.martCompeteNote", "抢得多了他们会吃紧，甚至停业整顿；只在 AI星露谷 的经济里，不改原版剧情，种子一定买得到"), c => c.MartCompetition, (c, v) => c.MartCompetition = v) { Shown = c => c.FarmerMart },
 					new ToggleRow(Tr.Get("shell.settings.brawl", "上门理论时可以动手"), Tr.Get("shell.settings.brawlNote", "像原版过场那样一拳，不伤人；会被罚款、上周报"), c => c.AllowBrawl, (c, v) => c.AllowBrawl = v) { Shown = c => c.FarmerMart && c.MartCompetition },
 					new ToggleRow(Tr.Get("shell.settings.stolenNoticed", "赃物可能被认出来"), Tr.Get("shell.settings.stolenNoticedNote", "偷来的东西放在店里卖，失主和熟人可能认出来"), c => c.StolenGoodsNoticed, (c, v) => c.StolenGoodsNoticed = v),
-					new ToggleRow(Tr.Get("shell.settings.fenceArrest", "屡次卖赃物会被带走"), Tr.Get("shell.settings.fenceArrestNote", "同一季第三次被认出卖赃物：赃物没收、被带走（装了 Law and Order 关进牢里），当天结束。关掉只罚款、停业"), c => c.FenceArrest, (c, v) => c.FenceArrest = v),
 					new ToggleRow(Tr.Get("shell.settings.cosLink", "和 Farmer's Store 对接"), Tr.Get("shell.settings.cosLinkNote", "装了 Farmer's Store 时：两边不抢村民，它那边的成交也记进村民账本；两家店可以同时开"), c => c.FarmersStoreLink, (c, v) => c.FarmersStoreLink = v)
+				})
+			}),
+			new Category(Tr.Get("shell.settings.consequences", "后果"), Tr.Get("shell.settings.consequencesDesc", "做错事以后会怎样：同一季犯得越多越重。"), new List<(string, List<Row>)>
+			{
+				(Tr.Get("shell.settings.consequences", "后果"), new List<Row>
+				{
+					new ToggleRow(Tr.Get("shell.settings.consequencesOn", "做错事有后果"), Tr.Get("shell.settings.consequencesOnNote", "在原有的后果之外，同一季犯得越多越重：来信、罚款、记仇、传开、冷落一阵子；换季清零"), c => c.ConsequencesOn, (c, v) => c.ConsequencesOn = v),
+					new ToggleRow(Tr.Get("shell.settings.arrest", "屡犯会被带走"), Tr.Get("shell.settings.arrestNote", "同一季第三次卖赃物被认出、第三次在店里动手：被带走（装了 Law and Order 关进牢里），当天结束；卖赃物的还会没收店里的赃物。关掉只罚款、停业"), c => c.FenceArrest, (c, v) => c.FenceArrest = v) { Shown = c => c.ConsequencesOn },
+					new ToggleRow(Tr.Get("shell.settings.csqBrawl", "屡次动手"), Tr.Get("shell.settings.csqBrawlNote", "上门理论时动手：第二回罚款加倍，第三回被带走"), c => c.BrawlConsequences, (c, v) => c.BrawlConsequences = v) { Shown = c => c.ConsequencesOn },
+					new ToggleRow(Tr.Get("shell.settings.csqMeetup", "放人鸽子"), Tr.Get("shell.settings.csqMeetupNote", "约好了没去：记成说话不算话；第二回传开，第三回这一周不肯再和你约"), c => c.MeetupConsequences, (c, v) => c.MeetupConsequences = v) { Shown = c => c.ConsequencesOn },
+					new ToggleRow(Tr.Get("shell.settings.csqFavor", "答应的事没办"), Tr.Get("shell.settings.csqFavorNote", "托付、请求到期没办：记成说话不算话，好感掉一点；第二回传开"), c => c.FavorConsequences, (c, v) => c.FavorConsequences = v) { Shown = c => c.ConsequencesOn },
+					new ToggleRow(Tr.Get("shell.settings.csqDebt", "欠钱不还"), Tr.Get("shell.settings.csqDebtNote", "借的钱、赊的账到期没还：镇长来信；第三回起两周内借不到钱、赊不了账"), c => c.DebtConsequences, (c, v) => c.DebtConsequences = v) { Shown = c => c.ConsequencesOn },
+					new ToggleRow(Tr.Get("shell.settings.csqTheft", "偷东西被抓"), Tr.Get("shell.settings.csqTheftNote", "装了 Stardew Thief 时：屡次当场被抓会传开、镇长来信（罚款和牢房仍由它管）"), c => c.TheftConsequences, (c, v) => c.TheftConsequences = v) { Shown = c => c.ConsequencesOn },
+					new ToggleRow(Tr.Get("shell.settings.csqTrash", "翻垃圾桶"), Tr.Get("shell.settings.csqTrashNote", "同一季屡次翻别人家门口的垃圾桶：主人来信，被起外号"), c => c.TrashConsequences, (c, v) => c.TrashConsequences = v) { Shown = c => c.ConsequencesOn },
+					new ToggleRow(Tr.Get("shell.settings.csqFlirt", "当着恋人调情"), Tr.Get("shell.settings.csqFlirtNote", "当着恋人、配偶的面和别人调情：对方伤心好几天，好感和心情都掉；配偶这几天不帮你干农活"), c => c.FlirtConsequences, (c, v) => c.FlirtConsequences = v) { Shown = c => c.ConsequencesOn }
 				})
 			}),
 			new Category(Tr.Get("shell.settings.keys", "快捷键"), Tr.Get("shell.settings.keysDesc", "在 Generic Mod Config Menu 或 config.json 里改。"), new List<(string, List<Row>)>

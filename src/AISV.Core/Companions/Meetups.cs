@@ -188,6 +188,8 @@ public static class MeetupRules
 	public const string HoursReason = "too early or too late";
 	public const string ClosedReason = "the place isn't open then";
 	public const string AlreadyReason = "already has a plan with you";
+
+	public const string StoodUpReason = "was stood up too often lately";
 	public const string FullReason = "you already have three plans that day";
 	public const string TooLateReason = "too late to get there today";
 
@@ -379,6 +381,10 @@ public static class MeetupRules
 		if (reason.Contains("birthday"))
 		{
 			return Tr.Get("meetup.why.birthday", "那天过生日，家里有安排");
+		}
+		if (reason.Contains(StoodUpReason))
+		{
+			return Tr.Get("meetup.why.stoodUp", "你最近放了好几次鸽子，先不约了");
 		}
 		if (reason.Contains("already has"))
 		{

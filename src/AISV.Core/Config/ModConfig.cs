@@ -513,6 +513,30 @@ public sealed class ModConfig
 	/// <summary>同一季第 3 次卖赃物被认出时被带走（装了 Law and Order 关进牢里，没装由镇长押回家），当天结束。关掉只罚款、停业。</summary>
 	public bool FenceArrest { get; set; } = true;
 
+	/// <summary>做错事的后果：同一季犯得越多越重（只在原有后果之外再加）。总开关。</summary>
+	public bool ConsequencesOn { get; set; } = true;
+
+	/// <summary>同一季第二、三回动手打人：罚款加倍、被带走。</summary>
+	public bool BrawlConsequences { get; set; } = true;
+
+	/// <summary>屡次失约：记仇、传八卦、一段时间不肯再约。</summary>
+	public bool MeetupConsequences { get; set; } = true;
+
+	/// <summary>答应的事到期没办：记成说话不算话，屡次就传开。</summary>
+	public bool FavorConsequences { get; set; } = true;
+
+	/// <summary>欠钱到期不还：镇长来信，屡次就借不到钱、赊不了账。</summary>
+	public bool DebtConsequences { get; set; } = true;
+
+	/// <summary>偷东西屡次被当场抓住：传开、镇长来信（罚款和牢房仍由 Stardew Thief 管）。</summary>
+	public bool TheftConsequences { get; set; } = true;
+
+	/// <summary>屡次翻别人家的垃圾桶：主人来信、被起外号。</summary>
+	public bool TrashConsequences { get; set; } = true;
+
+	/// <summary>当着恋人、配偶的面和别人调情：对方事后质问，冷淡几天。</summary>
+	public bool FlirtConsequences { get; set; } = true;
+
 	/// <summary>小超市收银小游戏：顾客排到柜台前等你来收银找零（关掉就自动结账）。</summary>
 	public bool MartCheckoutGame { get; set; } = true;
 

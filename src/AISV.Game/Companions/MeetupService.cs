@@ -56,6 +56,12 @@ public sealed class MeetupService
 
 	public event Action<Meetup>? MeetupClosed;
 
+	/// <summary>农夫没来（伴侣剧情的约见不算）：交给做错事的后果。</summary>
+	public Action<string>? StoodUp { get; set; }
+
+	/// <summary>这个村民被放鸽子太多次，暂时不肯再约。</summary>
+	public Func<string, bool>? Refuses { get; set; }
+
 	public int Version { get; private set; }
 
 	public bool Enabled
@@ -345,6 +351,10 @@ public sealed class MeetupService
 		{
 			return MeetupRules.ChildReason;
 		}
+		if (Refuses?.Invoke(npc.Name) == true)
+		{
+			return MeetupRules.StoodUpReason;
+		}
 		if (day < Today || day > Today + MeetupRules.MaxDaysAhead)
 		{
 			return MeetupRules.AheadReason;
@@ -536,6 +546,10 @@ public sealed class MeetupService
 		{
 			Close(m, MeetupStates.Missed, o.CancelReason.Length > 0 ? o.CancelReason : "the farmer didn't come", o.Day);
 			ChangeFriendship(m.Npc, MeetupRules.MissedFriendship);
+			if (m.Owner != MeetupRules.StoryOwner)
+			{
+				StoodUp?.Invoke(m.Npc);
+			}
 			return;
 		}
 		if (o.CancelReason is PlanReasons.RainMove or PlanReasons.FarmerCancelled)

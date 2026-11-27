@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AISV.Core.Consequences;
 using AISV.Core.Store;
 using Xunit;
 
@@ -171,15 +172,14 @@ public sealed class MartTests
 	[Fact]
 	public void FenceStylesDifferByPersonality()
 	{
-		Assert.Equal(FenceStyle.Hot, FenceRules.StyleOf("Shane"));
-		Assert.Equal(FenceStyle.Cold, FenceRules.StyleOf("Sebastian"));
-		Assert.Equal(FenceStyle.Hurt, FenceRules.StyleOf("penny"));
-		Assert.Equal(FenceStyle.Snide, FenceRules.StyleOf("Alex"));
+		Assert.Equal(ReactionStyle.Hot, FenceRules.StyleOf("Shane"));
+		Assert.Equal(ReactionStyle.Cold, FenceRules.StyleOf("Sebastian"));
+		Assert.Equal(ReactionStyle.Hurt, FenceRules.StyleOf("penny"));
+		Assert.Equal(ReactionStyle.Snide, FenceRules.StyleOf("Alex"));
 		Assert.Null(FenceRules.StyleOf("Ripley"));
-		Assert.Equal(FenceStyle.Snide, FenceRules.Parse(" Snide "));
-		Assert.Equal(FenceStyle.Hot, FenceRules.Parse("???"));
-		Assert.True(FenceRules.FriendshipFactor(FenceStyle.Cold) > FenceRules.FriendshipFactor(FenceStyle.Snide));
-		Assert.Equal(0, FenceRules.Grudge(FenceStyle.Cold));
-		Assert.True(FenceRules.MoodDrop(FenceStyle.Hurt) < FenceRules.MoodDrop(FenceStyle.Snide));
+		Assert.Equal(ReactionStyle.Snide, FenceRules.Parse(" Snide "));
+		Assert.Equal(ReactionStyle.Hot, FenceRules.Parse("???"));
+		Assert.True(FenceRules.FriendshipFactor(ReactionStyle.Cold) > FenceRules.FriendshipFactor(ReactionStyle.Snide));
+		Assert.True(FenceRules.MoodDrop(ReactionStyle.Hurt) < FenceRules.MoodDrop(ReactionStyle.Snide));
 	}
 }

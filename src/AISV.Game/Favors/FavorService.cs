@@ -106,14 +106,25 @@ public sealed class FavorService : IItemRequestDesk
 		.Concat(Requests.For(npc).Where(f => f.IsActive).Select(f => $"{f.Amount}×{f.WantedItemName}"))
 		.Take(3).ToList();
 
+	/// <summary>托付、请求到期没办（村民名）：交给做错事的后果。</summary>
+	public Action<string>? Expired { get; set; }
+
 	public string FavorBlock(string npc) => Favors.PromptBlock(npc, Today);
 
 	public string RequestBlock(string npc) => Requests.PromptBlock(npc, Today);
 
 	public void OnDayStarted()
 	{
-		Favors.Expire(Today);
-		if (Requests.Expire(Today).Count > 0)
+		foreach (var f in Favors.Expire(Today))
+		{
+			Expired?.Invoke(f.Asker);
+		}
+		var lapsed = Requests.Expire(Today);
+		foreach (var r in lapsed)
+		{
+			Expired?.Invoke(r.Asker);
+		}
+		if (lapsed.Count > 0)
 		{
 			_helper.GameContent.InvalidateAllLocales(QuestsAsset);
 		}

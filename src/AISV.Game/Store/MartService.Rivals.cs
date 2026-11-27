@@ -4,9 +4,11 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using AISV.Core.Ai;
+using AISV.Core.Consequences;
 using AISV.Core.Dialogue;
 using AISV.Core.Store;
 using AISV.Core.Text;
+using AISV.Game.Consequences;
 using AISV.Game.Dialogue;
 using AISV.Game.Npcs;
 using HarmonyLib;
@@ -465,6 +467,15 @@ public sealed partial class MartService
 				}
 				Gossip?.Invoke(Tr.Get("mart.brawlGossip", "{{farmer}}在自己店里和{{name}}动了手，一拳把{{name}}打得连退好几步，镇长罚了 {{gold}}g。", ("farmer", Game1.player.Name), ("name", Display(real.Name)), ("gold", fine)), new[] { real.Name, "Lewis" });
 				Hints.Hud(Tr.Get("mart.brawlHud", "{{name}}挨了一拳，晕乎乎地走了。罚款 {{gold}}g，明天会收到镇长的信。", ("name", Display(real.Name)), ("gold", fine)), 10000);
+				// 同一季第二回起罚款翻倍、第三回被带走（只算额外的部分）。
+				Consequences?.Report(new Misdeed
+				{
+					Kind = Misdeeds.Brawl,
+					Farmer = Game1.player.UniqueMultiplayerID,
+					FarmerName = Game1.player.Name,
+					Npc = real.Name,
+					Place = Tr.Get("mart.fencePlace", "{{farmer}}的小超市", ("farmer", Game1.player.Name))
+				});
 				Leave(real, clone, angry: true);
 			}
 		};

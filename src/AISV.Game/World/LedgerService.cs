@@ -698,7 +698,7 @@ public sealed partial class LedgerService
 			return 0;
 		}
 		Debt? open = OpenDebt(LedgerRules.TabOwner);
-		if (open != null && (!open.Tab || Today > open.DueDay))
+		if (open != null && (!open.Tab || Today > open.DueDay) || NoCredit?.Invoke() == true)
 		{
 			return 0;
 		}
@@ -744,6 +744,10 @@ public sealed partial class LedgerService
 		if (OpenDebt(npc) != null)
 		{
 			return Tr.Get("ledger.loan.open", "还有一笔没还清");
+		}
+		if (NoCredit?.Invoke() == true)
+		{
+			return Tr.Get("ledger.loan.noCredit", "你欠钱不还的事传开了，这阵子没人肯借");
 		}
 		if (ChildSafety.IsChild(npc, Game1.getCharacterFromName(npc)?.Age))
 		{
@@ -875,8 +879,19 @@ public sealed partial class LedgerService
 		return null;
 	}
 
+	/// <summary>一笔债到期没还（村民名）：交给做错事的后果。</summary>
+	public Action<string>? OverdueNoticed { get; set; }
+
+	/// <summary>欠钱不还传开了：一段时间里借不到钱、赊不了账。</summary>
+	public Func<bool>? NoCredit { get; set; }
+
 	private void Overdue(Debt d)
 	{
+		if (!d.Reported && Today > d.DueDay)
+		{
+			d.Reported = true;
+			OverdueNoticed?.Invoke(d.Npc);
+		}
 		DebtAction action = LedgerRules.Overdue(d, Today);
 		if (action != DebtAction.None)
 		{

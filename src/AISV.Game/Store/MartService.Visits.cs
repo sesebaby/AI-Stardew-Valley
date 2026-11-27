@@ -174,7 +174,6 @@ public sealed partial class MartService
 	public void OnUpdateTicked()
 	{
 		TickStocker();
-		TickArrest();
 		if (Game1.ticks % 30 == 0 && _config().FarmerMart && Context.IsWorldReady && IsShop(Game1.currentLocation))
 		{
 			MartShelves.EnsureDisplay(Game1.currentLocation);

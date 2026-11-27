@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AISV.Core.Consequences;
 using AISV.Core.Storage;
 
 namespace AISV.Core.Store;
@@ -75,70 +76,20 @@ public static class StolenRules
 	}
 }
 
-/// <summary>失主认出赃物时的脾气：当场骂 / 冷脸拿走 / 难过失望 / 阴阳怪气。</summary>
-public enum FenceStyle
-{
-	Hot,
-	Cold,
-	Hurt,
-	Snide
-}
-
 /// <summary>
 /// 卖赃物被认出的后果：按这一季的"案底"次数逐级加重。第 1 次罚款；第 2 次罚款翻倍、停业整顿 3 天；第 3 次起被带走（当天结束）、没收店里的赃物、罚三倍、停业 7 天。
 /// 失主按脾气反应：好感扣多少、心情掉多少、记不记仇都不一样。
 /// </summary>
 public static class FenceRules
 {
-	/// <summary>原版村民的脾气（其他 mod 的 NPC 让 AI 按人设判断，判断不了当成 Hot）。</summary>
-	public static readonly IReadOnlyDictionary<string, FenceStyle> Known = new Dictionary<string, FenceStyle>(StringComparer.OrdinalIgnoreCase)
-	{
-		["Shane"] = FenceStyle.Hot, ["Haley"] = FenceStyle.Hot, ["Clint"] = FenceStyle.Hot, ["Marnie"] = FenceStyle.Hot, ["Pierre"] = FenceStyle.Hot,
-		["Pam"] = FenceStyle.Hot, ["Kent"] = FenceStyle.Hot, ["Gus"] = FenceStyle.Hot, ["Willy"] = FenceStyle.Hot, ["Lewis"] = FenceStyle.Hot,
-		["Robin"] = FenceStyle.Hot, ["Jodi"] = FenceStyle.Hot, ["Abigail"] = FenceStyle.Hot,
-		["Sebastian"] = FenceStyle.Cold, ["Elliott"] = FenceStyle.Cold, ["Demetrius"] = FenceStyle.Cold, ["Harvey"] = FenceStyle.Cold,
-		["Linus"] = FenceStyle.Cold, ["Wizard"] = FenceStyle.Cold, ["Krobus"] = FenceStyle.Cold, ["Morris"] = FenceStyle.Cold,
-		["Penny"] = FenceStyle.Hurt, ["Leah"] = FenceStyle.Hurt, ["Evelyn"] = FenceStyle.Hurt, ["George"] = FenceStyle.Hurt,
-		["Emily"] = FenceStyle.Hurt, ["Caroline"] = FenceStyle.Hurt, ["Maru"] = FenceStyle.Hurt, ["Sandy"] = FenceStyle.Hurt,
-		["Alex"] = FenceStyle.Snide, ["Sam"] = FenceStyle.Snide, ["Gil"] = FenceStyle.Snide, ["Marlon"] = FenceStyle.Snide
-	};
+	/// <summary>失主的反应方式（见 <see cref="ReactionStyles"/>）。</summary>
+	public static ReactionStyle? StyleOf(string npc) => ReactionStyles.StyleOf(npc);
 
-	public static FenceStyle? StyleOf(string npc) => Known.TryGetValue(npc, out FenceStyle s) ? s : null;
+	public static ReactionStyle Parse(string? text) => ReactionStyles.Parse(text);
 
-	public static FenceStyle Parse(string? text) => text?.Trim().ToLowerInvariant() switch
-	{
-		"cold" => FenceStyle.Cold,
-		"hurt" => FenceStyle.Hurt,
-		"snide" => FenceStyle.Snide,
-		_ => FenceStyle.Hot
-	};
+	public static double FriendshipFactor(ReactionStyle s) => ReactionStyles.FriendshipFactor(s);
 
-	/// <summary>好感扣多少倍：冷脸的最记仇，难过的其次，阴阳怪气的嘴上不饶人、心里没那么在意。</summary>
-	public static double FriendshipFactor(FenceStyle s) => s switch
-	{
-		FenceStyle.Cold => 1.3,
-		FenceStyle.Hurt => 1.2,
-		FenceStyle.Snide => 0.8,
-		_ => 1.0
-	};
-
-	/// <summary>失主心情掉多少。</summary>
-	public static int MoodDrop(FenceStyle s) => s switch
-	{
-		FenceStyle.Hurt => -20,
-		FenceStyle.Hot => -15,
-		FenceStyle.Cold => -12,
-		_ => -8
-	};
-
-	/// <summary>之后主动找来吵的火气（给"看到听到"的 confront）：冷脸的不来吵，只是记着。</summary>
-	public static double Grudge(FenceStyle s) => s switch
-	{
-		FenceStyle.Hot => 3.0,
-		FenceStyle.Hurt => 2.0,
-		FenceStyle.Snide => 1.6,
-		_ => 0
-	};
+	public static int MoodDrop(ReactionStyle s) => ReactionStyles.MoodDrop(s);
 
 	/// <summary>"案底"按季算：换季清零。</summary>
 	public static int Strike(int lastSeason, int lastStrikes, int season) => (lastSeason == season ? lastStrikes : 0) + 1;

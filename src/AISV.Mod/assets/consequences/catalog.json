@@ -1,0 +1,74 @@
+{
+  // 做错事的后果：每种事按"同一季第几次"分档，超过最后一档就按最后一档。
+  // 全是在原有后果之外"再加多少"；keeps 写这件事原本就有的后果（这里不重复扣）。
+  // friendship 是扣多少好感（正数）；fine 罚款：basis=value 货值×rate，basis=wallet 身上钱的 rate%，限在 min～max，再乘 multiplier。
+  "kinds": {
+    "fenced_goods": {
+      "awareness": "fenced_goods",
+      "keeps": ["失主之后找上门、对手取笑由看到听到管"],
+      "tiers": [
+        { "friendshipFromSetting": true, "ownerShare": 0.5, "moodByStyle": true, "enmity": 40, "fine": { "basis": "value", "rate": 5, "min": 300, "max": 3000, "multiplier": 1 }, "letter": true, "gossip": true, "hud": true },
+        { "friendshipFromSetting": true, "friendshipScale": 1.5, "ownerShare": 0.5, "moodByStyle": true, "enmity": 80, "fine": { "basis": "value", "rate": 5, "min": 300, "max": 3000, "multiplier": 2 }, "closedDays": 3, "letter": true, "gossip": true, "hud": true },
+        { "friendshipFromSetting": true, "friendshipScale": 1.5, "ownerShare": 0.5, "moodByStyle": true, "enmity": 120, "fine": { "basis": "value", "rate": 5, "min": 300, "max": 3000, "multiplier": 3 }, "closedDays": 7, "arrest": true, "letter": true, "gossip": true, "hud": true }
+      ]
+    },
+    "brawl": {
+      "keeps": ["好感 -250、心情 -20、罚身上钱的一成（200～1000g）、口碑 -15、传八卦"],
+      "tiers": [
+        { "enmity": 100 },
+        { "enmity": 150, "fine": { "basis": "wallet", "rate": 10, "min": 200, "max": 1000, "multiplier": 1 }, "letter": true, "gossip": true, "hud": true },
+        { "enmity": 200, "fine": { "basis": "wallet", "rate": 10, "min": 200, "max": 1000, "multiplier": 2 }, "arrest": true, "letter": true, "gossip": true, "hud": true }
+      ]
+    },
+    "missed_meetup": {
+      "keeps": ["好感 -30、三天内说起"],
+      "tiers": [
+        { "mood": 6, "memory": true },
+        { "mood": 10, "enmity": 30, "memory": true, "gossip": true },
+        { "mood": 14, "enmity": 60, "memory": true, "gossip": true, "cooldownDays": 7, "hud": true }
+      ]
+    },
+    "favor_expired": {
+      "keeps": ["提示词里写失望"],
+      "tiers": [
+        { "friendship": 10, "mood": 4, "memory": true },
+        { "friendship": 20, "mood": 8, "enmity": 20, "memory": true, "gossip": true }
+      ]
+    },
+    "debt_overdue": {
+      "keeps": ["催债：每次提醒 -5、不好意思开口的每天 -2、传一次八卦、上门收账"],
+      "tiers": [
+        { "letter": true },
+        { "letter": true, "gossip": true },
+        { "letter": true, "gossip": true, "cooldownDays": 14, "hud": true }
+      ]
+    },
+    "theft_caught": {
+      "awareness": "pickpocket",
+      "keeps": ["Stardew Thief 自己的罚款和牢房、当场被抓扣的好感"],
+      "tiers": [
+        { },
+        { "gossip": true, "mood": 6 },
+        { "gossip": true, "mood": 10, "letter": true, "hud": true }
+      ]
+    },
+    "trash": {
+      "awareness": "trash",
+      "keeps": ["原版：7 格内的村民好感 -25"],
+      "tiers": [
+        { },
+        { "mood": 4, "letter": true },
+        { "mood": 8, "letter": true, "gossip": true }
+      ]
+    },
+    "flirt": {
+      "awareness": "flirt",
+      "keeps": ["看到听到的火气"],
+      "tiers": [
+        { "friendship": 30, "mood": 12, "enmity": 30, "cooldownDays": 2 },
+        { "friendship": 60, "mood": 18, "enmity": 60, "cooldownDays": 3, "gossip": true },
+        { "friendship": 100, "mood": 25, "enmity": 100, "cooldownDays": 5, "gossip": true, "hud": true }
+      ]
+    }
+  }
+}

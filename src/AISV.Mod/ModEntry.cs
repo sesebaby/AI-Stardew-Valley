@@ -8,6 +8,7 @@ using System.Linq;
 using AISV.Core.Ai;
 using AISV.Core.Compat;
 using AISV.Core.Config;
+using AISV.Core.Consequences;
 using AISV.Core.Diagnostics;
 using AISV.Core.Dialogue;
 using AISV.Core.Group;
@@ -21,6 +22,7 @@ using AISV.Core.Text;
 using AISV.Game;
 using AISV.Game.Approach;
 using AISV.Game.Companions;
+using AISV.Game.Consequences;
 using AISV.Game.Awareness;
 using AISV.Game.Dialogue;
 using AISV.Game.Favors;
@@ -566,7 +568,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_ledger.ShopShare = _mart.ShareLeft;
 			_shell.Mart = _mart;
 			AISV.Game.Store.MartShopGate.Apply(harmony, _mart, _log);
-			helper.ConsoleCommands.Add("aisv_store", "小超市调试。\n用法：aisv_store dump | build [x y] | customer | restock | review | brawl <Pierre|Morris> | state <Pierre|Joja> <0-3> | uninstall", (_, args) => _log.Info(Context.IsWorldReady ? StoreCommand(args) : "先进存档。"));
+			helper.ConsoleCommands.Add("aisv_store", "小超市调试。\n用法：aisv_store dump | build [x y] | customer [村民] | fence <村民> [失主] | arrest | restock | review | brawl <Pierre|Morris> | state <Pierre|Joja> <0-3> | uninstall", (_, args) => _log.Info(Context.IsWorldReady ? StoreCommand(args) : "先进存档。"));
 			helper.Events.GameLoop.UpdateTicked += (_, _) =>
 			{
 				_mart.OnUpdateTicked();
@@ -587,8 +589,32 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			};
 			_mart.SpouseMinding = () => _spousePlan.Minding;
 			_shell.Spouse = _spousePlan;
+			_consequences = new ConsequenceService(() => _config, store, helper, _log)
+			{
+				Ai = _ai,
+				Language = PromptLanguage,
+				Persona = n => _npcs.Persona(n, StardewValley.Game1.getCharacterFromName(n)).Personality,
+				Display = _npcs.Names.Display,
+				AdjustMood = _social.Moods.Adjust,
+				AddEnmity = (n, points) => relationships.Add(n, -points),
+				BrokenPromise = (n, text) => _social.Feelings.BrokenPromise(n, text, GameState.Today),
+				Gossip = (text, knowers) => _social.Gossip.AddLowKey(text, knowers.ToList(), "consequence", "consequence-" + GameState.Today.TotalDays + "-" + text.GetHashCode(), GameState.Today),
+				Witness = o => _awareness.Record(o),
+				Confiscate = _mart.Confiscate
+			};
+			_mart.Consequences = _consequences;
+			_meetups.StoodUp = _consequences.MissedMeetup;
+			_meetups.Refuses = n => _consequences.Blocked(ConsequenceService.NoMeetups, StardewValley.Game1.player.UniqueMultiplayerID, n);
+			_favors.Expired = _consequences.FavorExpired;
+			_ledger.OverdueNoticed = _consequences.DebtOverdue;
+			_ledger.NoCredit = () => _consequences.Blocked(ConsequenceService.NoCredit, StardewValley.Game1.player.UniqueMultiplayerID);
+			_thief.CaughtBy = _consequences.TheftCaught;
+			_spousePlan.Cold = n => _consequences.Blocked(ConsequenceService.ColdSpouse, StardewValley.Game1.player.UniqueMultiplayerID, n);
+			_awareness.Recorded += _consequences.OnSighting;
+			helper.Events.GameLoop.UpdateTicked += (_, _) => _consequences.OnUpdateTicked();
+			helper.ConsoleCommands.Add("aisv_consequence", "做错事的后果调试。\n用法：aisv_consequence list | strikes | reset | fire <" + string.Join("|", Misdeeds.All) + "> <村民> [失主]", (_, args) => _log.Info(Context.IsWorldReady ? _consequences.Command(args) : "先进存档。"));
 			helper.Events.GameLoop.UpdateTicked += (_, _) => _spousePlan.OnUpdateTicked();
-			helper.ConsoleCommands.Add("aisv_spouse", "配偶日程调试。\n用法：aisv_spouse dump | plan | ask <water|harvest|animals|hay|clear|greenhouse|ponds|machines|visit|shop|mind_shop|kids> | box", (_, args) => _log.Info(Context.IsWorldReady ? SpouseCommand(args) : "先进存档。"));
+			helper.ConsoleCommands.Add("aisv_spouse", "配偶日程调试。\n用法：aisv_spouse dump | plan | setup | box | ask <water|harvest|animals|hay|clear|greenhouse|ponds|machines|visit|shop|mind_shop|kids> | box", (_, args) => _log.Info(Context.IsWorldReady ? SpouseCommand(args) : "先进存档。"));
 			_shell.Eco = _eco;
 			_shell.TryChat = (npc, card, text, done) =>
 			{
@@ -910,6 +936,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private AISV.Game.Store.MartService _mart = null!;
 
+	private ConsequenceService _consequences = null!;
+
 	private SpousePlanner _spousePlan = null!;
 
 	/// <summary>聊天素材：这位村民最近在农夫的店里买过什么；Pierre 和 Morris 还知道自己的店现在怎么样。</summary>
@@ -1060,6 +1088,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		_squad.OnSaveLoaded();
 		_schedules.OnSaveLoaded();
 		_meetups.OnSaveLoaded();
+		_consequences.OnSaveLoaded(_mart.State);
 		_stories.OnSaveLoaded();
 		_news.OnSaveLoaded();
 		_promo.OnSaveLoaded();
@@ -1081,6 +1110,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			Hints.SendGuide();
 		}
 		_mart.OnDayStarted();
+		_consequences.OnDayStarted();
 		_spousePlan.OnDayStarted();
 		if (_martContent.ShopsDirty)
 		{
@@ -1507,6 +1537,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	{
 		_martContent.Enabled = _config.FarmerMart;
 		_martContent.OnAssetRequested(e);
+		_consequences.OnAssetRequested(e);
 		_mart.EditShops(e);
 		Hints.EditMail(e);
 		_looks.OnAssetRequested(e);
@@ -1541,6 +1572,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		_spousePlan?.Cleanup();
 		_mart?.CleanupVisits();
 		_mart?.CleanupClerks();
+		_consequences?.OnReturnedToTitle();
 		_sensors.OnSaving();
 		_awareness.OnSaving();
 		StepTimer timer = new StepTimer("AI星露谷 保存");

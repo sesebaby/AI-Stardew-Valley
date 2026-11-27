@@ -108,6 +108,14 @@ public sealed class AwarenessMemory
 		}
 	}
 
+	public Sighting? Find(string eventId)
+	{
+		lock (_gate)
+		{
+			return Data()?.Events.FirstOrDefault(x => x.EventId == eventId);
+		}
+	}
+
 	/// <summary>改一件已经记下的事（比如补上停留时间、对话轮数）。</summary>
 	public Sighting? Update(string eventId, Action<Sighting> change)
 	{
