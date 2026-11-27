@@ -84,12 +84,31 @@ public sealed class GossipBook
 
 	// ---- 今天发生的事 ----
 
-	public void RecordInteraction(DailyInteraction interaction) => _today.Add(interaction);
+	public void RecordInteraction(DailyInteraction interaction)
+	{
+		_today.Add(interaction);
+		Interacted?.Invoke(interaction);
+	}
+
+	/// <summary>记下了一次聊天（联机的农场帮手转给房主，晚上由房主整理成八卦）。</summary>
+	public event Action<DailyInteraction>? Interacted;
+
+	/// <summary>联机：房主记下的今天的聊天（别的农夫聊过什么），只用来写提示词。</summary>
+	private List<DailyInteraction> _shared = new List<DailyInteraction>();
+
+	public IReadOnlyList<DailyInteraction> TodayInteractions => _today;
+
+	/// <summary>联机：房主发来的今天的聊天（替换上一份）。</summary>
+	public void ReplaceShared(IEnumerable<DailyInteraction> list) => _shared = list.ToList();
+
+	/// <summary>房主那边收到别的农夫的一次聊天（不再转发）。</summary>
+	public void AddRemote(DailyInteraction interaction) => _today.Add(interaction);
 
 	public List<DailyInteraction> TakeTodayInteractions()
 	{
 		List<DailyInteraction> list = _today.ToList();
 		_today.Clear();
+		_shared.Clear();
 		return list;
 	}
 
@@ -137,9 +156,12 @@ public sealed class GossipBook
 	public void DiscardToday()
 	{
 		_today.Clear();
+		_shared.Clear();
 		_experimental.Clear();
 		_thirdParty.Clear();
 	}
+
+	private static bool Same(DailyInteraction a, DailyInteraction b) => a.Npc == b.Npc && a.Farmer == b.Farmer && a.Opener == b.Opener && a.Reply == b.Reply;
 
 	// ---- 提示词块 ----
 
@@ -150,7 +172,7 @@ public sealed class GossipBook
 		{
 			return "";
 		}
-		List<DailyInteraction> list = _today.Where(i => string.Equals(i.Npc, npc, StringComparison.OrdinalIgnoreCase) && !string.Equals(i.Farmer, currentPlayer, StringComparison.OrdinalIgnoreCase)).ToList();
+		List<DailyInteraction> list = _today.Concat(_shared.Where(s => !_today.Any(t => Same(t, s)))).Where(i => string.Equals(i.Npc, npc, StringComparison.OrdinalIgnoreCase) && !string.Equals(i.Farmer, currentPlayer, StringComparison.OrdinalIgnoreCase)).ToList();
 		if (list.Count == 0)
 		{
 			return "";

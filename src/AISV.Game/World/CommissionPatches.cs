@@ -47,7 +47,7 @@ public static class CommissionPatches
 				Delivered = !probe;
 				return false;
 			}
-			if (_service == null || !Context.IsMainPlayer || _service.WaitingFor(__instance, who?.ActiveObject) is not Commission c)
+			if (_service == null || !Context.IsMainPlayer && _service.Net?.Linked != true || _service.WaitingFor(__instance, who?.ActiveObject) is not Commission c)
 			{
 				return true;
 			}

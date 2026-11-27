@@ -32,6 +32,7 @@ using AISV.Game.Festivals;
 using AISV.Game.Group;
 using AISV.Game.Looks;
 using AISV.Game.Messenger;
+using AISV.Game.Net;
 using AISV.Game.Npcs;
 using AISV.Game.Outings;
 using AISV.Game.Scenes;
@@ -548,7 +549,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				Language = PromptLanguage,
 				PostLetter = _social.PostErrandLetter,
 				Text = _errands.Text,
-				Gossip = (text, knowers) => _social.Gossip.AddLowKey(text, knowers.ToList(), "ledger", "ledger-" + GameState.Today.TotalDays + "-" + text.GetHashCode(), GameState.Today)
+				Gossip = (text, knowers) => LowKeyGossip(text, knowers, "ledger")
 			};
 			_shell.Ledger = _ledger;
 			_martContent = new AISV.Game.Store.MartContent(helper);
@@ -559,7 +560,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				Persona = n => _npcs.Persona(n, StardewValley.Game1.getCharacterFromName(n)).Personality,
 				Display = _npcs.Names.Display,
 				AdjustMood = _social.Moods.Adjust,
-				Gossip = (text, knowers) => _social.Gossip.AddLowKey(text, knowers.ToList(), "farmer_store", "mart-" + GameState.Today.TotalDays + "-" + text.GetHashCode(), GameState.Today),
+				Gossip = (text, knowers) => LowKeyGossip(text, knowers, "farmer_store"),
 				OpenShelf = AISV.UI.Store.MartScreens.OpenShelf,
 				OpenCheckout = AISV.UI.Store.MartScreens.OpenCheckout,
 				OpenApp = () => AISV.UI.Store.MartScreens.OpenApp(_shell),
@@ -600,7 +601,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				AdjustMood = _social.Moods.Adjust,
 				AddEnmity = (n, points) => relationships.Add(n, -points),
 				BrokenPromise = (n, text) => _social.Feelings.BrokenPromise(n, text, GameState.Today),
-				Gossip = (text, knowers) => _social.Gossip.AddLowKey(text, knowers.ToList(), "consequence", "consequence-" + GameState.Today.TotalDays + "-" + text.GetHashCode(), GameState.Today),
+				Gossip = (text, knowers) => LowKeyGossip(text, knowers, "consequence"),
 				Witness = o => _awareness.Record(o),
 				Confiscate = _mart.Confiscate
 			};
@@ -630,6 +631,22 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_ledger.JobChange = _life.JobFor;
 			_shell.Life = _life;
 			helper.Events.Player.Warped += (_, e) => _life.OnWarped(e);
+			_net = new AISV.Game.Net.NetSync(helper, ModManifest, store, () => SocialSystem.VillageDocuments, _log);
+			NetOps.Wire(_net, _social);
+			_commissions.WireNet(_net);
+			_ledger.WireNet(_net);
+			_errands.Remote = () => _net.Linked;
+			_spousePlan.WireNet(_net);
+			helper.Events.Multiplayer.ModMessageReceived += (_, e) => _net.OnMessageReceived(e);
+			helper.Events.Multiplayer.PeerDisconnected += (_, e) => _net.OnPeerDisconnected(e);
+			helper.Events.GameLoop.UpdateTicked += (_, _) => _net.OnUpdateTicked();
+			helper.ConsoleCommands.Add("aisv_net", "联机同步调试。\n用法：aisv_net [push]", (_, args) => _log.Info(Context.IsWorldReady ? _net.Command(args, () => new[]
+			{
+				"今天的心情：" + string.Join("、", _social.Moods.All.Take(6).Select(m => $"{m.Npc} {m.Level}")),
+				"今天的聊天：" + string.Join("；", _social.Gossip.TodayInteractions.Select(i => $"{i.Farmer}→{i.Npc}：{i.Reply}")),
+				"别的农夫和 Lewis：" + _social.Gossip.OtherFarmersToday("Lewis", StardewValley.Game1.player.Name).Trim(),
+				"八卦动态：" + _social.Gossip.Feed().Count + " 条"
+			}) : "先进存档。"));
 			helper.ConsoleCommands.Add("aisv_life", "村民人生调试。\n" + LifeService.Usage, (_, args) => _log.Info(Context.IsWorldReady ? _life.Command(args) : "先进存档。"));
 			helper.Events.GameLoop.UpdateTicked += (_, _) => _spousePlan.OnUpdateTicked();
 			helper.ConsoleCommands.Add("aisv_spouse", "配偶日程调试。\n用法：aisv_spouse dump | plan | setup | box | ask <water|harvest|animals|hay|clear|greenhouse|ponds|machines|visit|shop|mind_shop|kids> | box", (_, args) => _log.Info(Context.IsWorldReady ? SpouseCommand(args) : "先进存档。"));
@@ -677,7 +694,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			BarTabPatch.Room = _ledger.TabRoom;
 			BarTabPatch.Charge = _ledger.ChargeTab;
 			BarTabPatch.Apply(harmony, _log);
-			_conversations.LoansAvailable = n => _ledger.Enabled && Context.IsMainPlayer && (_ledger.OpenDebt(n) != null || (relationships.EffectiveHearts(n) >= AISV.Core.World.Ledger.LedgerRules.LoanMinHearts && !ChildSafety.IsChild(n, StardewValley.Game1.getCharacterFromName(n)?.Age)));
+			_conversations.LoansAvailable = n => _ledger.Usable && (_ledger.OpenDebt(n) != null || (relationships.EffectiveHearts(n) >= AISV.Core.World.Ledger.LedgerRules.LoanMinHearts && !ChildSafety.IsChild(n, StardewValley.Game1.getCharacterFromName(n)?.Age)));
 			_conversations.OpenLoan = npc =>
 			{
 				ShellMenu menu = new ShellMenu(_shell, ShellMenu.Tab.World, null, ShellMenu.WorldTab.Ledger);
@@ -956,6 +973,19 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private ConsequenceService _consequences = null!;
 
+	private AISV.Game.Net.NetSync _net = null!;
+
+	/// <summary>小事传成八卦（账本、小超市、后果）：联机的农场帮手交给房主记。</summary>
+	private void LowKeyGossip(string text, IReadOnlyList<string> knowers, string origin)
+	{
+		if (_net.Linked)
+		{
+			_net.ToHost(NetOps.LowKey, new NetOps.LowKeyGossip(text, knowers.ToList(), origin));
+			return;
+		}
+		_social.Gossip.AddLowKey(text, knowers.ToList(), origin, origin + "-" + GameState.Today.TotalDays + "-" + text.GetHashCode(), GameState.Today);
+	}
+
 	private SpousePlanner _spousePlan = null!;
 
 	private LifeService _life = null!;
@@ -1115,6 +1145,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		_promo.OnSaveLoaded();
 		_farmHelp.OnSaveLoaded();
 		_offers.OnSaveLoaded();
+		_net.OnSaveLoaded();
 		// 角色卡放到后台读，主线程上拼提示词时只查内存。
 		Task.Run(() =>
 		{
@@ -1644,6 +1675,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		_messenger.Reset();
 		_villagerTexts.Reset();
 		_social.Reset();
+		_net.OnReturnedToTitle();
 		_saveData.Close();
 	}
 

@@ -77,6 +77,22 @@ public sealed class SpousePlanner
 
 	private int _mindUntil = -1;
 
+	/// <summary>这份安排是谁家的（0 = 这边的农夫）。联机时房主替每位结了婚的农场帮手各排一份，按他们自己的设置。</summary>
+	private readonly long _owner;
+
+	private readonly string _path = SpouseDayLog.Path;
+
+	private readonly Dictionary<long, SpousePlanner> _farmhands = new Dictionary<long, SpousePlanner>();
+
+	/// <summary>农场帮手发来的设置（只有替农场帮手排的那几份有）。</summary>
+	private ModConfig? _prefs;
+
+	private bool _pushLog;
+
+	private bool _prefsSent;
+
+	private static readonly List<SpousePlanner> Planners = new List<SpousePlanner>();
+
 	private sealed class Worker
 	{
 		public NPC Clone = null!;
@@ -98,8 +114,30 @@ public sealed class SpousePlanner
 		_mart = mart;
 		_memory = memory;
 		_log = log;
-		NpcBusy.Register(ChoreReason, n => _worker?.Real.Name == n);
+		Planners.Add(this);
+		NpcBusy.Register(ChoreReason, n => Planners.Any(p => p._worker?.Real.Name == n));
 	}
+
+	/// <summary>房主替一位农场帮手排的那份。</summary>
+	private SpousePlanner(SpousePlanner root, long owner, ModConfig prefs) : this(root._config, root._store, root._schedules, root._ledger, root._mart, () => null, root._log)
+	{
+		_owner = owner;
+		_path = $"family/spouse_day_{owner}.json";
+		_prefs = prefs;
+		Ai = root.Ai;
+		Language = root.Language;
+		Display = root.Display;
+		Persona = root.Persona;
+		Net = root.Net;
+	}
+
+	public AISV.Game.Net.NetSync? Net { get; set; }
+
+	/// <summary>这份安排的主人（不在线时为 null）。</summary>
+	private Farmer? Owner => _owner == 0 ? Game1.player : Game1.GetPlayer(_owner, onlyOnline: true);
+
+	/// <summary>按谁的设置排：这边的，或者农场帮手发来的。</summary>
+	private ModConfig Cfg => _prefs ?? _config();
 
 	public IAiSender? Ai { get; set; }
 
@@ -118,21 +156,24 @@ public sealed class SpousePlanner
 
 	public bool Minding => _mindUntil > 0;
 
-	public SpouseDayLog? Log => _store()?.Get(SpouseDayLog.Path, SpouseDayLog.Doc);
+	public SpouseDayLog? Log => _store()?.Get(_path, SpouseDayLog.Doc);
 
 	private static int Today => Game1.Date?.TotalDays ?? 0;
 
-	public bool Enabled => _config().SpousePlanner && Context.IsMainPlayer && Spouse() != null;
+	public bool Enabled => Cfg.SpousePlanner && Context.IsMainPlayer && Spouse() != null;
+
+	/// <summary>手机上看得到今天的安排：房主自己排，或者连着房主的农场帮手（房主替他排好发过来）。</summary>
+	public bool Shown => Enabled || _owner == 0 && Net?.Linked == true && _config().SpousePlanner && Spouse() != null;
 
 	/// <summary>玩家的配偶（室友看设置）；没结婚为 null。</summary>
 	public NPC? Spouse()
 	{
-		Farmer p = Game1.player;
+		Farmer? p = Owner;
 		if (p?.spouse == null || !p.friendshipData.TryGetValue(p.spouse, out Friendship f) || !(f.IsMarried() || f.IsRoommate()))
 		{
 			return null;
 		}
-		if (f.IsRoommate() && !_config().RoommatePlans)
+		if (f.IsRoommate() && !Cfg.RoommatePlans)
 		{
 			return null;
 		}
@@ -146,6 +187,14 @@ public sealed class SpousePlanner
 	public void OnDayStarted()
 	{
 		_plannedDay = -1;
+		_prefsSent = false;
+		if (_owner == 0)
+		{
+			foreach (SpousePlanner other in Farmhands())
+			{
+				other.OnDayStarted();
+			}
+		}
 		if (Log is not SpouseDayLog log)
 		{
 			return;
@@ -162,6 +211,17 @@ public sealed class SpousePlanner
 
 	public void OnTimeChanged()
 	{
+		if (_owner == 0)
+		{
+			if (!_prefsSent)
+			{
+				SendPrefs();
+			}
+			foreach (SpousePlanner other in Farmhands())
+			{
+				other.OnTimeChanged();
+			}
+		}
 		if (!Enabled || Log is not SpouseDayLog log || Spouse() is not NPC spouse)
 		{
 			return;
@@ -195,6 +255,18 @@ public sealed class SpousePlanner
 
 	public void OnUpdateTicked()
 	{
+		if (_owner == 0 && _farmhands.Count > 0 && Game1.ticks % 30 == 0)
+		{
+			foreach (SpousePlanner other in Farmhands())
+			{
+				other.OnUpdateTicked();
+				if (other._pushLog && other._store()?.Export(other._path) is string json)
+				{
+					other._pushLog = false;
+					Net?.ToFarmer(other._owner, LogOp, json);
+				}
+			}
+		}
 		if (_worker is not Worker w)
 		{
 			return;
@@ -212,6 +284,10 @@ public sealed class SpousePlanner
 
 	public void Cleanup()
 	{
+		foreach (SpousePlanner other in _farmhands.Values)
+		{
+			other.Cleanup();
+		}
 		EndWorker();
 		EndKids();
 		if (_mindUntil > 0)
@@ -225,7 +301,7 @@ public sealed class SpousePlanner
 
 	private SpousePlanInput Input(NPC spouse, SpouseDayLog log)
 	{
-		ModConfig c = _config();
+		ModConfig c = Cfg;
 		HashSet<string> allowed = new HashSet<string>();
 		void Allow(bool on, params string[] tasks)
 		{
@@ -242,15 +318,16 @@ public sealed class SpousePlanner
 		Allow(c.SpouseFishPonds, SpouseTasks.Ponds);
 		Allow(c.SpouseMachines, SpouseTasks.Machines);
 		Allow(c.SpouseGoesOut, SpouseTasks.Visit, SpouseTasks.Shop);
-		Allow(c.SpouseMindsShop, SpouseTasks.MindShop);
-		Allow(c.SpousePlaysWithKids, SpouseTasks.Kids);
+		// 看店、陪孩子只排给房主自己的配偶（小超市只有房主有，孩子的事在房主这边）。
+		Allow(c.SpouseMindsShop && _owner == 0, SpouseTasks.MindShop);
+		Allow(c.SpousePlaysWithKids && _owner == 0, SpouseTasks.Kids);
 		if (Cold?.Invoke(spouse.Name) == true)
 		{
 			// 还在生你的气：这几天不帮忙干农活。
 			allowed.ExceptWith(SpouseTasks.Chores);
 		}
 		Dictionary<string, int> work = SpouseTasks.Chores.ToDictionary(t => t, FarmChoreExecutor.Count);
-		Farmer p = Game1.player;
+		Farmer p = Owner!;
 		return new SpousePlanInput
 		{
 			Hearts = p.getFriendshipHeartLevelForNPC(spouse.Name),
@@ -262,8 +339,8 @@ public sealed class SpousePlanner
 			PatioDay = spouse.shouldPlaySpousePatioAnimation.Value,
 			Work = work,
 			Allowed = allowed,
-			HasKids = Kids.All().Any(),
-			HasShop = _mart.HasShop && _config().FarmerMart,
+			HasKids = _owner == 0 && Kids.All().Any(),
+			HasShop = _owner == 0 && _mart.HasShop && _config().FarmerMart,
 			Gold = _ledger.Wallet(spouse.Name)?.Gold ?? 0,
 			SpendCap = c.SpouseSpendDaily,
 			Requested = log.Requests.ToList()
@@ -308,7 +385,7 @@ public sealed class SpousePlanner
 
 	private string Prompt(NPC spouse, SpousePlanInput input, List<(string Task, double Score)> cands)
 	{
-		string farmer = Game1.player.Name;
+		string farmer = Owner?.Name ?? Game1.player.Name;
 		string persona = Persona?.Invoke(spouse.Name) ?? "";
 		string role = input.Roommate ? "室友" : "配偶";
 		string weather = input.Rain ? "下雨" : "晴";
@@ -329,11 +406,14 @@ public sealed class SpousePlanner
 			return;
 		}
 		string plan = string.Join(Tr.Get("list.sep", "、"), items.Select(i => $"{Clock.Text(i.Time)} {TaskName(i.Task)}"));
-		Hints.Hud(say.Length > 0
+		Tell(say.Length > 0
 			? Tr.Get("spouse.plan.said", "{{npc}}：“{{say}}”（{{plan}}）", ("npc", Name(spouse)), ("say", say), ("plan", plan))
 			: Tr.Get("spouse.plan.hud", "{{npc}}今天的安排：{{plan}}", ("npc", Name(spouse)), ("plan", plan)), 9000);
 		log.Announced = true;
-		Hints.Tip("SpousePlanHint", Tr.Get("help.spouse.title", "配偶的日常安排"));
+		if (_owner == 0)
+		{
+			Hints.Tip("SpousePlanHint", Tr.Get("help.spouse.title", "配偶的日常安排"));
+		}
 	}
 
 	/// <summary>玩家要配偶帮忙做一件事：今天还来得及就排进今天，不然明天一早做。</summary>
@@ -351,7 +431,7 @@ public sealed class SpousePlanner
 			{
 				Task = task,
 				Time = Clock.Add(time - time % 10, 10),
-				Amount = SpouseTasks.IsChore(task) ? SpouseTasks.Cap(task, 2) : task == SpouseTasks.Shop ? _config().SpouseSpendDaily : 1,
+				Amount = SpouseTasks.IsChore(task) ? SpouseTasks.Cap(task, 2) : task == SpouseTasks.Shop ? Cfg.SpouseSpendDaily : 1,
 				Requested = true
 			});
 			today = true;
@@ -368,7 +448,7 @@ public sealed class SpousePlanner
 	/// <summary>聊天里说好的帮忙（帮我浇水、喂动物……）：配偶不收钱，直接排进安排。</summary>
 	public bool TryRoute(NPC npc, string task)
 	{
-		if (Spouse() is not NPC spouse || spouse.Name != npc.Name || !Enabled)
+		if (Spouse() is not NPC spouse || spouse.Name != npc.Name || !Shown)
 		{
 			return false;
 		}
@@ -380,13 +460,23 @@ public sealed class SpousePlanner
 			"clear" => SpouseTasks.Clear,
 			_ => ""
 		};
-		if (mapped.Length == 0 || !RequestTask(mapped, out bool today))
+		if (mapped.Length == 0)
 		{
 			return false;
 		}
-		Hints.Hud(today
+		if (!Enabled)
+		{
+			// 农场帮手：交给房主排，房主排好了再告诉你。
+			Net?.ToHost(AskOp, new AskTask(mapped));
+			return true;
+		}
+		if (!RequestTask(mapped, out bool today))
+		{
+			return false;
+		}
+		Tell(today
 			? Tr.Get("spouse.plan.okToday", "{{npc}}答应今天就帮你{{task}}。", ("npc", Name(spouse)), ("task", TaskName(mapped)))
-			: Tr.Get("spouse.plan.okTomorrow", "{{npc}}答应明天一早帮你{{task}}。", ("npc", Name(spouse)), ("task", TaskName(mapped))));
+			: Tr.Get("spouse.plan.okTomorrow", "{{npc}}答应明天一早帮你{{task}}。", ("npc", Name(spouse)), ("task", TaskName(mapped))), 6000);
 		return true;
 	}
 
@@ -415,6 +505,7 @@ public sealed class SpousePlanner
 			MarkDirty();
 		}
 		Version++;
+		SendPrefs();
 	}
 
 	public bool IsOn(string task)
@@ -510,7 +601,7 @@ public sealed class SpousePlanner
 	private bool _doorTarget;
 
 	/// <summary>只有你在农场上、配偶不在你眼前时才派替身走出去（免得配偶在你面前凭空消失）。</summary>
-	private static bool CanShowWorker(NPC spouse) => Game1.currentLocation is Farm && spouse.currentLocation != Game1.currentLocation && Game1.activeClickableMenu == null;
+	private bool CanShowWorker(NPC spouse) => _owner == 0 && Game1.currentLocation is Farm && spouse.currentLocation != Game1.currentLocation && Game1.activeClickableMenu == null;
 
 	/// <summary>去哪干：地里就走到最近一块要干的地边上；要进屋的走到那栋建筑的门口。</summary>
 	private static (GameLocation, Point, bool)? WorkSpot(string task)
@@ -655,9 +746,9 @@ public sealed class SpousePlanner
 		}
 		MarkDirty();
 		Version++;
-		if (SpouseTasks.IsChore(item.Task) && item.Did > 0 && Game1.player.currentLocation == spouse.currentLocation && !spouse.IsInvisible)
+		if (SpouseTasks.IsChore(item.Task) && item.Did > 0 && Owner?.currentLocation == spouse.currentLocation && !spouse.IsInvisible)
 		{
-			NpcSpeech.Say(spouse, Tr.Get("spouse.plan.bubbleDone", "{{task}}弄好啦～", ("task", TaskName(item.Task))));
+			Say(spouse, Tr.Get("spouse.plan.bubbleDone", "{{task}}弄好啦～", ("task", TaskName(item.Task))));
 		}
 		_log.Debug($"配偶日程：{spouse.Name} {item.Task} 做完（{item.Did}/{item.Amount}）{note}");
 	}
@@ -725,11 +816,11 @@ public sealed class SpousePlanner
 	private void Chatted(NPC spouse, NPC? friend, SpousePlanItem item)
 	{
 		string who = friend != null ? Name(friend) : item.Note;
-		if (friend != null && Game1.player.currentLocation == spouse.currentLocation && spouse.currentLocation == friend.currentLocation)
+		if (friend != null && Owner?.currentLocation == spouse.currentLocation && spouse.currentLocation == friend.currentLocation)
 		{
 			spouse.doEmote(32);
 			friend.doEmote(20);
-			NpcSpeech.Say(spouse, Tr.Get("spouse.plan.chatBubble", "{{friend}}，最近怎么样？", ("friend", who)));
+			Say(spouse, Tr.Get("spouse.plan.chatBubble", "{{friend}}，最近怎么样？", ("friend", who)));
 		}
 		try
 		{
@@ -866,18 +957,17 @@ public sealed class SpousePlanner
 
 	// ---------------- 收获箱和汇总 ----------------
 
-	public static string BoxId => BoxPrefix + Game1.player.UniqueMultiplayerID;
-
-	public Inventory Box() => Game1.player.team.GetOrCreateGlobalInventory(BoxId);
+	/// <summary>收获箱（全队共用的箱子，一位农夫一个）。</summary>
+	public Inventory Box() => Game1.player.team.GetOrCreateGlobalInventory(BoxPrefix + (Owner ?? Game1.player).UniqueMultiplayerID);
 
 	public int BoxCount => Box().Where(i => i != null).Sum(i => i.Stack);
 
 	/// <summary>放进收获箱（或出货箱）。</summary>
 	private void Store(Item item)
 	{
-		if (_config().SpouseHarvestTo == "Bin")
+		if (Cfg.SpouseHarvestTo == "Bin")
 		{
-			Game1.getFarm().getShippingBin(Game1.player).Add(item);
+			Game1.getFarm().getShippingBin(Owner ?? Game1.player).Add(item);
 			return;
 		}
 		Inventory box = Box();
@@ -931,10 +1021,148 @@ public sealed class SpousePlanner
 		}
 		string list = string.Join(Tr.Get("list.sep", "、"), done.Select(i => SpouseTasks.IsChore(i.Task) && i.Did > 0 ? $"{TaskName(i.Task)} ×{i.Did}" : i.Note.Length > 0 ? i.Note : TaskName(i.Task)));
 		string box = BoxCount > 0 ? Tr.Get("spouse.plan.boxNote", "（收获在手机“家务安排”里领）") : "";
-		Hints.Hud(Tr.Get("spouse.plan.summary", "{{npc}}今天：{{list}}{{box}}", ("npc", Name(spouse)), ("list", list), ("box", box)), 10000);
+		Tell(Tr.Get("spouse.plan.summary", "{{npc}}今天：{{list}}{{box}}", ("npc", Name(spouse)), ("list", list), ("box", box)), 10000);
 	}
 
-	public string PromptBlock(string npc) => Enabled && Log is SpouseDayLog log && log.Day == Today ? log.PromptBlock(npc, Game1.player.Name) : "";
+	public string PromptBlock(string npc) => Shown && Log is SpouseDayLog log && log.Day == Today ? log.PromptBlock(npc, Game1.player.Name) : "";
 
-	private void MarkDirty() => _store()?.MarkDirty(SpouseDayLog.Path);
+	private void MarkDirty()
+	{
+		_store()?.MarkDirty(_path);
+		_pushLog = _owner != 0;
+	}
+
+	/// <summary>告诉这份安排的主人（房主自己就弹提示，农场帮手发过去在他那边弹）。</summary>
+	private void Tell(string text, int ms)
+	{
+		if (_owner == 0)
+		{
+			Hints.Hud(text, ms);
+		}
+		else
+		{
+			Net?.ToFarmer(_owner, HudOp, new Hud(text, ms));
+		}
+	}
+
+	/// <summary>配偶冒一句（头顶的气泡只画在看得见的那位农夫那边）。</summary>
+	private void Say(NPC spouse, string text)
+	{
+		if (_owner == 0)
+		{
+			NpcSpeech.Say(spouse, text);
+		}
+		else
+		{
+			Net?.ToFarmer(_owner, SayOp, new Bubble(spouse.Name, text));
+		}
+	}
+
+	// ---------------- 联机 ----------------
+
+	public const string LogOp = "spouse.log";
+
+	public const string HudOp = "spouse.hud";
+
+	public const string SayOp = "spouse.say";
+
+	public const string PrefsOp = "spouse.prefs";
+
+	public const string AskOp = "spouse.ask";
+
+	public sealed record Hud(string Text, int Ms);
+
+	public sealed record Bubble(string Npc, string Text);
+
+	public sealed record AskTask(string Task);
+
+	/// <summary>农场帮手关于配偶日程的设置。</summary>
+	public sealed record Prefs(bool On, string Level, string HarvestTo, int Spend, bool Roommates, List<string> Tasks);
+
+	public void WireNet(AISV.Game.Net.NetSync net)
+	{
+		Net = net;
+		net.On<Hud>(HudOp, (_, h) => Hints.Hud(h.Text, h.Ms));
+		net.On<Bubble>(SayOp, (_, b) =>
+		{
+			if (Game1.getCharacterFromName(b.Npc) is NPC n && n.currentLocation == Game1.currentLocation)
+			{
+				NpcSpeech.Say(n, b.Text);
+			}
+		});
+		net.On<string>(LogOp, (_, json) =>
+		{
+			_store()?.Import(SpouseDayLog.Path, json);
+			Version++;
+		});
+		net.On<Prefs>(PrefsOp, (from, p) =>
+		{
+			if (!Context.IsMainPlayer)
+			{
+				return;
+			}
+			ModConfig c = JsonCopy(_config());
+			c.SpousePlanner = p.On;
+			c.SpouseHelpLevel = p.Level;
+			c.SpouseHarvestTo = p.HarvestTo;
+			c.SpouseSpendDaily = p.Spend;
+			c.RoommatePlans = p.Roommates;
+			c.SpouseWaters = p.Tasks.Contains(SpouseTasks.Water);
+			c.SpouseHarvests = p.Tasks.Contains(SpouseTasks.Harvest);
+			c.SpouseTendsAnimals = p.Tasks.Contains(SpouseTasks.Animals);
+			c.SpouseClears = p.Tasks.Contains(SpouseTasks.Clear);
+			c.SpouseGreenhouse = p.Tasks.Contains(SpouseTasks.Greenhouse);
+			c.SpouseFishPonds = p.Tasks.Contains(SpouseTasks.Ponds);
+			c.SpouseMachines = p.Tasks.Contains(SpouseTasks.Machines);
+			c.SpouseGoesOut = p.Tasks.Contains(SpouseTasks.Visit);
+			if (_farmhands.TryGetValue(from, out SpousePlanner? other))
+			{
+				other._prefs = c;
+				return;
+			}
+			other = new SpousePlanner(this, from, c);
+			_farmhands[from] = other;
+			other.OnDayStarted();
+			_log.Info($"配偶日程：也替 {Game1.GetPlayer(from)?.Name} 排（{other.Spouse()?.Name ?? "还没结婚"}）。");
+		});
+		net.On<AskTask>(AskOp, (from, a) =>
+		{
+			if (Context.IsMainPlayer && _farmhands.TryGetValue(from, out SpousePlanner? other) && other.Spouse() is NPC spouse && other.RequestTask(a.Task, out bool today))
+			{
+				other.Tell(today
+					? Tr.Get("spouse.plan.okToday", "{{npc}}答应今天就帮你{{task}}。", ("npc", other.Name(spouse)), ("task", TaskName(a.Task)))
+					: Tr.Get("spouse.plan.okTomorrow", "{{npc}}答应明天一早帮你{{task}}。", ("npc", other.Name(spouse)), ("task", TaskName(a.Task))), 6000);
+			}
+		});
+	}
+
+	private static ModConfig JsonCopy(ModConfig c) => System.Text.Json.JsonSerializer.Deserialize<ModConfig>(System.Text.Json.JsonSerializer.Serialize(c))!;
+
+	/// <summary>农场帮手：把自己的设置发给房主（连上后、换天、改了开关时）。</summary>
+	private void SendPrefs()
+	{
+		if (_owner != 0 || Net?.Linked != true)
+		{
+			return;
+		}
+		ModConfig c = _config();
+		List<string> tasks = new[] { SpouseTasks.Water, SpouseTasks.Harvest, SpouseTasks.Animals, SpouseTasks.Clear, SpouseTasks.Greenhouse, SpouseTasks.Ponds, SpouseTasks.Machines, SpouseTasks.Visit }.Where(IsOn).ToList();
+		Net.ToHost(PrefsOp, new Prefs(c.SpousePlanner, c.SpouseHelpLevel, c.SpouseHarvestTo, c.SpouseSpendDaily, c.RoommatePlans, tasks));
+		_prefsSent = true;
+	}
+
+	/// <summary>房主替农场帮手排的那几份：跟着这边一起过每一天；人走了就收起来。</summary>
+	private IEnumerable<SpousePlanner> Farmhands()
+	{
+		foreach (long id in _farmhands.Keys.ToList())
+		{
+			if (Game1.GetPlayer(id, onlyOnline: true) == null || Net?.IsLinkedFarmhand(id) != true)
+			{
+				_farmhands[id].Cleanup();
+				Planners.Remove(_farmhands[id]);
+				_farmhands.Remove(id);
+			}
+		}
+		return _farmhands.Values.ToList();
+	}
 }

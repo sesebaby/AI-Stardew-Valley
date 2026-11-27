@@ -33,7 +33,7 @@ tools/linux-game/stop.sh a             # 只停这个实例；别的会话也在
 | `wait <条件> [参数]` | world、free、title、menu &lt;类型名&gt;、nomenu、dialogue、farmers &lt;人数&gt;、time &lt;时间&gt;、day &lt;总天数&gt;、ticks &lt;帧数&gt; |
 | `console <命令...>` | 执行 SMAPI 控制台命令（经过标准输入的 FIFO；输出看 console.log） |
 | `screenshot <名字>` | 截图到 `io/out/<名字>.png` |
-| `warp <地点> x y`、`time <时间>`、`money <钱>` | 直接改 |
+| `warp <地点> x y`、`time <时间>`、`money <钱>`、`friend <村民> <好感点数>`、`marry <村民>` | 直接改（250 点一颗心；marry 只改婚姻记录、把房子升到 1 级，不搬家） |
 | `hold <物品id> [数量]` | 放进背包第一格拿在手上（送礼、交任务） |
 | `dump-texture <资源名> <文件>` | 把贴图存成 png（找原版素材的位置） |
 | `sleep` | 上床睡到第二天（联机时每个实例都要发） |

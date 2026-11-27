@@ -143,6 +143,8 @@ public sealed class ModEntry : Mod
 				: Helper.GameContent.Load<Dictionary<string, string>>(a[0])); return Nothing();
 			case "build-cabin": _result = BuildCabin(int.Parse(a[0]), int.Parse(a[1])); return Nothing();
 			case "money": Game1.player.Money = int.Parse(a[0]); return Nothing();
+			case "friend": _result = Friend(a[0], int.Parse(a[1])); return Nothing();
+			case "marry": _result = Marry(a[0]); return Nothing();
 			case "hold": return Hold(a[0], a.Length > 1 ? int.Parse(a[1]) : 1);
 			case "dump-texture": return DumpTexture(a[0], a[1]);
 			case "wallets": Game1.player.team.useSeparateWallets.Value = a[0] == "separate"; return Nothing();
@@ -385,6 +387,8 @@ public sealed class ModEntry : Mod
 		Game1.warpFarmer(home.NameOrUniqueName, bed.X, bed.Y, 2);
 		while (Game1.currentLocation != home || Game1.isWarping)
 			yield return null;
+		// 从别的地图过来时，换图后的落脚点可能是门口：再放到床上。
+		Game1.player.Position = new Vector2(bed.X, bed.Y) * 64f;
 		Helper.Reflection.GetMethod(home, "startSleep").Invoke();
 		int ticks = 0;
 		while (!(Context.IsWorldReady && Game1.Date.TotalDays > day && Context.IsPlayerFree))
@@ -486,6 +490,30 @@ public sealed class ModEntry : Mod
 	}
 
 	private static Type? FindType(string name) => AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(name)).FirstOrDefault(t => t != null);
+
+	/// <summary>把这边农夫和某位村民的好感设成多少点（250 点一颗心）。</summary>
+	private static JToken Friend(string npc, int points)
+	{
+		if (!Game1.player.friendshipData.TryGetValue(npc, out Friendship? f))
+		{
+			Game1.player.friendshipData.Add(npc, f = new Friendship(0));
+		}
+		f.Points = points;
+		return JToken.FromObject(new { npc, points = f.Points });
+	}
+
+	/// <summary>直接把这边的农夫和某位村民记成已婚（只改记录，不搬家、不演婚礼）。</summary>
+	private static JToken Marry(string npc)
+	{
+		Friend(npc, 2500);
+		Friendship f = Game1.player.friendshipData[npc];
+		f.Status = FriendshipStatus.Married;
+		f.WeddingDate = new WorldDate(Game1.Date);
+		Game1.player.spouse = npc;
+		// 没升级的房子没有婚后地图（原版要先升级才能结婚），进屋会崩。
+		Game1.player.HouseUpgradeLevel = Math.Max(1, Game1.player.HouseUpgradeLevel);
+		return JToken.FromObject(new { npc, spouse = Game1.player.spouse, status = f.Status.ToString() });
+	}
 
 	private static JToken? ToToken(object? o)
 	{

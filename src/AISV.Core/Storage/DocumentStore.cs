@@ -26,6 +26,14 @@ public sealed class DocumentStore
 
 	private readonly Dictionary<string, Entry> _open = new Dictionary<string, Entry>(StringComparer.Ordinal);
 
+	/// <summary>联机时房主发来、还没读过的文档（原样的文件内容），下次读时用它代替盘上的。</summary>
+	private readonly Dictionary<string, string> _incoming = new Dictionary<string, string>(StringComparer.Ordinal);
+
+	/// <summary>换成过房主那份的文档：这边改它不算数，标脏时不必先读过。</summary>
+	private readonly HashSet<string> _imported = new HashSet<string>(StringComparer.Ordinal);
+
+	private long _revision;
+
 	public DocumentStore(IStorageBackend backend, ILog? log = null)
 	{
 		_backend = backend;
@@ -53,7 +61,7 @@ public sealed class DocumentStore
 				return entry.Value as T ?? throw new InvalidOperationException($"文档 {path} 已经按另一种类型打开了。");
 			}
 			T value = Load(path, type);
-			_open[path] = new Entry(value, type.Version, false);
+			_open[path] = new Entry(value, type.Version, false) { Revision = ++_revision };
 			return value;
 		}
 	}
@@ -63,7 +71,7 @@ public sealed class DocumentStore
 	{
 		lock (_lock)
 		{
-			_open[path] = new Entry(value, type.Version, true);
+			_open[path] = new Entry(value, type.Version, true) { Revision = ++_revision };
 		}
 	}
 
@@ -74,9 +82,14 @@ public sealed class DocumentStore
 		{
 			if (!_open.TryGetValue(path, out Entry? entry))
 			{
+				if (_imported.Contains(path))
+				{
+					return;
+				}
 				throw new InvalidOperationException($"文档 {path} 还没打开，不能标脏。");
 			}
 			entry.Dirty = true;
+			entry.Revision = ++_revision;
 		}
 	}
 
@@ -95,12 +108,7 @@ public sealed class DocumentStore
 				{
 					continue;
 				}
-				JsonObject envelope = new JsonObject
-				{
-					["schema"] = entry.Version,
-					["data"] = JsonSerializer.SerializeToNode(entry.Value, entry.Value.GetType(), Json)
-				};
-				pending.Add((path, entry, envelope.ToJsonString(Json)));
+				pending.Add((path, entry, Envelope(entry)));
 				entry.Dirty = false;
 			}
 		}
@@ -127,6 +135,53 @@ public sealed class DocumentStore
 		lock (_lock)
 		{
 			_open.Clear();
+			_incoming.Clear();
+			_imported.Clear();
+		}
+	}
+
+	/// <summary>这个文档改到第几版了（每次读进来、标脏、替换都会变；没打开时为 0）。联机时房主据此判断要不要再发一次。</summary>
+	public long Revision(string path)
+	{
+		lock (_lock)
+		{
+			return _open.TryGetValue(path, out Entry? entry) ? entry.Revision : 0;
+		}
+	}
+
+	/// <summary>文档现在的完整内容（和写盘时一样）；没打开就读盘上的，都没有时为 null。</summary>
+	public string? Export(string path)
+	{
+		lock (_lock)
+		{
+			if (_open.TryGetValue(path, out Entry? entry))
+			{
+				return Envelope(entry);
+			}
+			if (_incoming.TryGetValue(path, out string? pending))
+			{
+				return pending;
+			}
+		}
+		try
+		{
+			return _backend.Read(path);
+		}
+		catch (Exception ex)
+		{
+			_log.Debug($"读不了 {path}：{ex.Message}");
+			return null;
+		}
+	}
+
+	/// <summary>换成别处（联机的房主）发来的内容：丢掉这边的，下次读时用它。这边以后的改动不会写盘以外的地方，也不必先读过才能标脏。</summary>
+	public void Import(string path, string content)
+	{
+		lock (_lock)
+		{
+			_open.Remove(path);
+			_incoming[path] = content;
+			_imported.Add(path);
 		}
 	}
 
@@ -142,12 +197,18 @@ public sealed class DocumentStore
 		}
 	}
 
+	private static string Envelope(Entry entry) => new JsonObject
+	{
+		["schema"] = entry.Version,
+		["data"] = JsonSerializer.SerializeToNode(entry.Value, entry.Value.GetType(), Json)
+	}.ToJsonString(Json);
+
 	private T Load<T>(string path, DocumentType<T> type) where T : class
 	{
 		string? text;
 		try
 		{
-			text = _backend.Read(path);
+			text = _incoming.Remove(path, out string? incoming) ? incoming : _backend.Read(path);
 		}
 		catch (Exception ex)
 		{
@@ -208,5 +269,7 @@ public sealed class DocumentStore
 		public int Version { get; }
 
 		public bool Dirty { get; set; }
+
+		public long Revision { get; set; }
 	}
 }

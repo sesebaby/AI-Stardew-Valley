@@ -102,6 +102,9 @@ public sealed class Debt
 
 	public string Npc { get; set; } = "";
 
+	/// <summary>借钱的农夫（联机；0 = 房主，旧存档也是 0）。</summary>
+	public long Farmer { get; set; }
+
 	public int Amount { get; set; }
 
 	public int Repaid { get; set; }

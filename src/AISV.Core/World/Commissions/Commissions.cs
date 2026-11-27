@@ -62,6 +62,9 @@ public sealed class Commission
 
 	public int AcceptedDay { get; set; } = -1;
 
+	/// <summary>接下的农夫（联机；0 = 房主，旧存档也是 0）。</summary>
+	public long Taker { get; set; }
+
 	public int ClosedDay { get; set; } = -1;
 
 	public string Text { get; set; } = "";

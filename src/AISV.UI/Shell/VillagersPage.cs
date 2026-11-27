@@ -437,7 +437,7 @@ internal sealed class VillagersPage : ShellPage
 
 	private int DrawInfo(SpriteBatch b, Villager v, int x, int y, int w, Hits hits)
 	{
-		AISV.Core.World.Ledger.NpcWallet? wallet = Ctx.Ledger is { Enabled: true } ledger && StardewModdingAPI.Context.IsMainPlayer ? ledger.Wallet(v.Name) : null;
+		AISV.Core.World.Ledger.NpcWallet? wallet = Ctx.Ledger is { Usable: true } ledger ? ledger.Wallet(v.Name) : null;
 		List<(string Label, string Value, Color Color)> rows = new List<(string, string, Color)>
 		{
 			(Tr.Get("shell.villagers.where", "现在在"), v.Where.Length > 0 ? v.Where : Tr.Get("shell.villagers.nowhere", "不知道在哪"), Hearth.Quill),

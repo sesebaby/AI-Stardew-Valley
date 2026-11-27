@@ -171,6 +171,7 @@ public sealed class MoodBook
 	/// <summary>聊天等事让心情变了：当场改今天的分，同时记下，明天算心情时再算一次。</summary>
 	public void Adjust(string npcName, int amount)
 	{
+		Adjusted?.Invoke(npcName, amount);
 		_carried[npcName] = (_carried.TryGetValue(npcName, out int sum) ? sum : 0) + amount;
 		if (_today.TryGetValue(npcName, out NpcMood? mood))
 		{
@@ -179,6 +180,9 @@ public sealed class MoodBook
 			mood.Temper = Label(mood.Level);
 		}
 	}
+
+	/// <summary>心情被改了（联机的农场帮手转给房主）。</summary>
+	public event Action<string, int>? Adjusted;
 
 	public NpcMood? Get(string npcName) => _today.TryGetValue(npcName, out NpcMood? mood) ? mood : null;
 

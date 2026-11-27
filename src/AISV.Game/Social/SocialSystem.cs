@@ -1482,7 +1482,15 @@ public sealed class SocialSystem
 	private TimeSpan JobTimeout => TimeSpan.FromSeconds(Math.Max(90, _config().NightlyWaitSeconds * 2 + 30));
 
 	/// <summary>全村共用的数据：联机时只有房主写。</summary>
-	public static readonly string[] VillageDocuments = { GossipBook.PromptPath, GossipBook.FeedPath, GossipBook.StatePath, LetterBook.Path, SocialWeb.Path, PersonalityBook.Path, StoryArcBook.Path, ResolvedLore.Path, ExpulsionBook.Path, ShopDetachBook.Path };
+	/// <summary>
+	/// 全村共用的文档：只有房主写盘；联机时房主把它们发给农场帮手（<see cref="Net.NetSync"/>），农场帮手那边的改动不算数。
+	/// 信、"看到听到"、做错事的后果、心里的感受这些是各位农夫自己的，各存各的。
+	/// </summary>
+	public static readonly string[] VillageDocuments =
+	{
+		GossipBook.PromptPath, GossipBook.FeedPath, GossipBook.StatePath, SocialWeb.Path, PersonalityBook.Path, StoryArcBook.Path, ResolvedLore.Path, ExpulsionBook.Path, ShopDetachBook.Path,
+		AISV.Core.Life.LifeBook.Path, AISV.Core.News.WeeklyNewsBook.Path, AISV.Core.World.Ledger.LedgerBook.Path, AISV.Core.World.Commissions.CommissionLog.Path
+	};
 
 	/// <summary>
 	/// 晚上和早上的后台结果会写到的文件。结果常在游戏存档之后才回来（属于已经存下的那一天），

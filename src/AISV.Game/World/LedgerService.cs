@@ -176,6 +176,18 @@ public sealed partial class LedgerService
 
 	private bool Host => Enabled && Context.IsWorldReady && Context.IsMainPlayer;
 
+	/// <summary>联机的农场帮手：账本在房主那边，借钱、还钱交给房主记。</summary>
+	private bool Remote => Enabled && Context.IsWorldReady && !Context.IsMainPlayer && Net?.Linked == true;
+
+	public AISV.Game.Net.NetSync? Net { get; set; }
+
+	/// <summary>能借钱、看账本（房主，或者连着房主的农场帮手）。</summary>
+	public bool Usable => Host || Remote;
+
+	private static long Me => Context.IsMainPlayer ? 0 : Game1.player?.UniqueMultiplayerID ?? 0;
+
+	private static bool Mine(Debt d) => d.Farmer == Me;
+
 	private LedgerBook? Book => _store()?.Get(LedgerBook.Path, LedgerBook.Doc);
 
 	private static int Today => (Game1.Date?.TotalDays ?? 0) + 1;
@@ -188,11 +200,12 @@ public sealed partial class LedgerService
 
 	public IReadOnlyList<NpcWallet> Wallets() => Book?.Wallets.Values.ToList() ?? new List<NpcWallet>();
 
-	public IReadOnlyList<Debt> Debts() => Book?.Debts.ToList() ?? new List<Debt>();
+	/// <summary>我欠的（联机时别的农夫欠的不算）。</summary>
+	public IReadOnlyList<Debt> Debts() => Book?.Debts.Where(Mine).ToList() ?? new List<Debt>();
 
 	public IReadOnlyList<TownEvent> Events() => Book?.Events.ToList() ?? new List<TownEvent>();
 
-	public Debt? OpenDebt(string npc) => Book?.Debts.FirstOrDefault(d => d.State == DebtStates.Open && string.Equals(d.Npc, npc, StringComparison.OrdinalIgnoreCase));
+	public Debt? OpenDebt(string npc) => Book?.Debts.FirstOrDefault(d => d.State == DebtStates.Open && Mine(d) && string.Equals(d.Npc, npc, StringComparison.OrdinalIgnoreCase));
 
 	/// <summary>这位村民的钱包；还没有就按职业生成（不是村民时为 null）。</summary>
 	public NpcWallet? Wallet(string npc)
@@ -612,6 +625,11 @@ public sealed partial class LedgerService
 
 	public void OnErrandDone(Errand e)
 	{
+		if (Remote)
+		{
+			Net!.ToHost(ErrandOp, e);
+			return;
+		}
 		if (!Host)
 		{
 			return;
@@ -625,6 +643,11 @@ public sealed partial class LedgerService
 
 	public void OnErrandKept(Errand e, int gold)
 	{
+		if (Remote)
+		{
+			Net!.ToHost(ErrandKeptOp, new ErrandKept(e, gold));
+			return;
+		}
 		if (Host)
 		{
 			Earn(e.Npc, gold, EntryKinds.Errand, Tr.Get("ledger.note.errandKept", "农夫中途撤回委托，留下的辛苦费"));
@@ -736,9 +759,9 @@ public sealed partial class LedgerService
 	/// <summary>借不了的原因；能借时为 null。</summary>
 	public string? LoanProblem(string npc, int amount)
 	{
-		if (!Host)
+		if (!Usable)
 		{
-			return Context.IsMainPlayer ? Tr.Get("ledger.loan.off", "村民账本没开") : Tr.Get("ledger.loan.host", "联机时只有房主能借钱");
+			return Context.IsMainPlayer || !Enabled ? Tr.Get("ledger.loan.off", "村民账本没开") : Tr.Get("ledger.loan.host", "联机时只有房主能借钱");
 		}
 		if (_asking)
 		{
@@ -840,20 +863,57 @@ public sealed partial class LedgerService
 
 	private void FinishLoan(string npc, int amount, int days, bool lend, string line, Action<bool, string> done)
 	{
-		if (lend && LoanProblem(npc, amount) == null && Wallet(npc) is NpcWallet w && Book is LedgerBook book)
+		if (!lend || LoanProblem(npc, amount) != null)
 		{
-			w.Gold -= amount;
+			done(false, line);
+			return;
+		}
+		if (Remote)
+		{
+			_asking = true;
+			Net!.Ask<LoanAsk, LoanAnswer>(LoanOp, new LoanAsk(npc, amount, days), a =>
+			{
+				_asking = false;
+				if (a?.Ok == true)
+				{
+					Game1.player.Money += amount;
+					_log.Info($"账本：{npc} 借给你 {amount}g（房主记下了）。");
+					done(true, line);
+				}
+				else
+				{
+					done(false, a == null ? Tr.Get("ledger.loan.noHost", "房主那边没有回话，这次没借成。") : Tr.Get("ledger.loan.broke", "他身上没多少钱"));
+				}
+			});
+			return;
+		}
+		if (Lend(npc, amount, days, 0))
+		{
 			Game1.player.Money += amount;
-			Debt d = new Debt { Id = "d" + book.NextDebt++, Npc = npc, Amount = amount, Day = Today, DueDay = Today + days, Style = LedgerRules.StyleOf(npc, Field(npc, "AIStardewValley/DebtStyle")) };
-			book.Debts.Add(d);
-			Log(w, EntryKinds.Loan, -amount, Tr.Get("ledger.note.loan", "借给农夫，{{days}} 天内还", ("days", days)));
-			Event(npc, EntryKinds.Loan, amount, Tr.Get("ledger.event.loan", "农夫向{{name}}借了 {{gold}}g。", ("name", Display(npc)), ("gold", amount)));
-			Changed();
-			_log.Info($"账本：{npc} 借给农夫 {amount}g，{days} 天内还（{d.Style}）。");
 			done(true, line);
 			return;
 		}
 		done(false, line);
+	}
+
+	/// <summary>房主记下一笔借款（钱由借钱的人自己那边加）。</summary>
+	private bool Lend(string npc, int amount, int days, long farmer)
+	{
+		if (Wallet(npc) is not NpcWallet w || Book is not LedgerBook book || w.Gold < amount || book.Debts.Any(d => d.State == DebtStates.Open && d.Farmer == farmer && string.Equals(d.Npc, npc, StringComparison.OrdinalIgnoreCase)))
+		{
+			return false;
+		}
+		string who = farmer == 0 ? "" : Game1.GetPlayer(farmer)?.Name ?? "";
+		w.Gold -= amount;
+		Debt d = new Debt { Id = "d" + book.NextDebt++, Npc = npc, Farmer = farmer, Amount = amount, Day = Today, DueDay = Today + days, Style = LedgerRules.StyleOf(npc, Field(npc, "AIStardewValley/DebtStyle")) };
+		book.Debts.Add(d);
+		Log(w, EntryKinds.Loan, -amount, Tr.Get("ledger.note.loan", "借给农夫，{{days}} 天内还", ("days", days)));
+		Event(npc, EntryKinds.Loan, amount, farmer == 0
+			? Tr.Get("ledger.event.loan", "农夫向{{name}}借了 {{gold}}g。", ("name", Display(npc)), ("gold", amount))
+			: Tr.Get("ledger.event.loanBy", "{{who}}向{{name}}借了 {{gold}}g。", ("who", who), ("name", Display(npc)), ("gold", amount)));
+		Changed();
+		_log.Info($"账本：{npc} 借给{(who.Length > 0 ? who : "农夫")} {amount}g，{days} 天内还（{d.Style}）。");
+		return true;
 	}
 
 	/// <summary>还钱（可以只还一部分）。</summary>
@@ -869,6 +929,35 @@ public sealed partial class LedgerService
 			return Tr.Get("ledger.repay.money", "钱不够");
 		}
 		Game1.player.Money -= amount;
+		if (Remote)
+		{
+			string id = d.Id;
+			Net!.Ask<RepayAsk, RepayAnswer>(RepayOp, new RepayAsk(id, amount), a =>
+			{
+				if (a == null)
+				{
+					// 房主没收到：钱退回来，下次再还。
+					Game1.player.Money += amount;
+					Game1.addHUDMessage(new HUDMessage(Tr.Get("ledger.repay.noHost", "房主那边没有回话，钱退回来了，等会儿再还。"), HUDMessage.error_type));
+				}
+				else if (a.Paid)
+				{
+					Text?.Invoke(npc, Tr.Get("ledger.text.paid", "钱收到了，谢谢你说话算话。"));
+				}
+			});
+			return null;
+		}
+		Received(d, w, amount);
+		if (d.Owed == 0)
+		{
+			Text?.Invoke(npc, Tr.Get("ledger.text.paid", "钱收到了，谢谢你说话算话。"));
+		}
+		return null;
+	}
+
+	/// <summary>房主记下还的钱。</summary>
+	private void Received(Debt d, NpcWallet w, int amount)
+	{
 		w.Gold += amount;
 		d.Repaid += amount;
 		Log(w, EntryKinds.Repay, amount, Tr.Get("ledger.note.repay", "农夫还了 {{n}}g", ("n", amount)));
@@ -876,10 +965,8 @@ public sealed partial class LedgerService
 		{
 			d.State = DebtStates.Paid;
 			d.ClosedDay = Today;
-			Text?.Invoke(npc, Tr.Get("ledger.text.paid", "钱收到了，谢谢你说话算话。"));
 		}
 		Changed();
-		return null;
 	}
 
 	/// <summary>一笔债到期没还（村民名）：交给做错事的后果。</summary>
@@ -893,7 +980,14 @@ public sealed partial class LedgerService
 		if (!d.Reported && Today > d.DueDay)
 		{
 			d.Reported = true;
-			OverdueNoticed?.Invoke(d.Npc);
+			if (d.Farmer == 0)
+			{
+				OverdueNoticed?.Invoke(d.Npc);
+			}
+			else
+			{
+				ToDebtor(d, new DebtEffect(d.Id, d.Npc, d.Amount, d.Owed, d.Tab) { Misdeed = true });
+			}
 		}
 		DebtAction action = LedgerRules.Overdue(d, Today);
 		if (action != DebtAction.None)
@@ -905,36 +999,38 @@ public sealed partial class LedgerService
 		{
 			case DebtAction.Warn:
 				d.WarnedDay = Today;
-				Notify(d, Tr.Get("ledger.debt.warnSubject", "借的钱"), d.Tab
+				NotifyDebtor(d, Tr.Get("ledger.debt.warnSubject", "借的钱"), d.Tab
 					? Tr.Get("ledger.debt.tabWarn", "在我这儿赊的 {{gold}}g 到期了。三天之内还不上，我就自己去拿。", ("gold", d.Owed))
 					: Tr.Get("ledger.debt.warn", "借你的 {{gold}}g 已经到期了。三天之内还不上，我就自己去拿。", ("gold", d.Owed)),
 					$"已经到期，你这次是最后通牒：三天之内还不上，你就自己上门去拿（先拿钱，不够拿他背包里的东西抵）。");
 				break;
 			case DebtAction.Collect:
-				Collect(d);
+				if (d.Farmer == 0)
+				{
+					Collect(d);
+				}
+				else
+				{
+					d.WarnedDay = Today;
+					ToDebtor(d, new DebtEffect(d.Id, d.Npc, d.Amount, d.Owed, d.Tab) { Collect = true });
+				}
 				break;
 			case DebtAction.Remind:
 				int penalty = LedgerRules.RemindPenalty(d);
 				d.Reminders++;
 				d.LastReminderDay = Today;
-				Notify(d, Tr.Get("ledger.debt.remindSubject", "那笔钱"), d.Tab
+				NotifyDebtor(d, Tr.Get("ledger.debt.remindSubject", "那笔钱"), d.Tab
 					? Tr.Get("ledger.debt.tabRemind", "在我这儿赊的 {{gold}}g 到期了，方便的时候来结一下。", ("gold", d.Owed))
 					: d.Reminders == 1
 					? Tr.Get("ledger.debt.remind1", "借你的 {{gold}}g 到期了，方便的时候记得还我。", ("gold", d.Owed))
 					: Tr.Get("ledger.debt.remind2", "上次借你的 {{gold}}g 还没还呢，别忘了。", ("gold", d.Owed)),
 					d.Reminders == 1 ? "已经到期了，这是你第一次提醒他。" : $"已经过期 {Today - d.DueDay} 天，这是你第 {d.Reminders} 次催了，语气可以重一点。");
-				if (penalty != 0 && npc != null && Game1.player.friendshipData.ContainsKey(d.Npc))
-				{
-					Game1.player.changeFriendship(penalty, npc);
-				}
+				FriendshipFor(d, penalty);
 				break;
 			case DebtAction.Sulk:
 				int loss = Math.Min(-LedgerRules.SulkFriendship, 100 - d.FriendshipLost);
 				d.FriendshipLost += loss;
-				if (npc != null && Game1.player.friendshipData.ContainsKey(d.Npc))
-				{
-					Game1.player.changeFriendship(-loss, npc);
-				}
+				FriendshipFor(d, -loss);
 				if (!d.Gossiped)
 				{
 					d.Gossiped = true;
@@ -999,12 +1095,17 @@ public sealed partial class LedgerService
 		{
 			return;
 		}
-		int owed = d.Owed;
+		Taken t = Take(d.Npc, d.Owed);
+		Collected(d, w, t);
+	}
+
+	/// <summary>从这边的农夫身上拿：先拿钱，不够拿背包里便宜的东西（免得为一点欠款拿走贵重的）。</summary>
+	private Taken Take(string npcName, int owed)
+	{
 		int cash = Math.Min(Game1.player.Money, owed);
 		Game1.player.Money -= cash;
 		int covered = cash;
-		List<string> taken = new List<string>();
-		// 先拿便宜的，免得为一点欠款拿走贵重东西。
+		List<TakenItem> items = new List<TakenItem>();
 		List<int> slots = Enumerable.Range(0, Game1.player.Items.Count)
 			.Where(i => Game1.player.Items[i] is StardewValley.Object o && !o.questItem.Value && o.sellToStorePrice() > 0)
 			.OrderBy(i => ((StardewValley.Object)Game1.player.Items[i]).sellToStorePrice())
@@ -1018,33 +1119,180 @@ public sealed partial class LedgerService
 			int unit = o.sellToStorePrice();
 			int n = Math.Min(o.Stack, (owed - covered + unit - 1) / unit);
 			covered += unit * n;
-			taken.Add($"{TextTools.CleanForGame(o.DisplayName)} ×{n}");
-			LedgerRules.Put(w.Home, LedgerRules.MaxHome, o.QualifiedItemId, n, o.Quality);
+			items.Add(new TakenItem(o.QualifiedItemId, n, o.Quality, TextTools.CleanForGame(o.DisplayName)));
 			o.Stack -= n;
 			if (o.Stack <= 0)
 			{
 				Game1.player.Items[i] = null;
 			}
 		}
+		string what = (cash > 0 ? $"{cash}g" : "") + (items.Count > 0 ? (cash > 0 ? "、" : "") + string.Join("、", items.Select(t => $"{t.Name} ×{t.Count}")) : "");
+		Game1.addHUDMessage(new HUDMessage(covered == 0
+			? Tr.Get("ledger.debt.empty", "{{name}}来收债，你身上什么也没有，他说过几天再来。", ("name", Display(npcName)))
+			: Tr.Get("ledger.debt.collected", "{{name}}拿走了{{what}}抵债。", ("name", Display(npcName)), ("what", what)), HUDMessage.error_type));
+		return new Taken(cash, covered, items);
+	}
+
+	/// <summary>房主记下收回来的（钱进钱包，东西放回他家）。</summary>
+	private void Collected(Debt d, NpcWallet w, Taken t)
+	{
+		int owed = d.Owed;
 		d.WarnedDay = Today;
-		if (covered == 0)
+		if (t.Covered == 0)
 		{
-			Game1.addHUDMessage(new HUDMessage(Tr.Get("ledger.debt.empty", "{{name}}来收债，你身上什么也没有，他说过几天再来。", ("name", Display(d.Npc))), HUDMessage.error_type));
 			_log.Info($"账本：{d.Npc} 来收债，什么也没拿到，过几天再来。");
+			Changed();
 			return;
 		}
-		w.Gold += cash;
-		d.Repaid = Math.Min(d.Amount, d.Repaid + covered);
-		string what = (cash > 0 ? $"{cash}g" : "") + (taken.Count > 0 ? (cash > 0 ? "、" : "") + string.Join("、", taken) : "");
-		Game1.addHUDMessage(new HUDMessage(Tr.Get("ledger.debt.collected", "{{name}}拿走了{{what}}抵债。", ("name", Display(d.Npc)), ("what", what)), HUDMessage.error_type));
-		Log(w, EntryKinds.Repay, cash, Tr.Get("ledger.note.collect", "自己去农夫那儿拿回欠款"));
+		foreach (TakenItem i in t.Items)
+		{
+			LedgerRules.Put(w.Home, LedgerRules.MaxHome, i.Id, i.Count, i.Quality);
+		}
+		w.Gold += t.Cash;
+		d.Repaid = Math.Min(d.Amount, d.Repaid + t.Covered);
+		Log(w, EntryKinds.Repay, t.Cash, Tr.Get("ledger.note.collect", "自己去农夫那儿拿回欠款"));
 		if (d.Owed == 0)
 		{
 			d.State = DebtStates.Collected;
 			d.ClosedDay = Today;
 		}
-		Event(d.Npc, EntryKinds.Repay, covered, Tr.Get("ledger.event.collect", "{{name}}从农夫那儿拿回了欠款。", ("name", Display(d.Npc))));
-		_log.Info($"账本：{d.Npc} 自己收债，抵了 {Math.Min(covered, owed)}g（{what}）。");
+		Event(d.Npc, EntryKinds.Repay, t.Covered, Tr.Get("ledger.event.collect", "{{name}}从农夫那儿拿回了欠款。", ("name", Display(d.Npc))));
+		Changed();
+		_log.Info($"账本：{d.Npc} 自己收债，抵了 {Math.Min(t.Covered, owed)}g（{t.Cash}g 和 {t.Items.Count} 样东西）。");
+	}
+
+	// ---------------- 联机：借钱的是农场帮手 ----------------
+
+	public const string LoanOp = "ledger.loan";
+
+	public const string RepayOp = "ledger.repay";
+
+	public const string DebtOp = "ledger.debt";
+
+	public const string CollectedOp = "ledger.collected";
+
+	public const string ErrandOp = "ledger.errand";
+
+	public const string ErrandKeptOp = "ledger.errandKept";
+
+	public sealed record ErrandKept(Errand Errand, int Gold);
+
+	public sealed record LoanAsk(string Npc, int Amount, int Days);
+
+	public sealed record LoanAnswer(bool Ok);
+
+	public sealed record RepayAsk(string Id, int Amount);
+
+	public sealed record RepayAnswer(bool Paid);
+
+	public sealed record TakenItem(string Id, int Count, int Quality, string Name);
+
+	public sealed record Taken(int Cash, int Covered, List<TakenItem> Items);
+
+	public sealed record CollectedNote(string Id, Taken Taken);
+
+	/// <summary>落在欠钱的那位农夫身上的事：算进后果、好感、催债的话、上门收债。</summary>
+	public sealed record DebtEffect(string Id, string Npc, int Amount, int Owed, bool Tab)
+	{
+		public bool Misdeed { get; init; }
+
+		public int Friendship { get; init; }
+
+		public bool Collect { get; init; }
+
+		public string Subject { get; init; } = "";
+
+		public string Text { get; init; } = "";
+
+		public string Situation { get; init; } = "";
+	}
+
+	public void WireNet(AISV.Game.Net.NetSync net)
+	{
+		Net = net;
+		net.On<LoanAsk>(LoanOp, (from, a) => Host ? new LoanAnswer(Lend(a.Npc, a.Amount, LedgerRules.LoanDays.Contains(a.Days) ? a.Days : 7, from)) : null);
+		net.On<RepayAsk>(RepayOp, (from, a) =>
+		{
+			if (!Host || Book?.Debts.FirstOrDefault(d => d.Id == a.Id && d.Farmer == from && d.State == DebtStates.Open) is not Debt d || Wallet(d.Npc) is not NpcWallet w)
+			{
+				return null;
+			}
+			Received(d, w, Math.Min(a.Amount, d.Owed));
+			return new RepayAnswer(d.Owed == 0);
+		});
+		net.On<CollectedNote>(CollectedOp, (from, c) =>
+		{
+			if (Host && Book?.Debts.FirstOrDefault(d => d.Id == c.Id && d.Farmer == from) is Debt d && Wallet(d.Npc) is NpcWallet w)
+			{
+				Collected(d, w, c.Taken);
+			}
+		});
+		net.On<DebtEffect>(DebtOp, (_, e) => ApplyEffect(e));
+		net.On<Errand>(ErrandOp, (_, e) => OnErrandDone(e));
+		net.On<ErrandKept>(ErrandKeptOp, (_, k) => OnErrandKept(k.Errand, k.Gold));
+	}
+
+	private void ToDebtor(Debt d, DebtEffect e)
+	{
+		if (Net?.ToFarmer(d.Farmer, DebtOp, e) != true)
+		{
+			_log.Debug($"账本：{d.Npc} 的债主不在线，这次的事落空了。");
+		}
+	}
+
+	private void FriendshipFor(Debt d, int delta)
+	{
+		if (delta == 0)
+		{
+			return;
+		}
+		if (d.Farmer == 0)
+		{
+			ChangeFriendship(d.Npc, delta);
+		}
+		else
+		{
+			ToDebtor(d, new DebtEffect(d.Id, d.Npc, d.Amount, d.Owed, d.Tab) { Friendship = delta });
+		}
+	}
+
+	private void NotifyDebtor(Debt d, string subject, string text, string situation)
+	{
+		if (d.Farmer == 0)
+		{
+			Notify(d, subject, text, situation);
+		}
+		else
+		{
+			ToDebtor(d, new DebtEffect(d.Id, d.Npc, d.Amount, d.Owed, d.Tab) { Subject = subject, Text = text, Situation = situation });
+		}
+	}
+
+	private static void ChangeFriendship(string npcName, int delta)
+	{
+		if (Game1.getCharacterFromName(npcName) is NPC npc && Game1.player.friendshipData.ContainsKey(npcName))
+		{
+			Game1.player.changeFriendship(delta, npc);
+		}
+	}
+
+	/// <summary>农场帮手这边：房主说这笔债该怎么办了。</summary>
+	private void ApplyEffect(DebtEffect e)
+	{
+		if (e.Misdeed)
+		{
+			OverdueNoticed?.Invoke(e.Npc);
+		}
+		ChangeFriendship(e.Npc, e.Friendship);
+		if (e.Subject.Length > 0)
+		{
+			Notify(new Debt { Id = e.Id, Npc = e.Npc, Amount = e.Amount, Repaid = e.Amount - e.Owed, Tab = e.Tab, Farmer = Me }, e.Subject, e.Text, e.Situation);
+		}
+		if (e.Collect)
+		{
+			Taken t = Take(e.Npc, e.Owed);
+			Net?.ToHost(CollectedOp, new CollectedNote(e.Id, t));
+		}
 	}
 
 	// ---------------- 给 AI 和界面 ----------------
@@ -1142,9 +1390,9 @@ public sealed partial class LedgerService
 			}
 			case "repay" when args.Length >= 3 && int.TryParse(args[2], out int amount):
 				return Repay(npc, amount) ?? "还了。";
-			case "due" when OpenDebt(npc) is Debt debt:
+			case "due" when (OpenDebt(npc) ?? Book?.Debts.FirstOrDefault(d => d.State == DebtStates.Open && string.Equals(d.Npc, npc, StringComparison.OrdinalIgnoreCase))) is Debt debt:
 				debt.DueDay = Math.Min(debt.DueDay, Today - 1);
-				if (debt.Style == DebtStyles.Demand && debt.WarnedDay >= 0)
+				if (debt.Style == DebtStyles.Demand && debt.WarnedDay >= 0 && debt.Farmer == 0)
 				{
 					Collect(debt);
 				}

@@ -91,7 +91,56 @@ public sealed class CommissionService
 
 	public IReadOnlyList<Commission> Open() => All().Where(c => c.State == CommissionStates.Open).ToList();
 
-	public IReadOnlyList<Commission> Active() => All().Where(c => c.State == CommissionStates.Active).ToList();
+	/// <summary>我接下的（联机时别的农夫接的不算）。</summary>
+	public IReadOnlyList<Commission> Active() => All().Where(c => c.State == CommissionStates.Active && Mine(c)).ToList();
+
+	private static long Me => Game1.player?.UniqueMultiplayerID ?? 0;
+
+	private static bool Mine(Commission c) => c.Taker == Me || c.Taker == 0 && Context.IsMainPlayer;
+
+	/// <summary>联机：农场帮手接、放弃、交付都告诉房主；房主把过期的扣分发给接下的人。</summary>
+	public AISV.Game.Net.NetSync? Net { get; set; }
+
+	public const string AcceptOp = "commission.accept";
+
+	public const string AbandonOp = "commission.abandon";
+
+	public const string DoneOp = "commission.done";
+
+	public const string ExpiredOp = "commission.expired";
+
+	public sealed record Request(string Id);
+
+	public sealed record Answer(bool Ok, string Code);
+
+	/// <summary>房主上的同步数据换了：界面重画。</summary>
+	public void Touch() => Version++;
+
+	public void WireNet(AISV.Game.Net.NetSync net)
+	{
+		Net = net;
+		net.On<Request>(AcceptOp, (from, r) => Context.IsMainPlayer ? TryAccept(r.Id, from) : null);
+		net.On<Request>(AbandonOp, (from, r) => Context.IsMainPlayer ? TryAbandon(r.Id, from) : null);
+		net.On<Request>(DoneOp, (from, r) =>
+		{
+			if (Context.IsMainPlayer && Find(r.Id) is Commission c && c.State == CommissionStates.Active && c.Taker == from)
+			{
+				c.State = CommissionStates.Done;
+				c.ClosedDay = Today;
+				Paid?.Invoke(c);
+				Changed();
+				_log.Info($"{Game1.GetPlayer(from)?.Name} 完成委托 {c.Id}（{c.Kind}，{c.Poster}）。");
+			}
+		});
+		net.On<Request>(ExpiredOp, (_, r) =>
+		{
+			if (Find(r.Id) is Commission c)
+			{
+				Expired(c);
+			}
+		});
+		net.Synced += Touch;
+	}
 
 	public Commission? Find(string id) => All().FirstOrDefault(c => string.Equals(c.Id, id, StringComparison.OrdinalIgnoreCase));
 
@@ -167,38 +216,81 @@ public sealed class CommissionService
 
 	// ---------------- 玩家 ----------------
 
-	public (bool Ok, string Message) Accept(string id)
+	/// <summary>接下或放弃（联机的农场帮手要等房主回话）。done(成没成, 给玩家看的话)。</summary>
+	public void Accept(string id, Action<bool, string> done) => Ask(AcceptOp, id, done, TryAccept);
+
+	public void Abandon(string id, Action<bool, string> done)
+	{
+		string poster = Find(id)?.Poster ?? "";
+		Ask(AbandonOp, id, (ok, message) =>
+		{
+			if (ok && Net?.Linked == true)
+			{
+				ChangeFriendship(poster, -CommissionRules.AbandonPenalty);
+			}
+			done(ok, message);
+		}, TryAbandon);
+	}
+
+	private void Ask(string op, string id, Action<bool, string> done, Func<string, long, Answer> local)
+	{
+		string poster = Find(id)?.Poster ?? "";
+		Action<Answer?> reply = a => done(a?.Ok == true, Message(a?.Code ?? "noHost", poster));
+		if (Net?.Linked == true)
+		{
+			Net.Ask<Request, Answer>(op, new Request(id), reply);
+			return;
+		}
+		reply(local(id, Me));
+	}
+
+	private static string Message(string code, string poster) => code switch
+	{
+		"accepted" => Tr.Get("commission.accepted", "接下了{{npc}}的委托。", ("npc", NpcName(poster))),
+		"abandoned" => Tr.Get("commission.abandoned", "放弃了{{npc}}的委托。{{npc}}有点失望。", ("npc", NpcName(poster))),
+		"tooMany" => Tr.Get("commission.tooMany", "你手上已经有 {{count}} 条委托了，先做完再接。", ("count", CommissionRules.MaxActive)),
+		"noHost" => Tr.Get("commission.noHost", "房主那边没有回话，等一会儿再试。"),
+		_ => Tr.Get("commission.gone", "这条委托已经不在了。")
+	};
+
+	private Answer TryAccept(string id, long farmer)
 	{
 		Commission? c = Find(id);
 		if (c == null || c.State != CommissionStates.Open)
 		{
-			return (false, Tr.Get("commission.gone", "这条委托已经不在了。"));
+			return new Answer(false, "gone");
 		}
-		if (Active().Count >= CommissionRules.MaxActive)
+		long taker = farmer == Game1.MasterPlayer.UniqueMultiplayerID ? 0 : farmer;
+		if (All().Count(a => a.State == CommissionStates.Active && a.Taker == taker) >= CommissionRules.MaxActive)
 		{
-			return (false, Tr.Get("commission.tooMany", "你手上已经有 {{count}} 条委托了，先做完再接。", ("count", CommissionRules.MaxActive)));
+			return new Answer(false, "tooMany");
 		}
 		c.State = CommissionStates.Active;
 		c.AcceptedDay = Today;
+		c.Taker = taker;
 		Changed();
-		_log.Info($"接下委托 {c.Id}（{c.Kind} {c.ItemId}×{c.Count}，{c.Poster}）。");
-		return (true, Tr.Get("commission.accepted", "接下了{{npc}}的委托。", ("npc", NpcName(c.Poster))));
+		_log.Info($"{Game1.GetPlayer(farmer)?.Name} 接下委托 {c.Id}（{c.Kind} {c.ItemId}×{c.Count}，{c.Poster}）。");
+		return new Answer(true, "accepted");
 	}
 
-	public (bool Ok, string Message) Abandon(string id)
+	private Answer TryAbandon(string id, long farmer)
 	{
 		Commission? c = Find(id);
-		if (c == null || c.State != CommissionStates.Active)
+		long taker = farmer == Game1.MasterPlayer.UniqueMultiplayerID ? 0 : farmer;
+		if (c == null || c.State != CommissionStates.Active || c.Taker != taker)
 		{
-			return (false, Tr.Get("commission.gone", "这条委托已经不在了。"));
+			return new Answer(false, "gone");
 		}
 		c.State = CommissionStates.Abandoned;
 		c.ClosedDay = Today;
 		c.PenaltyPoints = CommissionRules.AbandonPenalty;
-		ChangeFriendship(c.Poster, -CommissionRules.AbandonPenalty);
+		if (taker == 0)
+		{
+			ChangeFriendship(c.Poster, -CommissionRules.AbandonPenalty);
+		}
 		Changed();
-		_log.Info($"放弃委托 {c.Id}（{c.Poster} -{CommissionRules.AbandonPenalty}）。");
-		return (true, Tr.Get("commission.abandoned", "放弃了{{npc}}的委托。{{npc}}有点失望。", ("npc", NpcName(c.Poster))));
+		_log.Info($"{Game1.GetPlayer(farmer)?.Name} 放弃委托 {c.Id}（{c.Poster} -{CommissionRules.AbandonPenalty}）。");
+		return new Answer(true, "abandoned");
 	}
 
 	public static int CountInInventory(Farmer player, string itemId) => player.Items.Where(i => i != null && i.QualifiedItemId == itemId && i is not Tool).Sum(i => i.Stack);
@@ -244,7 +336,14 @@ public sealed class CommissionService
 		c.ClosedDay = Today;
 		Game1.player.Money += c.RewardGold;
 		ChangeFriendship(c.Poster, c.RewardFriendship);
-		Paid?.Invoke(c);
+		if (Net?.Linked == true)
+		{
+			Net.ToHost(DoneOp, new Request(c.Id));
+		}
+		else
+		{
+			Paid?.Invoke(c);
+		}
 		Game1.playSound("reward");
 		Game1.addHUDMessage(new HUDMessage(TextTools.CleanForGame(Tr.Get("commission.done", "{{npc}}的委托完成了：+{{gold}}g", ("npc", NpcName(c.Poster)), ("gold", c.RewardGold))), HUDMessage.achievement_type));
 		Changed();
@@ -263,11 +362,24 @@ public sealed class CommissionService
 			}
 			c.State = CommissionStates.Expired;
 			c.PenaltyPoints = CommissionRules.ExpiryPenalty;
-			ChangeFriendship(c.Poster, -CommissionRules.ExpiryPenalty);
-			Game1.addHUDMessage(new HUDMessage(TextTools.CleanForGame(Tr.Get("commission.expired", "{{npc}}的委托过期了，{{npc}}有些失望。", ("npc", NpcName(c.Poster)))), HUDMessage.error_type));
+			if (c.Taker == 0)
+			{
+				Expired(c);
+			}
+			else
+			{
+				// 扣分落在接下的人身上；他不在线就算了。
+				Net?.ToFarmer(c.Taker, ExpiredOp, new Request(c.Id));
+			}
 			_log.Info($"委托 {c.Id} 过期了（{c.Poster} -{CommissionRules.ExpiryPenalty}）。");
 		}
 		Version++;
+	}
+
+	private static void Expired(Commission c)
+	{
+		ChangeFriendship(c.Poster, -CommissionRules.ExpiryPenalty);
+		Game1.addHUDMessage(new HUDMessage(TextTools.CleanForGame(Tr.Get("commission.expired", "{{npc}}的委托过期了，{{npc}}有些失望。", ("npc", NpcName(c.Poster)))), HUDMessage.error_type));
 	}
 
 	private static void ChangeFriendship(string npc, int points)
@@ -575,9 +687,11 @@ public sealed class CommissionService
 				return posted.Count == 0 ? "没贴成（板上满了或者凑不出）" : "贴了 " + string.Join("、", posted.Select(c => $"{c.Id} {c.Kind} {c.Poster} {c.ItemId}×{c.Count} {c.RewardGold}g"));
 			}
 			case "accept" when args.Length > 1:
-				return Accept(args[1]).Message;
+				Accept(args[1], (_, message) => _log.Info("委托：" + message));
+				return Net?.Linked == true ? "问房主了。" : "";
 			case "abandon" when args.Length > 1:
-				return Abandon(args[1]).Message;
+				Abandon(args[1], (_, message) => _log.Info("委托：" + message));
+				return Net?.Linked == true ? "问房主了。" : "";
 			case "expire" when args.Length > 1:
 			{
 				Commission? c = Find(args[1]);

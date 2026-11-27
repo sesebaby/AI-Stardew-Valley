@@ -384,10 +384,21 @@ internal sealed class CommissionsPage : ShellPage
 		{
 			return;
 		}
-		(bool ok, string message) = c.State == CommissionStates.Active ? service.Abandon(c.Id) : service.Accept(c.Id);
-		Game1.playSound(ok ? (c.State == CommissionStates.Active ? "newArtifact" : "trashcan") : "cancel");
-		Host.Notice(message);
-		Reload();
+		bool taking = c.State != CommissionStates.Active;
+		Action<bool, string> done = (ok, message) =>
+		{
+			Game1.playSound(ok ? (taking ? "newArtifact" : "trashcan") : "cancel");
+			Host.Notice(message);
+			Reload();
+		};
+		if (taking)
+		{
+			service.Accept(c.Id, done);
+		}
+		else
+		{
+			service.Abandon(c.Id, done);
+		}
 	}
 
 	// ---------------- 画 ----------------

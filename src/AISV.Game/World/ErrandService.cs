@@ -125,7 +125,10 @@ public sealed class ErrandService
 		}
 	}
 
-	public bool CanPost => Enabled && Context.IsWorldReady && Context.IsMainPlayer && Book != null;
+	public bool CanPost => Enabled && Context.IsWorldReady && (Context.IsMainPlayer || Remote()) && Book != null;
+
+	/// <summary>联机的农场帮手连着房主：托村民办事在自己这边算（钱、东西都是自己的），村民挣的钱交给房主记账。</summary>
+	public Func<bool> Remote { get; set; } = () => false;
 
 	private ErrandBook? Book => _store()?.Get(ErrandBook.Path, ErrandBook.Doc);
 
@@ -637,7 +640,7 @@ public sealed class ErrandService
 
 	public void OnDayStarted()
 	{
-		if (Book is not ErrandBook book || !Context.IsMainPlayer)
+		if (Book is not ErrandBook book || !Context.IsMainPlayer && !Remote())
 		{
 			return;
 		}

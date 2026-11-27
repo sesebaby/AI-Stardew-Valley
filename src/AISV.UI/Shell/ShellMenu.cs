@@ -235,11 +235,11 @@ public sealed partial class ShellMenu : IClickableMenu, IShellHost
 		{
 			tabs.Add(WorldTab.Market);
 		}
-		if ((_ctx.Commissions?.Enabled == true || _ctx.Errands?.Enabled == true) && StardewModdingAPI.Context.IsMainPlayer)
+		if ((_ctx.Commissions?.Enabled == true || _ctx.Errands?.Enabled == true) && (StardewModdingAPI.Context.IsMainPlayer || _ctx.Commissions?.Net?.Linked == true))
 		{
 			tabs.Add(WorldTab.Commissions);
 		}
-		if (_ctx.Ledger?.Enabled == true && StardewModdingAPI.Context.IsMainPlayer)
+		if (_ctx.Ledger?.Usable == true)
 		{
 			tabs.Add(WorldTab.Ledger);
 		}
