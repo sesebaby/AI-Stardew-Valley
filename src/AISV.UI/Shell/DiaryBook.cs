@@ -98,7 +98,7 @@ internal sealed class DiaryBook : ShellPage
 	{
 		IEnumerable<AlbumItem> photos = (Ctx.Messenger?.Photos.All() ?? Array.Empty<AISV.Core.Messenger.PhotoRecord>())
 			.Select(r => new AlbumItem(new AISV.Core.Dialogue.GameDate(r.Day, r.Season, r.Year).TotalDays, () => Ctx.Messenger?.Photos.Image(r.Id), DiaryPictures.PhotoCaption(Ctx, r), true));
-		IEnumerable<AlbumItem> sketches = DiarySketches.Pin(entries, Ctx.Display)
+		IEnumerable<AlbumItem> sketches = DiarySketches.Pin(entries, Ctx.Display, Ctx.Life?.Sketches())
 			.Select(p => new AlbumItem(new AISV.Core.Dialogue.GameDate(p.Entry.Day, p.Entry.Season, p.Entry.Year).TotalDays, () => DiaryPictures.Sketch(Ctx, p.Sketch.File), DiaryPictures.SketchCaption(Ctx, p), false));
 		_items = photos.Concat(sketches).OrderBy(i => i.TotalDay).ToList();
 	}

@@ -42,6 +42,9 @@ public sealed class ShellContext
 
 	public AISV.Game.Companions.SpousePlanner? Spouse { get; set; }
 
+	/// <summary>村民自己的人生。</summary>
+	public AISV.Game.Life.LifeService? Life { get; set; }
+
 	/// <summary>这个 mod 的文件夹。</summary>
 	public string ModFolder { get; set; } = "";
 

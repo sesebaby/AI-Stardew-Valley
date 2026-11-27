@@ -132,14 +132,19 @@ public sealed class ModEntry : Mod
 			case "sleep": return Sleep();
 			case "talk": return Talk(a[0], interact: true);
 			case "near": return Talk(a[0], interact: false);
+			case "give": return Give(a[0]);
 			case "click": Game1.activeClickableMenu?.receiveLeftClick(int.Parse(a[0]), int.Parse(a[1])); return Nothing();
 			case "text": Game1.keyboardDispatcher.Subscriber?.RecieveTextInput(string.Join(' ', a)); return Nothing();
 			case "key": Game1.activeClickableMenu?.receiveKeyPress((Microsoft.Xna.Framework.Input.Keys)Enum.Parse(typeof(Microsoft.Xna.Framework.Input.Keys), a[0])); return Nothing();
 			case "close": return Close();
 			case "time": Game1.timeOfDay = int.Parse(a[0]); return Nothing();
-			case "dump-asset": _result = JToken.FromObject(Helper.GameContent.Load<Dictionary<string, string>>(a[0])); return Nothing();
+			case "dump-asset": _result = JToken.FromObject(a.Length > 1
+				? typeof(StardewModdingAPI.IGameContentHelper).GetMethod("Load", new[] { typeof(string) })!.MakeGenericMethod(AccessTools.TypeByName(a[1])).Invoke(Helper.GameContent, new object[] { a[0] })!
+				: Helper.GameContent.Load<Dictionary<string, string>>(a[0])); return Nothing();
 			case "build-cabin": _result = BuildCabin(int.Parse(a[0]), int.Parse(a[1])); return Nothing();
 			case "money": Game1.player.Money = int.Parse(a[0]); return Nothing();
+			case "hold": return Hold(a[0], a.Length > 1 ? int.Parse(a[1]) : 1);
+			case "dump-texture": return DumpTexture(a[0], a[1]);
 			case "wallets": Game1.player.team.useSeparateWallets.Value = a[0] == "separate"; return Nothing();
 			case "get": _result = Get(a[0]); return Nothing();
 			case "invoke": _result = Invoke(a[0], a[1], a.Skip(2).ToArray()); return Nothing();
@@ -157,6 +162,28 @@ public sealed class ModEntry : Mod
 		// 控制台线程收到后排进下一帧执行；多等几帧再报完成。
 		for (int i = 0; i < 10; i++)
 			yield return null;
+	}
+
+	/// <summary>把东西放进背包第一格并拿在手上（送礼、交任务用）。</summary>
+	private IEnumerator Hold(string itemId, int count)
+	{
+		Item item = ItemRegistry.Create(itemId, count);
+		Game1.player.Items[0] = item;
+		Game1.player.CurrentToolIndex = 0;
+		_result = item.DisplayName + " x" + item.Stack;
+		yield break;
+	}
+
+	/// <summary>把一张贴图存成 png（找原版素材的位置用）。</summary>
+	private IEnumerator DumpTexture(string asset, string file)
+	{
+		Texture2D t = Game1.content.Load<Texture2D>(asset);
+		using (FileStream f = File.Create(file))
+		{
+			t.SaveAsPng(f, t.Width, t.Height);
+		}
+		_result = $"{t.Width}x{t.Height}";
+		yield break;
 	}
 
 	private static IEnumerator Nothing()
@@ -390,6 +417,16 @@ public sealed class ModEntry : Mod
 		if (interact)
 			npc.checkAction(Game1.player, Game1.currentLocation);
 		_result = Status();
+	}
+
+	/// <summary>走到村民旁边，把手上的东西给他（送礼、交任务）。</summary>
+	private IEnumerator Give(string npcName)
+	{
+		IEnumerator walk = Talk(npcName, interact: false);
+		while (walk.MoveNext())
+			yield return walk.Current;
+		NPC npc = Game1.getCharacterFromName(npcName);
+		_result = npc.tryToReceiveActiveObject(Game1.player);
 	}
 
 	private IEnumerator SaveNow()

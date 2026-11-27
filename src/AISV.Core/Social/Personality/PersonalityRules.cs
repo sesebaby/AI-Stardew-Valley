@@ -16,14 +16,25 @@ public static class VillageRelations
 
 	private static readonly (string, string)[] Family = { ("Shane", "Marnie"), ("Shane", "Jas"), ("Penny", "Pam"), ("Robin", "Sebastian"), ("Maru", "Demetrius"), ("Alex", "Evelyn"), ("Emily", "Haley"), ("Sam", "Vincent") };
 
-	public static bool IsMarriage(string a, string b) => Contains(Married, a, b);
+	/// <summary>这个存档里由 mod 撮合成的夫妻（村民人生接上）。</summary>
+	public static Func<string, string, bool>? ExtraMarriage { get; set; }
+
+	public static Func<string, bool>? ExtraMarried { get; set; }
+
+	/// <summary>由 mod 撮合、还在交往或订了婚的（含已婚）。</summary>
+	public static Func<string, string, bool>? ExtraCouple { get; set; }
+
+	/// <summary>夫妻或公开的情侣（关系网画成一对）。</summary>
+	public static bool IsCouple(string a, string b) => IsMarriage(a, b) || ExtraCouple?.Invoke(a, b) == true;
+
+	public static bool IsMarriage(string a, string b) => Contains(Married, a, b) || ExtraMarriage?.Invoke(a, b) == true;
 
 	public static bool IsFamily(string a, string b) => Contains(Family, a, b);
 
 	/// <summary>游戏资料里有这两人的关系（亲友、邻居、恋情……）。</summary>
 	public static bool IsKnownPair(string a, string b) => BuiltInPersonas.Relationships.Any(r => Same(r.A, r.B, a, b));
 
-	public static bool IsMarriedNpc(string npc) => Married.Any(p => string.Equals(p.Item1, npc, StringComparison.OrdinalIgnoreCase) || string.Equals(p.Item2, npc, StringComparison.OrdinalIgnoreCase));
+	public static bool IsMarriedNpc(string npc) => Married.Any(p => string.Equals(p.Item1, npc, StringComparison.OrdinalIgnoreCase) || string.Equals(p.Item2, npc, StringComparison.OrdinalIgnoreCase)) || ExtraMarried?.Invoke(npc) == true;
 
 	/// <summary>游戏里的三个孩子。</summary>
 	public static bool IsKnownChild(string npc) => npc is "Vincent" or "Jas" or "Leo";
@@ -469,6 +480,9 @@ public static class RelationshipGraph
 		"strained" => "关系紧张",
 		"warming" => "越来越熟",
 		"married" => "夫妻",
+		"dating" => "在交往",
+		"engaged" => "订婚了",
+		"broken_up" => "分了手",
 		_ => "平常"
 	};
 
@@ -481,14 +495,17 @@ public static class RelationshipGraph
 		"strained" => "关系有点僵，能感觉到别扭。",
 		"warming" => "关系在慢慢变好。",
 		"married" => "两人是夫妻，这份承诺是根基。",
+		"dating" => "两人正在交往，镇上的人都知道。",
+		"engaged" => "两人订了婚，正在准备婚礼。",
+		"broken_up" => "两人交往过，后来分了手，见面还有点别扭。",
 		_ => $"亲近 {e.Fondness:0.00}，心动 {e.Spark:0.00}，紧张 {e.Strain:0.00}。"
 	};
 
 	private static bool PromptWorthy(RelationshipEdgeState e) =>
-		e.Phase is "crush" or "questioning_attraction" or "boundary_set" or "affair_contemplation" or "strained" or "warming"
+		e.Phase is "crush" or "questioning_attraction" or "boundary_set" or "affair_contemplation" or "strained" or "warming" or "dating" or "engaged" or "broken_up"
 		|| e.Spark >= 0.25f || e.Strain >= 0.35f || e.RecentShifts.Count > 0;
 
-	private static float Weight(RelationshipEdgeState e) => Math.Max(e.Spark, e.Strain) + e.Interest + (e.Phase == "affair_contemplation" ? 1f : 0f);
+	private static float Weight(RelationshipEdgeState e) => Math.Max(e.Spark, e.Strain) + e.Interest + (e.Phase is "affair_contemplation" or "dating" or "engaged" ? 1f : 0f);
 
 	private static bool EntityOk(string entity, Func<string, bool> enabled) => string.Equals(entity, Farmer, StringComparison.OrdinalIgnoreCase) || !string.IsNullOrWhiteSpace(entity) && enabled(entity);
 

@@ -5,8 +5,8 @@ using AISV.Core.Dialogue;
 
 namespace AISV.Core.Social.Diary;
 
-/// <summary>一幅夹在日记里的画，图片在 assets/diary。</summary>
-public sealed record DiarySketch(string File, string Npc);
+/// <summary>一幅夹在日记里的画，图片在 assets/diary。<paramref name="From"/>：从这天起才夹（村民心愿达成的画）。</summary>
+public sealed record DiarySketch(string File, string Npc, int From = 0);
 
 public sealed record PinnedSketch(DiarySketch Sketch, DiaryEntry Entry);
 
@@ -30,17 +30,19 @@ public static class DiarySketches
 
 	public static List<PinnedSketch> Pin(IEnumerable<DiaryEntry> entries, Func<string, string> displayName, IReadOnlyList<DiarySketch>? sketches = null)
 	{
-		Dictionary<string, Queue<DiarySketch>> waiting = (sketches ?? All).GroupBy(s => s.Npc, StringComparer.OrdinalIgnoreCase)
-			.ToDictionary(g => g.Key, g => new Queue<DiarySketch>(g), StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, List<DiarySketch>> waiting = (sketches ?? All).GroupBy(s => s.Npc, StringComparer.OrdinalIgnoreCase)
+			.ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
 		Dictionary<string, int> lastDay = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 		List<PinnedSketch> pinned = new List<PinnedSketch>();
 		foreach ((DiaryEntry entry, int day) in entries.Select(e => (e, new GameDate(e.Day, e.Season, e.Year).TotalDays)).OrderBy(x => x.TotalDays))
 		{
-			string? npc = waiting.Keys.Where(n => waiting[n].Count > 0 && (!lastDay.TryGetValue(n, out int last) || day - last >= RestDays))
+			string? npc = waiting.Keys.Where(n => waiting[n].Any(s => s.From <= day) && (!lastDay.TryGetValue(n, out int last) || day - last >= RestDays))
 				.FirstOrDefault(n => Mentions(entry.Text, n) || Mentions(entry.Text, displayName(n)));
 			if (npc != null)
 			{
-				pinned.Add(new PinnedSketch(waiting[npc].Dequeue(), entry));
+				DiarySketch sketch = waiting[npc].First(s => s.From <= day);
+				waiting[npc].Remove(sketch);
+				pinned.Add(new PinnedSketch(sketch, entry));
 				lastDay[npc] = day;
 			}
 		}

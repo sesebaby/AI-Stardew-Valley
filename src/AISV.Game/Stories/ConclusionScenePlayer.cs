@@ -37,17 +37,26 @@ public static class ConclusionScenePlayer
 	/// <summary>开演。没有能演的台词时返回 false（<paramref name="done"/> 不会被调用）。</summary>
 	public static bool TryStart(StoryArc arc, Action? done, ILog log)
 	{
-		_log = log;
 		List<ConclusionLine> lines = ConclusionScript.Playable(arc, Game1.player?.Name ?? "Farmer");
+		string location = ConclusionScript.Location(arc);
+		return TryStart(location, lines, arc.Id, ConclusionScript.LayoutFor(location, arc.FinalStage), "", done, log);
+	}
+
+	/// <summary>
+	/// 在 <paramref name="location"/> 演一段：村民按 <paramref name="layout"/> 站好，依次说 <paramref name="lines"/>；
+	/// <paramref name="prelude"/> 是站好以后、开口以前插进去的事件命令（比如摆道具，以 / 开头）。没有台词时返回 false。
+	/// </summary>
+	public static bool TryStart(string location, IReadOnlyList<ConclusionLine> lines, string idSeed, ConclusionScript.Layout layout, string prelude, Action? done, ILog log)
+	{
+		_log = log;
 		if (lines.Count == 0)
 		{
 			return false;
 		}
 		Register();
-		string location = ConclusionScript.Location(arc);
-		string id = ConclusionScript.EventId(arc.Id);
+		string id = ConclusionScript.EventId(idSeed);
 		Waiting[id] = new Pending { Done = done, From = Snapshot() };
-		string script = ConclusionScript.Build(lines, ConclusionScript.LayoutFor(location, arc.FinalStage), id);
+		string script = ConclusionScript.Build(lines, layout, id, prelude);
 		DelayedAction.functionAfterDelay(() => Attempt(location, script, id, false, 0), 100);
 		return true;
 	}

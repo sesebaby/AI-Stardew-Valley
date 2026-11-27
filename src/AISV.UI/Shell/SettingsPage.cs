@@ -62,6 +62,8 @@ internal sealed class SettingsPage : ShellPage
 
 	private static readonly int[] ArcLimits = { 1, 2, 3, 4, 5 };
 
+	private static readonly int[] LifeGoalCounts = { 1, 2, 3, 4, 5, 6 };
+
 	private static readonly int[] PostDays = { 1, 2, 3, 4, 5, 7, 14 };
 
 	private static readonly int[] FizzleSeasons = { 1, 2, 3, 4, 8 };
@@ -307,6 +309,13 @@ internal sealed class SettingsPage : ShellPage
 					new ChoiceRow(Tr.Get("shell.settings.leaveTownReturnChance", "回来的故事多常见"), Tr.Get("shell.settings.leaveTownReturnChanceNote", "有人离开过时，每次看新故事允许写这种故事的机会"), ExpulsionChances.Select(n => n + "%").ToArray(), c => Nearest(ExpulsionChances, c.ReturnHintPercent), (c, i) => c.ReturnHintPercent = ExpulsionChances[i]),
 					new ChoiceRow(Tr.Get("shell.settings.arcPostDays", "散场后几天还在聊"), Tr.Get("shell.settings.arcPostDaysNote", "结局后这几天里第一次见面，村民会先说起这件事"), PostDays.Select(n => Tr.Get("shell.settings.days", "{{n}} 天", ("n", n))).ToArray(), c => Nearest(PostDays, c.AfterwordDays), (c, i) => c.AfterwordDays = PostDays[i]),
 					new ChoiceRow(Tr.Get("shell.settings.arcFizzle", "几季没进展就作罢"), Tr.Get("shell.settings.arcFizzleNote", "一个目标都没办成的小剧场，过了这么多季就不了了之"), FizzleSeasons.Select(n => Tr.Get("shell.settings.seasons", "{{n}} 季", ("n", n))).ToArray(), c => Nearest(FizzleSeasons, c.StorylineStaleSeasons), (c, i) => c.StorylineStaleSeasons = FizzleSeasons[i])
+				}),
+				(Tr.Get("shell.settings.life", "村民的人生"), new List<Row>
+				{
+					new ToggleRow(Tr.Get("shell.settings.lifeOn", "村民有自己的心愿"), Tr.Get("shell.settings.lifeOnNote", "村民慢慢做成自己想做的事，走到某一步会托你帮忙，达成时请你去看；暗生好感的村民可能交往"), c => c.LifeOn, (c, v) => c.LifeOn = v),
+					new ChoiceRow(Tr.Get("shell.settings.lifeGoals", "同时几位在忙"), Tr.Get("shell.settings.lifeGoalsNote", "每周看一次，有空位时再有一位村民开始新的心愿"), LifeGoalCounts.Select(n => n.ToString()).ToArray(), c => Nearest(LifeGoalCounts, c.LifeGoalsAtOnce), (c, i) => c.LifeGoalsAtOnce = LifeGoalCounts[i]) { Shown = c => c.LifeOn },
+					new ToggleRow(Tr.Get("shell.settings.lifeWeddings", "村民之间的婚礼"), Tr.Get("shell.settings.lifeWeddingsNote", "交往久了可能订婚，一周后在镇广场办婚礼；关掉就只交往。还要开着“村民之间可能产生好感”"), c => c.LifeWeddings, (c, v) => c.LifeWeddings = v) { Shown = c => c.LifeOn },
+					new ToggleRow(Tr.Get("shell.settings.lifeJobs", "心愿达成后换工作"), Tr.Get("shell.settings.lifeJobsNote", "有的村民做成以后换了工作，账本和聊天里跟着变"), c => c.LifeJobs, (c, v) => c.LifeJobs = v) { Shown = c => c.LifeOn }
 				})
 			}),
 			new Category(Tr.Get("shell.settings.home", "家里"), Tr.Get("shell.settings.homeDesc", "配偶、孩子和宠物。"), new List<(string, List<Row>)>

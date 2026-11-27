@@ -1,0 +1,108 @@
+// 村民自己的心愿：每周可能往前走一步，走到最后一步就达成，在 ending.location 演一段。
+// help.step：推进到第几步时托你找东西（要在最后一步之前）。lines：AI 没写成时的台词，"谁|说什么|心情"（happy/surprised/sad/angry/neutral）。
+// x, y：主角站哪一格（不写就用这个地方默认的空地）。prop：assets/life/props/<名字>.png，或者原版贴图的一块"贴图@x,y,宽,高"；道具底边正中对着主角往右 propDx、往下 propDy 格（默认 0, -1，主角身后）。art：日记里夹的画，assets/diary/life/<名字>.png。
+// 避开原版已有的剧情线：Elliott 出书、Clint 和 Emily、Shane 养鸡、Willy 修船。
+{
+  "goals": [
+    {
+      "id": "haley_exhibit", "npc": "Haley", "goal": "办一次自己的摄影展",
+      "steps": ["把这些年拍的照片全翻出来，一张张挑", "说服刘易斯镇长借广场一天", "把挑好的照片冲洗出来、钉上相框", "在镇广场办了摄影展"],
+      "help": { "step": 2, "item": "(O)388", "amount": 20, "ask": "我要给照片做相框，你能帮我弄 20 块木头吗？我可不想自己去砍树……", "thanks": "太好了！这下每张照片都有像样的相框了。" },
+      "ending": { "location": "Town", "cast": ["Haley", "Emily", "Alex"], "prop": "photo_board", "propDx": 0, "propDy": -1,
+        "lines": ["Haley|你来啦！这些全是我拍的，连我自己都不敢相信攒了这么多。|happy", "Emily|我早就说过，你看东西的眼光和别人不一样。|happy", "Alex|这张海边的……拍的是我吧？我居然这么帅。|surprised", "Haley|别自作多情，我拍的是海鸥。不过……谢谢你们都来了。|happy"],
+        "art": "haley_exhibit" },
+      "newJob": "开了个小照相馆，帮镇上的人拍照", "newWage": 300
+    },
+    {
+      "id": "sam_gig", "npc": "Sam", "goal": "让乐队第一次正式登台",
+      "steps": ["熬夜写完了一首新歌", "拉着塞巴斯蒂安和阿比盖尔排练了好几个晚上", "说动格斯让出酒吧的一个晚上", "乐队在酒吧第一次正式演出"],
+      "help": { "step": 2, "item": "(O)787", "amount": 1, "ask": "音箱又烧了……你能帮我找一个电池组吗？没电演出就泡汤了。", "thanks": "电池组！你真是救星，演出那天你一定要来。" },
+      "ending": { "location": "Saloon", "cast": ["Sam", "Sebastian", "Abigail", "Gus"], "prop": "band_poster", "propDx": 0, "propDy": -1,
+        "lines": ["Sam|大家好！我们是……呃，我们还没定名字。总之，第一首歌！|happy", "Sebastian|……他紧张的时候话特别多。|neutral", "Abigail|别管他了，鼓点我来起，一、二、三！|happy", "Gus|哈哈，这家酒吧好多年没这么热闹了！|happy", "Sam|谢谢大家！我们还会再来的！|happy"],
+        "art": "sam_gig" },
+      "newJob": "在 Joja 打零工，周末在酒吧驻唱", "newWage": 380
+    },
+    {
+      "id": "leah_gallery", "npc": "Leah", "goal": "开一次个人画展",
+      "steps": ["关在小屋里画完了一组新画", "到海边捡浮木，做画框和小雕塑", "在森林里自己的小屋外办了画展"],
+      "help": { "step": 1, "item": "(O)169", "amount": 3, "ask": "我想用海边的浮木做画框，你去海滩时能帮我捡 3 块吗？", "thanks": "这几块形状真好，我已经想好怎么用了。" },
+      "ending": { "location": "Forest", "cast": ["Leah", "Elliott", "Robin"], "prop": "leah_easel", "propDx": 1, "propDy": 0,
+        "lines": ["Leah|我以前从来不敢把画拿给别人看……今天全摆出来了。|happy", "Elliott|这幅森林的晨雾，几乎能闻到湿润的泥土味。|happy", "Robin|画框是浮木做的？手艺真不错，下回教教我。|surprised", "Leah|谢谢你们……这比卖掉一幅画还让我高兴。|happy"],
+        "art": "leah_gallery" },
+      "newJob": "卖画，也接雕刻的订单", "newWage": 450
+    },
+    {
+      "id": "maru_invention", "npc": "Maru", "goal": "做出一台会自己浇水的机器人",
+      "steps": ["画完了机器人的图纸", "在家里的工作间组装零件", "第一次试车，机器人把整个院子都浇湿了", "机器人终于听话地浇完了一排花"],
+      "help": { "step": 1, "item": "(O)334", "amount": 3, "ask": "我的机器人还差关节的零件，能帮我找 3 根铜锭吗？", "thanks": "铜锭！这下关节终于能动了，谢谢你！" },
+      "ending": { "location": "Mountain", "cast": ["Maru", "Demetrius", "Robin"], "prop": "maru_robot", "propDx": 1, "propDy": 0,
+        "lines": ["Maru|好，大家退后一点……启动！|happy", "Robin|它、它真的在浇花！我的小姑娘！|surprised", "Demetrius|数据记录下来了吗？这可是值得写进论文的成果。|happy", "Maru|下一步，我要让它学会自己回家充电。|happy"],
+        "art": "maru_invention" }
+    },
+    {
+      "id": "penny_class", "npc": "Penny", "goal": "在博物馆给全镇上一堂课",
+      "steps": ["熬夜写好了讲义", "冈瑟答应借出博物馆的阅览室", "在博物馆给大家讲了一堂矿石课"],
+      "help": { "step": 1, "item": "(O)80", "amount": 2, "ask": "我想上课时让大家亲手摸摸真的石英，你能帮我找 2 块吗？", "thanks": "这两块真漂亮，孩子们肯定会喜欢的。" },
+      "ending": { "location": "ArchaeologyHouse", "cast": ["Penny", "Gunther", "Vincent", "Jas"], "prop": "penny_board", "propDx": 0, "propDy": -1,
+        "lines": ["Penny|大家好……今天我们来认识一下山里的矿石。|neutral", "Vincent|这块石头会发光！我能带回家吗？|surprised", "Jas|佩妮老师讲得比书上清楚多了。|happy", "Gunther|讲得很好，以后每个月都来讲一次吧。|happy", "Penny|真、真的吗？我一定会好好准备的！|happy"],
+        "art": "penny_class" },
+      "newJob": "给孩子上课，每个月去博物馆讲一次", "newWage": 350
+    },
+    {
+      "id": "abigail_hike", "npc": "Abigail", "goal": "一个人走一趟山那边的远路",
+      "steps": ["偷偷收拾好了背包和地图", "为了这趟远行和爸爸吵了一架", "天没亮就出发了", "平平安安走完了全程回来"],
+      "help": { "step": 1, "item": "(O)216", "amount": 2, "ask": "我要出远门，路上得带点吃的……你能帮我买两个面包吗？别告诉我爸。", "thanks": "够我撑到山那边了，谢啦，这是我们俩的秘密。" },
+      "ending": { "location": "Mountain", "cast": ["Abigail", "Caroline", "Pierre"], "prop": "hiking_map", "propDx": 0, "propDy": -1,
+        "lines": ["Abigail|我回来了！你们看，我把一路走过的地方都画在地图上了。|happy", "Caroline|你这孩子……平安回来就好。|sad", "Pierre|下回出门……至少先跟我说一声。|neutral", "Abigail|知道啦。不过下回，我想走得更远。|happy"],
+        "art": "abigail_hike" }
+    },
+    {
+      "id": "pam_karaoke", "npc": "Pam", "goal": "在酒吧办一场卡拉OK之夜",
+      "steps": ["软磨硬泡让格斯点了头", "每天开着巴士练老歌", "在酒吧办了一场卡拉OK之夜"],
+      "help": { "step": 1, "item": "(O)395", "amount": 3, "ask": "我这嗓子得润一润，你能给我带 3 杯咖啡吗？今晚还要练歌。", "thanks": "好咖啡！今晚我能唱到天亮。" },
+      "ending": { "location": "Saloon", "cast": ["Pam", "Gus", "Penny", "Shane"], "prop": "karaoke_mic", "propDx": 1, "propDy": 0,
+        "lines": ["Pam|下面这首，献给年轻时候的我！|happy", "Penny|妈……你唱得真好听，我都不知道你会唱歌。|surprised", "Shane|……行吧，下一首我来。别笑。|neutral", "Gus|以后每个月都办一次！|happy"],
+        "art": "pam_karaoke" }
+    },
+    {
+      "id": "gus_festival", "npc": "Gus", "goal": "在镇广场办一场美食节",
+      "steps": ["定好了美食节的菜单", "跑遍全镇张罗食材", "在广场上搭起了摊位", "美食节热热闹闹地办起来了"],
+      "help": { "step": 2, "item": "(O)176", "amount": 5, "ask": "美食节的蛋饼不够蛋了，你能帮我凑 5 个鸡蛋吗？", "thanks": "有了这些蛋，蛋饼管够！到时候第一块给你。" },
+      "ending": { "location": "Town", "cast": ["Gus", "Pam", "Pierre", "Emily"], "prop": "food_stall", "propDx": 0, "propDy": -1,
+        "lines": ["Gus|来来来，刚出锅的，谁都不许客气！|happy", "Pam|格斯，这个炖菜我还要一碗。|happy", "Pierre|……好吧，比我店里的熟食好吃那么一点点。|neutral", "Emily|大家吃得这么开心，空气里都是好味道。|happy"],
+        "art": "gus_festival" }
+    },
+    {
+      "id": "linus_welcome", "npc": "Linus", "goal": "被镇上的人真正接纳",
+      "steps": ["鼓起勇气第一次去酒吧坐了坐", "在镇上有人主动跟他打了招呼", "刘易斯镇长请他参加镇民会", "和镇上的人坐在一起吃了顿饭"],
+      "help": { "step": 1, "item": "(O)372", "amount": 3, "ask": "我想请邻居们吃点东西，可我只会做海边的东西……你能帮我找 3 个蛤蜊吗？", "thanks": "谢谢你。有你在，我好像没那么怕了。" },
+      "ending": { "location": "Town", "cast": ["Linus", "Lewis", "Marnie", "Gus"], "prop": "welcome_banner", "propDx": 0, "propDy": -1,
+        "lines": ["Lewis|大家安静一下。林纳斯一直都是我们镇上的一份子，以前是我们做得不够。|neutral", "Marnie|林纳斯，以后有空常来牧场坐坐。|happy", "Gus|这一桌的菜，林纳斯也出了力！|happy", "Linus|我……我不知道该说什么。谢谢大家。|sad"],
+        "art": "linus_welcome" }
+    },
+    {
+      "id": "emily_show", "npc": "Emily", "goal": "办一场自己的服装秀",
+      "steps": ["缝完了一整组新衣服", "说服海莉和莉亚来当模特", "在酒吧办了一场服装秀"],
+      "help": { "step": 1, "item": "(O)66", "amount": 1, "ask": "最后一件衣服还差一颗宝石做扣子……你能帮我找一颗紫水晶吗？", "thanks": "就是这个颜色！它会是整场秀最亮的一件。" },
+      "ending": { "location": "Saloon", "cast": ["Emily", "Haley", "Leah", "Gus"], "prop": "clothes_rack", "propDx": 0, "propDy": -1,
+        "lines": ["Emily|欢迎来到我的第一场服装秀！每一件都是我亲手缝的。|happy", "Haley|姐，这件裙子……我能穿走吗？|surprised", "Leah|穿着它，我觉得自己像森林里的精灵。|happy", "Gus|酒吧今天成了秀场，真不赖！|happy"],
+        "art": "emily_show" }
+    },
+    {
+      "id": "willy_contest", "npc": "Willy", "goal": "办一场全镇的钓鱼大赛",
+      "steps": ["在镇上贴满了钓鱼大赛的告示", "准备好了奖杯和奖品", "在海边办了钓鱼大赛"],
+      "help": { "step": 1, "item": "(O)685", "amount": 20, "ask": "比赛那天要给每个人发鱼饵，你能帮我做 20 个鱼饵吗？", "thanks": "这么多鱼饵，够全镇的人钓上一整天了！" },
+      "ending": { "location": "Beach", "cast": ["Willy", "Elliott", "Pam", "Linus"], "prop": "TileSheets/Craftables@64,448,16,32", "propDx": 1, "propDy": 0,
+        "lines": ["Willy|比赛结束！今天钓得最大的，是……林纳斯！|happy", "Linus|我、我只是运气好。|surprised", "Elliott|大海今天对所有人都很慷慨。|happy", "Pam|明年我可不会再输了！|angry", "Willy|哈哈，明年这个时候，咱们再来比！|happy"],
+        "art": "willy_contest" }
+    },
+    {
+      "id": "robin_gazebo", "npc": "Robin", "goal": "在镇上搭一座花架凉亭",
+      "steps": ["画好了花架凉亭的设计图", "刘易斯镇长批准了", "备齐了木料", "花架凉亭在镇上搭好了"],
+      "help": { "step": 2, "item": "(O)709", "amount": 5, "ask": "凉亭的柱子得用硬木，你能帮我弄 5 块吗？", "thanks": "这几块硬木真结实，凉亭能用上一百年。" },
+      "ending": { "location": "Town", "cast": ["Robin", "Demetrius", "Lewis", "Sebastian"], "prop": "LooseSprites/Cursors@540,1196,98,54", "propDx": 0, "propDy": -1,
+        "lines": ["Robin|大功告成！爬藤再长一长，夏天就能在底下乘凉了。|happy", "Lewis|这是镇上今年最好的一件事，谢谢你，罗宾。|happy", "Demetrius|结构很稳，我算过了。|neutral", "Sebastian|……还挺好看的，妈。|happy"],
+        "art": "robin_gazebo" }
+    }
+  ]
+}

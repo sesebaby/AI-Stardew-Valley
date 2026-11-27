@@ -571,7 +571,7 @@ public static class ConclusionScript
 	/// <summary>镜头在 (x, y)，农夫在左边一格，村民在右边排开。</summary>
 	private static Layout Row(int x, int y) => new Layout(x, y, new Spot(x - 1, y, 2), new[] { new Spot(x + 1, y, 3), new Spot(x + 2, y, 3), new Spot(x, y - 1, 2), new Spot(x + 3, y - 1, 3) });
 
-	public static string Build(IReadOnlyList<ConclusionLine> lines, Layout layout, string eventId)
+	public static string Build(IReadOnlyList<ConclusionLine> lines, Layout layout, string eventId, string prelude = "")
 	{
 		List<string> speakers = lines.Select(l => l.Who.Trim()).Where(s => s.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).Take(MaxSpeakers).ToList();
 		StringBuilder sb = new StringBuilder();
@@ -581,6 +581,7 @@ public static class ConclusionScript
 			Spot s = layout.Npc(i);
 			sb.Append($" {speakers[i]} {s.X} {s.Y} {s.Facing}");
 		}
+		sb.Append(prelude);
 		foreach (ConclusionLine l in lines.Where(l => speakers.Contains(l.Who.Trim(), StringComparer.OrdinalIgnoreCase)))
 		{
 			string who = l.Who.Trim();

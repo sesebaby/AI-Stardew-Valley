@@ -106,6 +106,39 @@ public sealed class FavorService : IItemRequestDesk
 		.Concat(Requests.For(npc).Where(f => f.IsActive).Select(f => $"{f.Amount}×{f.WantedItemName}"))
 		.Take(3).ToList();
 
+	/// <summary>请求的东西送到了（村民人生看是不是心愿要的）。</summary>
+	public Action<ItemRequestFavor>? RequestCompleted { get; set; }
+
+	/// <summary>
+	/// 不经过场景模板直接托你找东西（心愿推进到某一步时开口）：进任务日志，送到时照常完成。<paramref name="tag"/> 记在 StageRef 里认是谁托的。
+	/// 这位村民已经有一件进行中的请求时返回 null。
+	/// </summary>
+	public ItemRequestFavor? AskFor(string npc, string itemId, int amount, string plea, string thanks, string tag)
+	{
+		if (Requests.HasActive(npc) || ItemRegistry.GetData(itemId) == null)
+		{
+			return null;
+		}
+		string id = $"airq-life-{Today}-{Guid.NewGuid().ToString("N")[..8]}";
+		ItemRequestCandidate c = new ItemRequestCandidate
+		{
+			Id = id,
+			JournalId = $"Aisv.ItemRequest.{SaveData.FolderName()}.life.{Today}.{id[^6..]}",
+			Asker = npc,
+			WantedItemId = itemId,
+			WantedItemName = DisplayName(itemId, ""),
+			Amount = Math.Max(1, amount),
+			Scene = new ItemRequestScene { TemplateId = tag, SceneType = "life" }
+		};
+		ItemRequestFavor? f = Requests.Activate(c, plea, "", "", Today, thanks);
+		if (f != null)
+		{
+			AddQuest(f, hud: true);
+			_log.Info($"{npc} 托农夫找 {amount}×{f.WantedItemName}（{tag}）。");
+		}
+		return f;
+	}
+
 	/// <summary>托付、请求到期没办（村民名）：交给做错事的后果。</summary>
 	public Action<string>? Expired { get; set; }
 
@@ -296,6 +329,7 @@ public sealed class FavorService : IItemRequestDesk
 		_helper.GameContent.InvalidateAllLocales(QuestsAsset);
 		_log.Debug($"{f.Asker} 要的 {f.WantedItemName} 送到了。");
 		Changed?.Invoke(f.Asker);
+		RequestCompleted?.Invoke(f);
 		StartOrQueueScene(f);
 	}
 

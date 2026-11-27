@@ -310,7 +310,7 @@ internal static class AppData
 			{
 				Residents = people.ConvertAll(n => n.Name),
 				Elsewhere = people.Where(n => !n.CanSocialize).Select(n => n.Name).ToList(),
-				Declared = people.SelectMany(DeclaredRelatives).ToList(),
+				Declared = people.SelectMany(DeclaredRelatives).Concat(ctx.Life?.Declared() ?? Enumerable.Empty<(string, string, string)>()).ToList(),
 				Moods = Map(ctx).Ties.Select(t => new KinMood(t.A, t.B, t.Bond)).ToList(),
 				Farmer = Game1.player == null ? null : HomeOf(Game1.player)
 			});
@@ -369,7 +369,7 @@ internal static class AppData
 	private static MapModel BuildMap(ShellContext ctx)
 	{
 		var c = ctx.Config();
-		MapPolicy policy = new MapPolicy(VillageRelations.IsMarriage,
+		MapPolicy policy = new MapPolicy(VillageRelations.IsCouple,
 			(a, b) => VillageMap.CanShowRomance(c.VillagerCouplesOn, RelationshipGraph.RomanceAllowed(a, b, c), VillageRelations.IsMarriedNpc(a) || VillageRelations.IsMarriedNpc(b), c.AdultDramaOn(), c.InfidelityOn()),
 			c.AdultDramaOn());
 		return VillageMap.Build(ctx.Social.Web.Edges.Where(e => ctx.Npcs.IsEnabled(e.First) && ctx.Npcs.IsEnabled(e.Second)), Today, policy);

@@ -216,11 +216,14 @@ public sealed partial class LedgerService
 		return w;
 	}
 
+	/// <summary>这个存档里换了工作（村民人生接上）：(村民, 原来的工作) → 现在的工作。</summary>
+	public Func<string, Occupation, Occupation>? JobChange { get; set; }
+
 	public Occupation Job(string npc)
 	{
 		NPC? n = Game1.getCharacterFromName(npc);
-		Occupation job = LedgerRules.JobOf(npc, ChildSafety.IsChild(npc, n?.Age));
-		return LedgerRules.Override(job, Field(npc, "AIStardewValley/Wallet"));
+		Occupation job = LedgerRules.Override(LedgerRules.JobOf(npc, ChildSafety.IsChild(npc, n?.Age)), Field(npc, "AIStardewValley/Wallet"));
+		return JobChange?.Invoke(npc, job) ?? job;
 	}
 
 	private static string? Field(string npc, string key) =>

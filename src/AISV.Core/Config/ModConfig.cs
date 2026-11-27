@@ -537,6 +537,18 @@ public sealed class ModConfig
 	/// <summary>当着恋人、配偶的面和别人调情：对方事后质问，冷淡几天。</summary>
 	public bool FlirtConsequences { get; set; } = true;
 
+	/// <summary>村民自己的人生：每周推进心愿、村民之间的恋爱。总开关。</summary>
+	public bool LifeOn { get; set; } = true;
+
+	/// <summary>同时有几位村民在忙自己的心愿（1～6）。</summary>
+	public int LifeGoalsAtOnce { get; set; } = 3;
+
+	/// <summary>交往的村民可能订婚、在镇广场办婚礼。</summary>
+	public bool LifeWeddings { get; set; } = true;
+
+	/// <summary>心愿达成后可能换工作（账本、聊天里跟着变）。</summary>
+	public bool LifeJobs { get; set; } = true;
+
 	/// <summary>小超市收银小游戏：顾客排到柜台前等你来收银找零（关掉就自动结账）。</summary>
 	public bool MartCheckoutGame { get; set; } = true;
 
@@ -672,6 +684,7 @@ public sealed class ModConfig
 		NoticedGroupTalkPercent = System.Math.Clamp(NoticedGroupTalkPercent, 0, 100);
 		TextsDaily = System.Math.Clamp(TextsDaily, 1, 15);
 		StorylinesAtOnce = System.Math.Clamp(StorylinesAtOnce, 1, 5);
+		LifeGoalsAtOnce = System.Math.Clamp(LifeGoalsAtOnce, 1, 6);
 		OutingHearts = System.Math.Clamp(OutingHearts, 0, 14);
 		OutingRestAfterYes = System.Math.Clamp(OutingRestAfterYes, 0, 28);
 		OutingRestAfterNo = System.Math.Clamp(OutingRestAfterNo, 0, 28);

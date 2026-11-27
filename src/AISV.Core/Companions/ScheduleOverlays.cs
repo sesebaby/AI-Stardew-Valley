@@ -42,6 +42,7 @@ public static class PlanReasons
 	public const string Birthday = "their birthday";
 	public const string NoPlace = "no such place";
 	public const string NoSpot = "no spot there they can walk to";
+	public const string Bumped = "made way for a plan with the farmer";
 	public const string Overlap = "already has plans then";
 
 	public const string Missed = "missed";

@@ -93,13 +93,14 @@ public static class VillageMap
 
 	public static Bond Classify(NpcSocialEdge e, MapPolicy policy)
 	{
-		if (BondLines.Stranger(e))
-		{
-			return Bond.Strangers;
-		}
 		string a = (e.First ?? "").Trim(), b = (e.Second ?? "").Trim();
 		bool grownUps = !SocialWeb.IsChild(a) && !SocialWeb.IsChild(b);
 		bool married = grownUps && policy.IsCouple(a, b);
+		// 夫妻、情侣碰面再少也不算陌生人。
+		if (BondLines.Stranger(e))
+		{
+			return married ? Bond.Couple : Bond.Strangers;
+		}
 		if (BondLines.Sworn(e))
 		{
 			return !married || policy.AdultDrama ? Bond.Rivals : Bond.Tense;

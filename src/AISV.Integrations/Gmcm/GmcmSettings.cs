@@ -114,6 +114,12 @@ public static class GmcmSettings
 		api.AddBoolOption(manifest, () => get().ReturnStoriesOn, v => get().ReturnStoriesOn = v, () => Tr.Get("config.leaveTownReturn", "离开的人可能回来"));
 		api.AddNumberOption(manifest, () => get().ReturnHintPercent, v => get().ReturnHintPercent = v, () => Tr.Get("config.leaveTownReturnChance", "回来的故事出现的机会（%）"), min: 0, max: 100);
 
+		api.AddSectionTitle(manifest, () => Tr.Get("shell.settings.life", "村民的人生"));
+		api.AddBoolOption(manifest, () => get().LifeOn, v => get().LifeOn = v, () => Tr.Get("shell.settings.lifeOn", "村民有自己的心愿"), () => Tr.Get("shell.settings.lifeOnNote", "村民慢慢做成自己想做的事，走到某一步会托你帮忙，达成时请你去看；暗生好感的村民可能交往"));
+		api.AddNumberOption(manifest, () => get().LifeGoalsAtOnce, v => get().LifeGoalsAtOnce = v, () => Tr.Get("shell.settings.lifeGoals", "同时几位在忙"), () => Tr.Get("shell.settings.lifeGoalsNote", "每周看一次，有空位时再有一位村民开始新的心愿"), min: 1, max: 6);
+		api.AddBoolOption(manifest, () => get().LifeWeddings, v => get().LifeWeddings = v, () => Tr.Get("shell.settings.lifeWeddings", "村民之间的婚礼"), () => Tr.Get("shell.settings.lifeWeddingsNote", "交往久了可能订婚，一周后在镇广场办婚礼；关掉就只交往。还要开着“村民之间可能产生好感”"));
+		api.AddBoolOption(manifest, () => get().LifeJobs, v => get().LifeJobs = v, () => Tr.Get("shell.settings.lifeJobs", "心愿达成后换工作"), () => Tr.Get("shell.settings.lifeJobsNote", "有的村民做成以后换了工作，账本和聊天里跟着变"));
+
 		api.AddSectionTitle(manifest, () => Tr.Get("config.social", "镇上的生活"));
 		api.AddTextOption(manifest, () => get().KeyPhone, v => get().KeyPhone = v.Trim(), () => Tr.Get("config.phoneKey", "打开手机"), () => Tr.Get("config.phoneKeyTip", "手机里是同样的内容，排成竖屏"));
 		api.AddTextOption(manifest, () => get().KeyShell, v => get().KeyShell = v.Trim(), () => Tr.Get("config.shellKey", "打开外壳的按键"));

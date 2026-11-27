@@ -186,6 +186,11 @@ public sealed class ScheduleOverlayService
 
 	// ---------------- 排 ----------------
 
+	/// <summary>这些来源的安排给别的让路（村民之间的约会）。</summary>
+	public static readonly HashSet<string> Yielding = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+	private static bool Yields(string owner) => Yielding.Contains(owner);
+
 	/// <summary>排一段改写；不合规返回空和原因。dryRun 只检查不排。</summary>
 	public ScheduleOverlay? Plan(string npcName, string owner, int day, int start, int end, string location, int x, int y, int facing, out string reason, bool dryRun = false)
 	{
@@ -234,7 +239,9 @@ public sealed class ScheduleOverlayService
 			reason = PlanReasons.NoSpot;
 			return null;
 		}
-		if (state.Items.Any(o => string.Equals(o.Npc, npc.Name, StringComparison.OrdinalIgnoreCase) && OverlayRules.Overlaps(o, day, start, end)))
+		// 村民之间自己的约会让路：和你的约见、帮工、出游撞上时取消约会那条。
+		List<ScheduleOverlay> clash = state.Items.Where(o => string.Equals(o.Npc, npc.Name, StringComparison.OrdinalIgnoreCase) && OverlayRules.Overlaps(o, day, start, end)).ToList();
+		if (clash.Count > 0 && (Yields(owner) || !clash.All(o => Yields(o.Owner))))
 		{
 			reason = PlanReasons.Overlap;
 			return null;
@@ -256,6 +263,10 @@ public sealed class ScheduleOverlayService
 		if (dryRun)
 		{
 			return overlay;
+		}
+		foreach (ScheduleOverlay o in clash)
+		{
+			Cancel(o.Id, PlanReasons.Bumped);
 		}
 		state.Items.Add(overlay);
 		_log.Info($"日程 {overlay.Id}：{npc.Name} → {overlay.Location}({overlay.X},{overlay.Y})，第 {day} 天 {start}～{end}（{owner}）。");

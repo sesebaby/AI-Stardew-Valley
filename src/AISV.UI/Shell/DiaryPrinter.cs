@@ -62,7 +62,7 @@ internal sealed class DiaryPrinter
 	{
 		List<DiaryEntry> entries = _ctx.Social.Diary.All().AsEnumerable().Reverse().ToList();
 		_pages.Add(CoverPage);
-		List<PinnedSketch> pins = DiarySketches.Pin(entries, _ctx.Display);
+		List<PinnedSketch> pins = DiarySketches.Pin(entries, _ctx.Display, _ctx.Life?.Sketches());
 		List<(string Line, bool IsDate)> lines = new List<(string, bool)>();
 		int rows = (PageH - 2 * Inset) / RowHeight;
 		void Flush()

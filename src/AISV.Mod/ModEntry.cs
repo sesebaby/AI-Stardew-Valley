@@ -14,6 +14,7 @@ using AISV.Core.Dialogue;
 using AISV.Core.Group;
 using AISV.Core.Messenger;
 using AISV.Core.Persona;
+using AISV.Core.Social.Personality;
 using AISV.Core.Prompts;
 using AISV.Core.Scenes;
 using AISV.Core.Storage;
@@ -22,6 +23,7 @@ using AISV.Core.Text;
 using AISV.Game;
 using AISV.Game.Approach;
 using AISV.Game.Companions;
+using AISV.Game.Life;
 using AISV.Game.Consequences;
 using AISV.Game.Awareness;
 using AISV.Game.Dialogue;
@@ -613,6 +615,22 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_awareness.Recorded += _consequences.OnSighting;
 			helper.Events.GameLoop.UpdateTicked += (_, _) => _consequences.OnUpdateTicked();
 			helper.ConsoleCommands.Add("aisv_consequence", "做错事的后果调试。\n用法：aisv_consequence list | strikes | reset | fire <" + string.Join("|", Misdeeds.All) + "> <村民> [失主]", (_, args) => _log.Info(Context.IsWorldReady ? _consequences.Command(args) : "先进存档。"));
+			_life = new LifeService(() => _config, store, helper, _social, _npcs, _schedules, _favors, _log)
+			{
+				Ai = _ai,
+				Language = PromptLanguage,
+				Persona = n => _npcs.Persona(n, StardewValley.Game1.getCharacterFromName(n)).Personality,
+				Display = _npcs.Names.Display
+			};
+			ScheduleOverlayService.Yielding.Add(LifeService.DateOwner);
+			VillageRelations.ExtraMarriage = _life.IsMarried;
+			VillageRelations.ExtraMarried = _life.IsWed;
+			VillageRelations.ExtraCouple = _life.IsCouple;
+			_favors.RequestCompleted = _life.OnRequestCompleted;
+			_ledger.JobChange = _life.JobFor;
+			_shell.Life = _life;
+			helper.Events.Player.Warped += (_, e) => _life.OnWarped(e);
+			helper.ConsoleCommands.Add("aisv_life", "村民人生调试。\n" + LifeService.Usage, (_, args) => _log.Info(Context.IsWorldReady ? _life.Command(args) : "先进存档。"));
 			helper.Events.GameLoop.UpdateTicked += (_, _) => _spousePlan.OnUpdateTicked();
 			helper.ConsoleCommands.Add("aisv_spouse", "配偶日程调试。\n用法：aisv_spouse dump | plan | setup | box | ask <water|harvest|animals|hay|clear|greenhouse|ponds|machines|visit|shop|mind_shop|kids> | box", (_, args) => _log.Info(Context.IsWorldReady ? SpouseCommand(args) : "先进存档。"));
 			_shell.Eco = _eco;
@@ -698,7 +716,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_shell.Stories = _stories;
 			string debugDir = Path.Combine(helper.DirectoryPath, "debug");
 			helper.ConsoleCommands.Add("aisv_story", "伴侣剧情调试，dump 写到 debug/。\n用法：aisv_story dump | marry <村民> | start <村民> [结构 1-5] | inject <村民> <结构> <文件> | prompt <村民> [结构] | theme <村民> <文字> | deliver <包> | advance <包> | scene <包> | due [天] | clear", (_, args) => _log.Info(Context.IsWorldReady ? _stories.Command(args, debugFile, debugDir) : "先进存档。"));
-			materials.Dealings = n => DialoguePrompts.Join(_squad.PromptLine(n), _gifts.PromptBlock(n), _commissions.PromptBlock(n), _errands.PromptBlock(n), _ledger.PromptBlock(n), _meetups.PromptBlock(n), _stories.PromptBlock(n), _farmHelp.PromptBlock(n), _adult.PromptBlock(n), MartPromptBlock(n), _spousePlan.PromptBlock(n));
+			materials.Dealings = n => DialoguePrompts.Join(_squad.PromptLine(n), _gifts.PromptBlock(n), _commissions.PromptBlock(n), _errands.PromptBlock(n), _ledger.PromptBlock(n), _meetups.PromptBlock(n), _stories.PromptBlock(n), _farmHelp.PromptBlock(n), _adult.PromptBlock(n), MartPromptBlock(n), _spousePlan.PromptBlock(n), _life.PromptBlock(n));
 			_news = new WeeklyNewsService(() => _config, store, _social, _market, _commissions, _log) { Ai = _ai, Language = PromptLanguage };
 			_shell.News = _news;
 			_news.Money = _ledger.PaperLines;
@@ -940,6 +958,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private SpousePlanner _spousePlan = null!;
 
+	private LifeService _life = null!;
+
 	/// <summary>聊天素材：这位村民最近在农夫的店里买过什么；Pierre 和 Morris 还知道自己的店现在怎么样。</summary>
 	private string MartPromptBlock(string npc)
 	{
@@ -1077,6 +1097,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		_villagerTexts.Reset();
 		_favors.OnSaveLoaded();
 		_arcs.OnSaveLoaded();
+		_life.OnSaveLoaded();
 		_moments.OnSaveLoaded();
 		_eco.Invalidate();
 		_market.OnSaveLoaded();
@@ -1132,6 +1153,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		_npcs.RefreshWorld();
 		_social.OnDayStarted();
 		_arcs.OnDayStarted();
+		_life.OnDayStarted();
 		_awareness.OnDayStarted();
 		_sensors.OnDayStarted();
 		_groups.OnDayStarted();
@@ -1538,6 +1560,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		_martContent.Enabled = _config.FarmerMart;
 		_martContent.OnAssetRequested(e);
 		_consequences.OnAssetRequested(e);
+		_life.OnAssetRequested(e);
 		_mart.EditShops(e);
 		Hints.EditMail(e);
 		_looks.OnAssetRequested(e);

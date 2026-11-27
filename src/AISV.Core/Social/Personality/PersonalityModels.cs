@@ -158,7 +158,7 @@ public sealed class RelationshipEdgeState
 	[JsonPropertyName("kind")]
 	public string Kind { get; set; } = "acquaintance";
 
-	/// <summary>stable / warming / crush / questioning_attraction / boundary_set / affair_contemplation / strained / married。</summary>
+	/// <summary>stable / warming / crush / questioning_attraction / boundary_set / affair_contemplation / strained / dating / engaged / married / broken_up。</summary>
 	[JsonPropertyName("phase")]
 	public string Phase { get; set; } = "stable";
 

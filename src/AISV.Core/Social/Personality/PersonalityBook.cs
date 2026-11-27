@@ -43,6 +43,11 @@ public sealed class PersonalityBook
 
 	public IReadOnlyList<RelationshipEdgeState> Edges => Data().Ties;
 
+	/// <summary>村民人生改两人的关系：取出这条边（没有就建），改完调 <see cref="Changed"/>。</summary>
+	public RelationshipEdgeState Tie(string a, string b) => RelationshipGraph.GetOrCreate(Data().Ties, a, b);
+
+	public void Changed() => Dirty();
+
 	/// <summary>聊完一轮：读信号、改性格；示好时再看私下的心动。</summary>
 	public void AfterExchange(string npc, string playerText, string? proposedAction, string npcLine, NpcReaction reaction, int hearts, bool isAdult, int today)
 	{
