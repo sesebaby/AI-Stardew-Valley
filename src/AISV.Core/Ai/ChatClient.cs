@@ -207,7 +207,8 @@ public sealed class ChatClient
 			}
 			if (cut)
 			{
-				_log.Warn($"{request.Name} 还没写出正文就到了输出上限（{request.MaxOutputTokens}）。");
+				// 调用方会放大上限重试一次，重试也不成才报警告。
+				_log.Debug($"{request.Name} 还没写出正文就到了输出上限（{request.MaxOutputTokens}）。");
 				return AiResult.Truncated(null, "finish_reason=" + (finish ?? "?"), usedReasoning);
 			}
 			_log.Warn("AI 回了空内容。");
@@ -215,7 +216,7 @@ public sealed class ChatClient
 		}
 		if (cut)
 		{
-			_log.Warn($"{request.Name} 的回复在输出上限处被截断（finish_reason={finish ?? "?"}，{completionTokens ?? 0}/{request.MaxOutputTokens}）。");
+			_log.Debug($"{request.Name} 的回复在输出上限处被截断（finish_reason={finish ?? "?"}，{completionTokens ?? 0}/{request.MaxOutputTokens}）。");
 			return AiResult.Truncated(answer.Trim(), "finish_reason=" + (finish ?? "?"), usedReasoning);
 		}
 		return AiResult.Success(answer.Trim(), usedReasoning);

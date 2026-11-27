@@ -11,7 +11,7 @@ warp Town 47 60
 wait free
 screenshot c-town
 talk Penny
-wait ticks 120
+wait ticks 360
 screenshot c-talk
 close
 console aisv_shell today

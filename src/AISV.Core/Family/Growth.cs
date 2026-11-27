@@ -291,6 +291,22 @@ public static class GrowthRules
 			: $"{name}到了上学的年纪，是个{looks}的{kid}，每天有一肚子学校里的新鲜事想讲。";
 	}
 
+	/// <summary>
+	/// 上学的孩子真上过几次课、今天的课怎么样，让 AI 只讲真发生过的事。
+	/// lessonKnown 为 false（农场帮手那边不知道今天的课）时不提今天。
+	/// </summary>
+	public static string SchoolFacts(int classes, bool lessonKnown, SchoolRules.Lesson? lesson, bool wentToday, int time)
+	{
+		string past = classes > 0 ? $"已经去佩妮那里上过 {classes} 次课" : "还没正式去上过课，只知道以后要去佩妮那里上学";
+		string today = !lessonKnown ? ""
+			: lesson is not SchoolRules.Lesson l ? "，今天没有课"
+			: wentToday && time >= l.End ? "，今天的课已经上完了"
+			: wentToday ? "，现在正在上课"
+			: time < l.Start ? $"，今天 {l.Start / 100} 点要去上课，还没去"
+			: "，今天的课没去上";
+		return past + today + "。学校里的事只讲真发生过的，没上过的课不要编。";
+	}
+
 	/// <summary>少年周末去镇上逛（星期六、星期天）。</summary>
 	public static bool TeenOutingDay(string dayOfWeek) => dayOfWeek is "Sat" or "Sun";
 }

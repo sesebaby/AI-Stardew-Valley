@@ -64,7 +64,18 @@ public sealed class KidGrowthService
 	/// <summary>长大了、还没当面说过那一句的孩子（名字）。</summary>
 	private readonly HashSet<string> _toGreet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+	/// <summary>写好了、当时没机会说的那一句。</summary>
+	private readonly Dictionary<string, string> _greetReady = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>正在等 AI 写某个孩子的那一句（一次只等一个，免得两句撞在一起丢一句）。</summary>
+	private bool _greeting;
+
 	private SchoolRules.Lesson? _lesson;
+
+	/// <summary>长大后的样子一个一个写（同一天长大的兄弟姐妹别写成一样）。</summary>
+	private Task _writing = Task.CompletedTask;
+
+	private readonly Dictionary<string, string> _written = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
 	private Point _teacherTile;
 
@@ -370,17 +381,23 @@ public sealed class KidGrowthService
 			return;
 		}
 		ChildContext ctx = Talk.Context(kid);
+		string key = Kids.Key(kid);
+		// 兄弟姐妹已经写下的样子：同一天长大的排队写，后写的能看到先写的。
+		List<(string Key, string Name, string Persona)> siblings = Mine().Where(k => k != kid)
+			.Select(k => (Kids.Key(k), k.displayName, _book.Find(Kids.Key(k))?.Persona ?? "")).ToList();
 		string system = "你在帮一个农场模拟游戏写角色设定。只写设定本身，不加标题、引号和解释，120 个字以内，用" + ctx.Language + "。";
 		string turn = $"农夫{ctx.ParentName}（{ctx.ParentRole}）的孩子{ctx.Name}（{(ctx.Boy ? "男孩" : "女孩")}）今天{(stage == KidStages.Teen ? "长成了十三四岁的少年" : "到了上学的年纪（七八岁）")}。"
 			+ $"从小养成的性子：{string.Join("；", g.Traits.Select(GrowthRules.TraitText))}。"
 			+ $"小时候：聊过 {g.Chats} 次天，陪着玩过 {g.Plays} 次，跑出去玩过 {g.Runaways} 次，上过 {g.Classes} 次课。"
 			+ "写一段现在的样子：性格、爱好、说话的习惯、和家里人的关系。不写恋爱、不写钱。";
-		Task.Run(async () =>
+		Task Write(Task _) => Task.Run(async () =>
 		{
 			string text = fallback;
 			try
 			{
-				AiResult r = await ai.SendAsync(new ChatRequest("kid_grown", system, turn, 500, 0.9)).ConfigureAwait(false);
+				string others = string.Join("；", siblings.Select(s => s.Name + (Written(s.Key, s.Persona) is { Length: > 0 } p ? "：" + p : "")));
+				string ask = siblings.Count == 0 ? turn : turn + $"家里还有{others}。爱好和说话的样子要写得和他们不一样。";
+				AiResult r = await ai.SendAsync(new ChatRequest("kid_grown", system, ask, 500, 0.9)).ConfigureAwait(false);
 				if (r.Ok && !string.IsNullOrWhiteSpace(r.Text))
 				{
 					text = TextTools.Truncate(r.Text.Trim().Trim('"', '“', '”'), 160);
@@ -390,6 +407,10 @@ public sealed class KidGrowthService
 			{
 				_log.Debug($"孩子 {ctx.Name} 长大后的样子没写成：{ex.Message}");
 			}
+			lock (_written)
+			{
+				_written[key] = text;
+			}
 			MainThread.Run(() =>
 			{
 				g.Persona = text;
@@ -397,6 +418,19 @@ public sealed class KidGrowthService
 				_log.Info($"孩子 {ctx.Name} 长大后：{text}");
 			});
 		});
+		lock (_written)
+		{
+			_writing = _writing.ContinueWith(Write).Unwrap();
+		}
+	}
+
+	/// <summary>刚写好、可能还没回到主线程存进去的样子。</summary>
+	private string Written(string key, string saved)
+	{
+		lock (_written)
+		{
+			return _written.TryGetValue(key, out string? text) ? text : saved;
+		}
 	}
 
 	// ---------------- 每帧、每 10 分钟 ----------------
@@ -408,7 +442,7 @@ public sealed class KidGrowthService
 			return;
 		}
 		CheckGrown();
-		if (_toGreet.Count > 0 && Context.IsPlayerFree && !Game1.eventUp)
+		if (_toGreet.Count > 0 && !_greeting && Context.IsPlayerFree && !Game1.eventUp)
 		{
 			Child? kid = Mine().FirstOrDefault(k => _toGreet.Contains(k.Name) && k.currentLocation == Game1.currentLocation && !k.IsInvisible
 				&& Vector2.Distance(k.Tile, Game1.player.Tile) < 8);
@@ -430,6 +464,12 @@ public sealed class KidGrowthService
 		string fallback = stage == KidStages.Teen
 			? Tr.Get("kids.greetTeen", "……别一直看我啦。我知道我长高了。")
 			: Tr.Get("kids.greetSchool", "你看你看！我是大孩子了，可以去上学了！");
+		if (_greetReady.Remove(kid.Name, out string? ready))
+		{
+			KidBook?.Add(Kids.Key(kid), Game1.Date.TotalDays, "child", ready);
+			Game1.DrawDialogue(new StardewValley.Dialogue(kid, null, "$h" + ready));
+			return;
+		}
 		if (Ai is not IAiSender ai || !_config().AiOn || Talk == null)
 		{
 			Game1.DrawDialogue(new StardewValley.Dialogue(kid, null, fallback));
@@ -438,6 +478,7 @@ public sealed class KidGrowthService
 		ChildContext ctx = Talk.Context(kid);
 		string system = ChildPrompts.System(ctx, KidBook?.Recent(ctx.Key, 6) ?? Array.Empty<ChildTurn>(), opening: true);
 		string name = kid.Name;
+		_greeting = true;
 		Task.Run(async () =>
 		{
 			string? line = null;
@@ -452,11 +493,15 @@ public sealed class KidGrowthService
 			}
 			MainThread.Run(() =>
 			{
+				_greeting = false;
+				string said = string.IsNullOrWhiteSpace(line) ? fallback : line!;
 				if (Game1.activeClickableMenu != null || Game1.getCharacterFromName(name, mustBeVillager: false) is not Child k || k.currentLocation != Game1.currentLocation)
 				{
+					// 正忙或走开了：话留着，下次走近再说。
+					_greetReady[name] = said;
+					_toGreet.Add(name);
 					return;
 				}
-				string said = string.IsNullOrWhiteSpace(line) ? fallback : line!;
 				KidBook?.Add(ctx.Key, ctx.Day, "child", said);
 				Game1.DrawDialogue(new StardewValley.Dialogue(k, null, "$h" + said));
 			});
@@ -635,6 +680,12 @@ public sealed class KidGrowthService
 	{
 		BringBack(null);
 		_toGreet.Clear();
+		_greetReady.Clear();
+		_greeting = false;
+		lock (_written)
+		{
+			_written.Clear();
+		}
 	}
 
 	/// <summary>替身万一存进了存档：清掉，孩子回家。</summary>
@@ -690,8 +741,14 @@ public sealed class KidGrowthService
 	public (string StageId, string StageText, string Grown, IReadOnlyList<string> Traits) Material(Child kid)
 	{
 		string stage = Stage(kid);
-		KidGrowth? g = _book.Find(Kids.Key(kid));
-		return (stage, stage == KidStages.Toddler ? Kids.StageText(kid.Age) : GrowthRules.StageText(stage), g?.Persona ?? "", (IReadOnlyList<string>?)g?.Traits ?? Array.Empty<string>());
+		string key = Kids.Key(kid);
+		KidGrowth? g = _book.Find(key);
+		string text = stage == KidStages.Toddler ? Kids.StageText(kid.Age) : GrowthRules.StageText(stage);
+		if (stage == KidStages.School)
+		{
+			text += "。" + GrowthRules.SchoolFacts(g?.Classes ?? 0, Context.IsMainPlayer, _lesson, _noted.Contains(key + ":class"), Game1.timeOfDay);
+		}
+		return (stage, text, g?.Persona ?? "", (IReadOnlyList<string>?)g?.Traits ?? Array.Empty<string>());
 	}
 
 	/// <summary>佩妮聊天时知道她在教你家的孩子。</summary>

@@ -10,10 +10,13 @@ python3 -I tools/linux-game/h.py a wait title
 python3 -I tools/linux-game/h.py a load AISVTestSp2_455031485
 python3 -I tools/linux-game/h.py a --flow tools/linux-game/flows/smoke.txt
 tools/linux-game/deploy.sh a           # 改完代码重新构建、放进实例（要先 stop 再 run）
+tools/linux-game/use-ai.sh a real      # 换成真网关（fake 换回假 AI），要先 stop 再 run
 tools/linux-game/stop.sh a             # 只停这个实例；别的会话也在跑游戏，不要按进程名杀
 ```
 
 发布前回归：`flows/release.txt`（精简实例，五块功能各走一遍、外壳各页截图、过一夜）和 `flows/compat.txt`（`setup.sh <实例> full` 的全套 mod 实例）。测试实例里先把 CJB Cheats 的 AutoWater 关掉，不然地总是浇过的。
+
+真 AI 回归：`use-ai.sh <实例> real` 从 `~/.config/aisv/chat-gateway.env` 读网关（`AISV_LLM_BASE`、`AISV_LLM_KEY`、`AISV_LLM_MODEL`，OpenAI 兼容），密钥只放在这个文件里，不进仓库；再跑上面两个流程。挑回得快的模型（一句 2～3 秒），慢模型会让流程里的对话截图只截到一半。
 
 ## 需要的本机文件
 

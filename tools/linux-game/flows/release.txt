@@ -1,6 +1,8 @@
 # 发布前回归（单人存档 AISVTestSp2：配偶 Leah，两个孩子）：五块功能各走一遍、外壳各页截图、过一夜。
 # 结果看 io/out/*.png、console.log 里的 ERROR/WARN 和 Mods/AIStardewValley/debug/selfcheck.txt。
 # 测试实例里先关掉 CJB Cheats 的 AutoWater（不然地总是浇过的，少年没地可浇）；春 24 号花舞节配偶不排活。
+# 早上可能有孩子跑过来说话（长大那天），先关掉。
+close
 wait free
 console aisv_selfcheck
 # 后果
@@ -30,7 +32,7 @@ console aisv_net
 warp Town 47 60
 wait free
 talk Lewis
-wait ticks 120
+wait ticks 360
 screenshot r-talk
 close
 # 外壳各页

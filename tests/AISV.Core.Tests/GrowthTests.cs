@@ -22,6 +22,20 @@ public class GrowthTests
 	}
 
 	[Fact]
+	public void SchoolFactsOnlyClaimClassesThatHappened()
+	{
+		SchoolRules.Lesson lesson = new SchoolRules.Lesson("ArchaeologyHouse", 900, 1400);
+		string fresh = GrowthRules.SchoolFacts(0, true, lesson, false, 600);
+		Assert.Contains("还没正式去上过课", fresh);
+		Assert.Contains("今天 9 点要去上课，还没去", fresh);
+		Assert.Contains("正在上课", GrowthRules.SchoolFacts(3, true, lesson, true, 1000));
+		Assert.Contains("已经上完", GrowthRules.SchoolFacts(3, true, lesson, true, 1500));
+		Assert.Contains("今天没有课", GrowthRules.SchoolFacts(3, true, null, false, 1000));
+		// 农场帮手那边不知道今天的课
+		Assert.DoesNotContain("今天", GrowthRules.SchoolFacts(3, false, null, false, 1000).Split('。')[0]);
+	}
+
+	[Fact]
 	public void GrowsOneStageADayAndNeverBack()
 	{
 		Assert.Equal(KidStages.School, GrowthRules.Step(KidStages.Toddler, KidStages.Teen));

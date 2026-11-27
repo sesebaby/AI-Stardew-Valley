@@ -305,6 +305,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 					{
 						Age = 3
 					};
+					// 原版每晚按出生天数重算年龄，不到 55 天会变回爬，所以天数也给够。
+					added.daysOld.Value = 55;
 					added.currentLocation = house;
 					Microsoft.Xna.Framework.Point spot = house.getRandomOpenPointInHouse(StardewValley.Game1.random, 2);
 					added.Position = StardewValley.Utility.PointToVector2(spot == Microsoft.Xna.Framework.Point.Zero ? house.getKitchenStandingSpot() : spot) * 64f;
