@@ -1,0 +1,10 @@
+# 冒烟：读档后和一位村民说话、看状态页、截图
+wait free
+console aisv_status
+warp Town 47 60
+wait free
+talk Lewis
+wait ticks 120
+screenshot smoke-talk
+close
+console aisv_selfcheck

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 开发专用的测试工具 mod：不在 AISV.sln 里，不进 bin/AIStardewValley，也不进发布包。 -->
+  <Import Project="../../../GameReferences.props" />
+  <PropertyGroup>
+    <RootNamespace>AISV.TestHarness</RootNamespace>
+    <AssemblyName>AISV.TestHarness</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Update="manifest.json"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></None>
+  </ItemGroup>
+</Project>

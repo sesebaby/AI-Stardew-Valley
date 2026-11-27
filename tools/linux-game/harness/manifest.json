@@ -1,0 +1,9 @@
+{
+    "Name": "AISV Test Harness",
+    "Author": "远古牛哥",
+    "Version": "0.2.0",
+    "Description": "开发专用：通过文件队列接收命令，自动驾驶游戏做测试。不要装进正式的 Mods 目录。",
+    "UniqueID": "AIStardewValley.TestHarness",
+    "EntryDll": "AISV.TestHarness.dll",
+    "MinimumApiVersion": "4.0.0"
+}
