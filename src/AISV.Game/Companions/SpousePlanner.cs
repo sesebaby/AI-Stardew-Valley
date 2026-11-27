@@ -347,6 +347,18 @@ public sealed class SpousePlanner
 		};
 	}
 
+	/// <summary>调试用：现在排的话按什么条件排、能挑哪些。</summary>
+	public string Explain()
+	{
+		if (Log is not SpouseDayLog log || Spouse() is not NPC spouse)
+		{
+			return "没结婚";
+		}
+		SpousePlanInput p = Input(spouse, log);
+		return $"开着 {Enabled}，{p.Hearts} 心，最多 {SpouseDayPlan.MaxItems(p.Level, p.Hearts, p.Upset)} 件，下雨 {p.Rain}，过节 {p.Festival}，露台日 {p.PatioDay}，生气 {Cold?.Invoke(spouse.Name) == true}，"
+			+ "候选 " + string.Join(" ", SpouseDayPlan.Candidates(p).Select(c => $"{c.Task}:{c.Score:0.#}"));
+	}
+
 	private void Plan(NPC spouse, SpouseDayLog log)
 	{
 		SpousePlanInput input = Input(spouse, log);

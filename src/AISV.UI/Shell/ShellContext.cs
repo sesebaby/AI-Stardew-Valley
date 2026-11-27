@@ -105,5 +105,8 @@ public sealed class ShellContext
 	/// <summary>当前存档的数据（没进存档时为空）。</summary>
 	public Func<AISV.Core.Storage.DocumentStore?> Store { get; set; } = () => null;
 
+	/// <summary>跑一遍自检（结果写到 debug/selfcheck.txt），回来时给出正常几项、要看的几项。</summary>
+	public Action<Action<int, int>>? SelfCheck { get; set; }
+
 	public string Display(string npc) => Npcs.Names.Display(npc);
 }

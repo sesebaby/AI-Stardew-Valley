@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using AISV.Core.Text;
 using AISV.UI.Shell;
@@ -19,11 +20,15 @@ internal sealed class HelpPage : ShellPage
 
 	private Rectangle _view;
 
+	/// <summary>带着某一条打开时，第一次画完滚到那一条。</summary>
+	private string? _jump;
+
 	public HelpPage(ShellContext ctx, string? topic = null) : base(ctx)
 	{
 		if (topic != null)
 		{
 			_open.Add(topic);
+			_jump = topic;
 		}
 	}
 
@@ -50,6 +55,7 @@ internal sealed class HelpPage : ShellPage
 		yield return new Topic("life", Tr.Get("help.life.title", "村民自己的人生"), Tr.Get("help.life.body", "村民也有自己想做成的事：海莉想办摄影展，山姆的乐队想第一次登台，罗宾想在镇上搭一座凉亭……同时有几位在忙（默认 3 位），每周可能往前走一步，进展会传成八卦、上周报，聊天时他们也会提起。\n【帮忙】走到某一步时，村民会托你找样东西（任务日志里能看到）。送到了，心愿更快达成。\n【达成】村民会来信请你去看。信里写的那一周、那个时间去那里，就能看到一段结局；日记里会夹一幅画。有的人之后会换工作，账本和聊天里跟着变。\n【恋爱】暗生好感的两位村民可能开始交往，每周晚上约会一次（和你的约见、帮工撞上时给你让路）；交往久了可能订婚，一周后在镇广场办婚礼（上午九点到下午四点去镇上就能看到），婚后还住在各自原来的地方。订婚、结婚以后家谱里也画在一起。也可能分手。你在追求、交往或已经娶嫁的村民不会和别人谈；你和其中一位谈起恋爱，那一对就散了。\n设置 > 镇上的生活 > 村民的人生：总开关、同时几位、婚礼、换工作。村民之间的恋爱也受“村民之间可能产生好感”控制。"));
 		yield return new Topic("spouse", Tr.Get("help.spouse.title", "配偶的日常安排"), Tr.Get("help.spouse.body", "婚后配偶每天早上会排好自己的安排：浇水、收菜、照顾动物、添干草、捡蛋、清理农场、打理温室和鱼塘，也会去镇上找人聊天、买东西、去小超市看店，或者带孩子在院子里玩。\n你在农场时能看到 TA 出门干活；你不在时 TA 也会做完。收获的东西放在收获箱里。\n手机 > 家务安排：看今天的进度、领收获、关掉某一项、让 TA 帮你做什么。聊天时说“帮我浇水”也行，配偶帮忙不收钱。\n设置 > 家里 > 配偶日程：勤快程度、收获放哪、每天花多少钱。好感低时 TA 会少做甚至不做。"));
 		yield return new Topic("multiplayer", Tr.Get("help.multiplayer.title", "联机一起玩"), Tr.Get("help.multiplayer.body", "【怎么用】大家装同一版本的 AI 星露谷就行。全村的事由房主那边算：八卦、关系网、村民的人生、周报、今天的心情、村民账本和委托板，农场帮手那边会自动和房主保持一样。版本不一样时农场帮手会看到提示，他那边的功能只在自己这里，不和房主同步。\n【农场帮手能做的】和村民聊天（聊的事晚上会传成全村的八卦，村民也知道今天别的农夫找他聊过什么）；当面聊天时约村民见面、请村民来农场帮工（村民由房主那边安排着走过来，好感、退钱和提示落在你自己身上；发消息约还只有房主能用）；在手机上接委托、托村民办事、向村民借钱和还钱；结了婚的话，配偶每天也会排好自己的安排，帮你收的东西放进你自己的收获箱。\n【各算各的】做错事的后果落在做事的人身上：罚款从他身上扣（共用钱包时从大家的钱里扣），来信、被带走也只轮到他。信件、日记、村民心里对你的看法，每个人都是自己的。\n【还只有房主能用的】农夫小超市、在手机上发消息约村民、孩子离家出走。\n【分屏】同一台电脑上分屏两个人玩时，第二个画面用不了需要和房主同步的功能。"));
+		yield return new Topic("trouble", Tr.Get("help.trouble.title", "出了问题怎么办"), Tr.Get("help.trouble.body", "村民不说话、说的话不对劲、某个玩法没反应时：\n【自检】设置 > 常用 > AI 状态 > 自检（或在 SMAPI 窗口输入 aisv_selfcheck）。会看 AI 能不能来回一次、存档数据读不读得出、素材文件齐不齐、和别的 mod 有没有冲突、各个玩法现在的状态，几秒后在按钮下面告诉你结果。\n【反馈问题】完整结果写在 Mods/AIStardewValley/debug/selfcheck.txt，密钥已经遮住了。反馈时把它和 SMAPI 日志一起发过来。\n【测试连接】同一页的“测试连接”只试一次 AI：连不连得上、多久回话。"));
 		yield return new Topic("keys", Tr.Get("help.keys.title", "常用按键"), Tr.Get("help.keys.body", "按住 Alt（手柄 LB）再点村民：游戏原来的互动。\n对话框里 Ctrl + 回车：发送。\n其余按键在 设置 > 按键 里看和改。"));
 	}
 
@@ -66,9 +72,14 @@ internal sealed class HelpPage : ShellPage
 			y += Hearth.LineHeight(0.75f);
 		}
 		y += 10;
+		int jumpTo = -1;
 		foreach (Topic t in Topics())
 		{
 			bool open = _open.Contains(t.Id);
+			if (t.Id == _jump)
+			{
+				jumpTo = y + _scroll.Offset - area.Y - 18;
+			}
 			Rectangle head = new Rectangle(x, y, w, 48);
 			Hearth.PressPlate(b, head, (open ? "- " : "+ ") + t.Title, hover: Hearth.Hover(head, area), scale: 0.85f);
 			string id = t.Id;
@@ -93,5 +104,10 @@ internal sealed class HelpPage : ShellPage
 		}
 		Hearth.EndClip(b);
 		_scroll.Finish(b, area, y + _scroll.Offset, 12);
+		if (_jump != null)
+		{
+			_jump = null;
+			_scroll.By(Math.Max(0, jumpTo) - _scroll.Offset);
+		}
 	}
 }

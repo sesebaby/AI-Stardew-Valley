@@ -20,6 +20,6 @@ public static class Tr
 		{
 			text = text.Replace("{{" + name + "}}", Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "", StringComparison.Ordinal);
 		}
-		return text;
+		return Glyphs.Fix(text);
 	}
 }

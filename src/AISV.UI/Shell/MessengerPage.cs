@@ -734,7 +734,7 @@ internal sealed class MessengerPage : ShellPage
 			{
 			case ChatItemKind.Date:
 			{
-				string label = Tr.Get("messenger.date", "第 {{year}} 年{{season}} {{day}} 日", ("year", item.Year), ("season", HistoryFormatter.SeasonName(item.Season)), ("day", item.Day));
+				string label = Tr.Get("messenger.date", "第 {{year}} 年{{season}} {{day}} 日", ("year", item.Year), ("season", ShellText.Season(item.Season)), ("day", item.Day));
 				int cw = Hearth.TagWidth(label, 0.7f);
 				Hearth.Tag(b, new Vector2(view.Center.X - cw / 2, y), label, Hearth.Seam, Hearth.QuillSoft, 0.7f);
 				y += 40;
@@ -893,7 +893,7 @@ internal sealed class MessengerPage : ShellPage
 			if (record != null)
 			{
 				string caption = Tr.Get("messenger.photoCaption", "{{place}} · 第 {{year}} 年{{season}} {{day}} 日 {{time}}",
-					("place", record.LocationDisplay), ("year", record.Year), ("season", HistoryFormatter.SeasonName(record.Season)), ("day", record.Day), ("time", MessengerRules.ClockText(record.Time)));
+					("place", record.LocationDisplay), ("year", record.Year), ("season", ShellText.Season(record.Season)), ("day", record.Day), ("time", MessengerRules.ClockText(record.Time)));
 				Hearth.InkMiddle(b, caption, new Rectangle(area.X, r.Bottom + 16, area.Width, 32), Color.White, 0.8f);
 			}
 		}

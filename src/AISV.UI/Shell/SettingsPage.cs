@@ -527,7 +527,7 @@ internal sealed class SettingsPage : ShellPage
 		Hearth.Field(b, box, _search.Selected);
 		Hearth.Magnifier(b, new Vector2(box.X + 20, box.Center.Y));
 		Vector2 tp = new Vector2(box.X + 40, box.Center.Y - Hearth.LineHeight(0.8f) / 2);
-		Hearth.Ink(b, q.Length == 0 && !_search.Selected ? Tr.Get("shell.settings.search", "搜索设置") : Hearth.Truncate(q, box.Width - 52, 0.8f), tp, q.Length == 0 ? Hearth.QuillPale : Hearth.Quill, 0.8f);
+		Hearth.Ink(b, q.Length == 0 && !_search.Selected ? Hearth.Truncate(Tr.Get("shell.settings.search", "搜索设置"), box.Width - 52, 0.8f) : Hearth.Truncate(q, box.Width - 52, 0.8f), tp, q.Length == 0 ? Hearth.QuillPale : Hearth.Quill, 0.8f);
 		hits.Add(box, () => _search.Selected = true);
 		int y = box.Bottom + 12;
 		for (int i = 0; i < _categories.Count && y < nav.Bottom; i++)

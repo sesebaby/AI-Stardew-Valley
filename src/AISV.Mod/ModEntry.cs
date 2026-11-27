@@ -175,6 +175,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_config = ReadConfig(helper);
 			AISV.UI.Theme.Hearth.UseSkin(_config.ShellSkin);
 			Tr.Use(key => helper.Translation.Get(key) is { } t && t.HasValue() ? t.ToString() : null);
+			Glyphs.Use(FontHas);
 		}
 		if (!_config.ModOn)
 		{
@@ -679,6 +680,9 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				"八卦动态：" + _social.Gossip.Feed().Count + " 条"
 			}) : "先进存档。"));
 			helper.ConsoleCommands.Add("aisv_life", "村民人生调试。\n" + LifeService.Usage, (_, args) => _log.Info(Context.IsWorldReady ? _life.Command(args) : "先进存档。"));
+			_selfCheck = new SelfCheck(helper, ModManifest, harmony, _ai, () => _config, _log) { Features = SelfCheckFeatures };
+			_shell.SelfCheck = done => _selfCheck.Run(done);
+			helper.ConsoleCommands.Add("aisv_selfcheck", "自检：AI 能不能来回一次、存档数据、素材、补丁、兼容 mod、配置、各功能的状态，写到 debug/selfcheck.txt。", (_, _) => _selfCheck.Run());
 			helper.Events.GameLoop.UpdateTicked += (_, _) => _spousePlan.OnUpdateTicked();
 			helper.ConsoleCommands.Add("aisv_spouse", "配偶日程调试。\n用法：aisv_spouse dump | plan | setup | box | ask <water|harvest|animals|hay|clear|greenhouse|ponds|machines|visit|shop|mind_shop|kids> | box", (_, args) => _log.Info(Context.IsWorldReady ? SpouseCommand(args) : "先进存档。"));
 			_shell.Eco = _eco;
@@ -725,6 +729,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			BarTabPatch.Room = _ledger.TabRoom;
 			BarTabPatch.Charge = _ledger.ChargeTab;
 			BarTabPatch.Apply(harmony, _log);
+			FarmChoreExecutor.Apply(harmony);
 			_conversations.LoansAvailable = n => _ledger.Usable && (_ledger.OpenDebt(n) != null || (relationships.EffectiveHearts(n) >= AISV.Core.World.Ledger.LedgerRules.LoanMinHearts && !ChildSafety.IsChild(n, StardewValley.Game1.getCharacterFromName(n)?.Age)));
 			_conversations.OpenLoan = npc =>
 			{
@@ -1027,6 +1032,26 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	private LifeService _life = null!;
 
 	/// <summary>聊天素材：这位村民最近在农夫的店里买过什么；Pierre 和 Morris 还知道自己的店现在怎么样。</summary>
+	private SelfCheck _selfCheck = null!;
+
+	/// <summary>自检里各功能的状态；没进存档时只有最近的 AI 失败。</summary>
+	private IEnumerable<SelfCheck.Section> SelfCheckFeatures()
+	{
+		yield return new("最近的 AI 失败", () => _ai.RecentFailures.Count == 0
+			? (SelfCheck.Level.Ok, "这次开游戏以来没有。")
+			: (SelfCheck.Level.Warn, string.Join("\n", _ai.RecentFailures.Select(f => $"{f.When} {f.Request} {f.Kind}：{f.Message}"))));
+		if (!Context.IsWorldReady)
+		{
+			yield break;
+		}
+		yield return new("存档数据", _selfCheck.SaveFiles);
+		yield return new("小超市", () => (SelfCheck.Level.Ok, _config.FarmerMart ? StoreCommand(new[] { "dump" }) : "没开。"));
+		yield return new("做错事的后果", () => (SelfCheck.Level.Ok, _consequences.Command(new[] { "strikes" }) + "\n最近的记录：\n" + _consequences.Command(Array.Empty<string>())));
+		yield return new("村民的人生", () => (SelfCheck.Level.Ok, _life.Command(Array.Empty<string>())));
+		yield return new("孩子", () => (SelfCheck.Level.Ok, Kids.All().Any() ? _kidGrowth.Describe() : "没有孩子。"));
+		yield return new("联机", () => _selfCheck.Peers(_net.Command(Array.Empty<string>(), Enumerable.Empty<string>)));
+	}
+
 	/// <summary>aisv_child stage | grow | school | traits。</summary>
 	private string ChildGrowthCommand(string[] args)
 	{
@@ -1074,6 +1099,25 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		return string.Join("\n", new[] { bought, state }.Where(x => x.Length > 0).Select(x => "- " + x));
 	}
 
+	private static Microsoft.Xna.Framework.Graphics.SpriteFont? _glyphFont;
+	private static HashSet<char> _glyphSet = new HashSet<char>();
+
+	/// <summary>当前语言的游戏字体画不画得出这个字（换语言时字体会换，跟着重建）。</summary>
+	private static bool FontHas(char c)
+	{
+		Microsoft.Xna.Framework.Graphics.SpriteFont? font = StardewValley.Game1.smallFont;
+		if (font == null)
+		{
+			return true;
+		}
+		if (!ReferenceEquals(font, _glyphFont))
+		{
+			_glyphSet = new HashSet<char>(font.Characters);
+			_glyphFont = font;
+		}
+		return _glyphSet.Contains(c);
+	}
+
 	private string SpouseCommand(string[] args)
 	{
 		switch (args.Length > 0 ? args[0] : "dump")
@@ -1118,7 +1162,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				string counts = string.Join("，", AISV.Core.Companions.SpouseTasks.Chores.Select(t => $"{t} {FarmChoreExecutor.Count(t)}"));
 				return $"配偶 {_spousePlan.Spouse()?.Name ?? "无"}，第 {log?.Day} 天：{(log == null ? "" : AISV.Core.Companions.SpouseDayPlan.Describe(log.Items))}\n"
 					+ string.Join("\n", log?.Items.Select(i => $"  {i.Time} {i.Task} {i.State} {i.Did}/{i.Amount} {i.Note}") ?? Array.Empty<string>())
-					+ $"\n活：{counts}（动物共 {StardewValley.Game1.getFarm().getAllFarmAnimals().Count} 只）\n昨天：{log?.Yesterday}";
+					+ $"\n活：{counts}（动物共 {StardewValley.Game1.getFarm().getAllFarmAnimals().Count} 只）\n排：{_spousePlan.Explain()}\n昨天：{log?.Yesterday}";
 		}
 	}
 
@@ -1454,7 +1498,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		}
 		if (where.Trim().Equals("app", StringComparison.OrdinalIgnoreCase))
 		{
-			// 调试和截图：直接打开某个应用，比如 app:help、app:chores、app:mart。
+			// 调试和截图：直接打开某个应用，比如 app:help、app:chores、app:mart；app:help:trouble 打开使用帮助的某一条。
 			ShellMenu apps = new ShellMenu(_shell, ShellMenu.Tab.Apps, null, null);
 			StardewValley.Game1.activeClickableMenu = apps;
 			apps.OpenApp(arg.Trim());

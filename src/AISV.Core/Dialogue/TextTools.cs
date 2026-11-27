@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using AISV.Core.Text;
 
 namespace AISV.Core.Dialogue;
 
@@ -156,7 +157,7 @@ public static class TextTools
 				sb.Append(c);
 			}
 		}
-		return sb.ToString().Trim();
+		return Glyphs.Fix(sb.ToString().Trim());
 	}
 
 	/// <summary>超长时尽量在句末断开（句末在后一半里），其次在空格处（后 30% 里），否则硬截加省略号。</summary>

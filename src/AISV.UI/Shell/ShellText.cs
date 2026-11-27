@@ -12,7 +12,10 @@ internal static class ShellText
 	/// <summary>去掉游戏字体画不出的表情符号。</summary>
 	public static string Clean(string? text) => TextTools.CleanForGame(text);
 
-	public static string Season(string? season) => HistoryFormatter.SeasonName(season);
+	/// <summary>界面上的季节名：中文用短的“春”，其他语言用游戏自己的译名（HistoryFormatter 的是写给 AI 的中文）。</summary>
+	public static string Season(string? season) => LocalizedContentManager.CurrentLanguageCode == LocalizedContentManager.LanguageCode.zh
+		? HistoryFormatter.SeasonName(season)
+		: Utility.getSeasonNameFromNumber(Utility.getSeasonNumber(season ?? "spring"));
 
 	public static string Date(int day, string? season, int year) => Tr.Get("shell.date", "第 {{year}} 年{{season}} {{day}} 日", ("year", year), ("season", Season(season)), ("day", day));
 
@@ -23,6 +26,8 @@ internal static class ShellText
 		: Game1.isSnowing ? Tr.Get("shell.weather.snow", "下雪")
 		: Game1.isDebrisWeather ? Tr.Get("shell.weather.wind", "刮风")
 		: Tr.Get("shell.weather.sun", "晴");
+
+	public static string Greeting(string name) => name.Length == 0 ? Greeting() : Tr.Get("shell.greet.named", "{{greet}}，{{name}}", ("greet", Greeting()), ("name", name));
 
 	public static string Greeting()
 	{

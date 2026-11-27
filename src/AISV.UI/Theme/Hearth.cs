@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using AISV.Core.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
@@ -400,11 +401,11 @@ public static class Hearth
 	{
 		if (!string.IsNullOrEmpty(text))
 		{
-			b.DrawString(font ?? Game1.smallFont, text, new Vector2(MathF.Round(pos.X), MathF.Round(pos.Y)), color, 0f, Vector2.Zero, Crisp(scale), SpriteEffects.None, 1f);
+			b.DrawString(font ?? Game1.smallFont, Glyphs.Fix(text), new Vector2(MathF.Round(pos.X), MathF.Round(pos.Y)), color, 0f, Vector2.Zero, Crisp(scale), SpriteEffects.None, 1f);
 		}
 	}
 
-	public static Vector2 Measure(string text, float scale = 1f, SpriteFont? font = null) => (font ?? Game1.smallFont).MeasureString(text ?? "") * Crisp(scale);
+	public static Vector2 Measure(string text, float scale = 1f, SpriteFont? font = null) => (font ?? Game1.smallFont).MeasureString(Glyphs.Fix(text ?? "")) * Crisp(scale);
 
 	/// <summary>游戏字体没有粗体，错开一像素画两遍。</summary>
 	public static void InkBold(SpriteBatch b, string text, Vector2 pos, Color color, float scale = 1f)
@@ -440,7 +441,7 @@ public static class Hearth
 		return text.Substring(0, n) + "…";
 	}
 
-	public static string Wrap(string text, int width, SpriteFont? font = null) => Game1.parseText(text ?? "", font ?? Game1.smallFont, Math.Max(40, width));
+	public static string Wrap(string text, int width, SpriteFont? font = null) => Game1.parseText(Glyphs.Fix(text ?? ""), font ?? Game1.smallFont, Math.Max(40, width));
 
 	/// <summary>按宽度折行；段落之间可以空一行。</summary>
 	public static List<string> WrapLines(string text, int width, float scale = 1f, bool paragraphGap = false)

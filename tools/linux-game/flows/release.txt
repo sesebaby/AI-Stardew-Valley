@@ -1,0 +1,74 @@
+# 发布前回归（单人存档 AISVTestSp2：配偶 Leah，两个孩子）：五块功能各走一遍、外壳各页截图、过一夜。
+# 结果看 io/out/*.png、console.log 里的 ERROR/WARN 和 Mods/AIStardewValley/debug/selfcheck.txt。
+# 测试实例里先关掉 CJB Cheats 的 AutoWater（不然地总是浇过的，少年没地可浇）；春 24 号花舞节配偶不排活。
+wait free
+console aisv_selfcheck
+# 后果
+console aisv_consequence fire missed_meetup Abigail
+console aisv_consequence fire trash Lewis
+console aisv_consequence fire trash Lewis
+console aisv_consequence strikes
+# 村民的人生
+console aisv_life tick
+console aisv_life advance Sam
+console aisv_life list
+# 孩子长大、少年帮着浇地
+console aisv_child stage Mia teen
+console aisv_child stage Bean school
+console aisv_child traits
+warp Farm 64 15
+wait free
+console debug spreaddirt
+console debug spreadseeds 472
+console aisv_spouse ask kids
+wait ticks 120
+screenshot r-teens
+console aisv_spouse dump
+# 联机状态（单人）
+console aisv_net
+# 对话
+warp Town 47 60
+wait free
+talk Lewis
+wait ticks 120
+screenshot r-talk
+close
+# 外壳各页
+console aisv_shell today
+wait ticks 30
+screenshot r-today
+close
+console aisv_shell social
+wait ticks 30
+screenshot r-social
+close
+console aisv_shell web
+wait ticks 30
+screenshot r-web
+close
+console aisv_shell gtree
+wait ticks 30
+screenshot r-gtree
+close
+console aisv_shell news
+wait ticks 30
+screenshot r-news
+close
+console aisv_shell help
+wait ticks 30
+screenshot r-help
+close
+console aisv_shell settings
+wait ticks 30
+screenshot r-settings
+close
+console aisv_shell aistatus
+wait ticks 30
+screenshot r-aistatus
+close
+# 过一夜
+sleep
+wait free
+wait ticks 120
+screenshot r-morning
+console aisv_selfcheck

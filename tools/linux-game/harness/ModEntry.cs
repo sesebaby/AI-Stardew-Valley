@@ -138,6 +138,7 @@ public sealed class ModEntry : Mod
 			case "key": Game1.activeClickableMenu?.receiveKeyPress((Microsoft.Xna.Framework.Input.Keys)Enum.Parse(typeof(Microsoft.Xna.Framework.Input.Keys), a[0])); return Nothing();
 			case "close": return Close();
 			case "time": Game1.timeOfDay = int.Parse(a[0]); return Nothing();
+			case "lang": LocalizedContentManager.CurrentLanguageCode = Enum.Parse<LocalizedContentManager.LanguageCode>(a[0]); return Nothing();
 			case "dump-asset": _result = JToken.FromObject(a.Length > 1
 				? typeof(StardewModdingAPI.IGameContentHelper).GetMethod("Load", new[] { typeof(string) })!.MakeGenericMethod(AccessTools.TypeByName(a[1])).Invoke(Helper.GameContent, new object[] { a[0] })!
 				: Helper.GameContent.Load<Dictionary<string, string>>(a[0])); return Nothing();
@@ -359,6 +360,15 @@ public sealed class ModEntry : Mod
 			}
 			yield return null;
 		}
+		// 升级窗口要走“确定”，直接关掉不会真的升级，下一晚又弹出来
+		while (Game1.activeClickableMenu is StardewValley.Menus.LevelUpMenu level && !level.isProfessionChooser && ++ticks < 1200)
+		{
+			if (level.isActive)
+			{
+				level.receiveGamePadButton(Microsoft.Xna.Framework.Input.Buttons.Start);
+			}
+			yield return null;
+		}
 		if (Game1.activeClickableMenu != null)
 		{
 			Game1.exitActiveMenu();
@@ -397,7 +407,12 @@ public sealed class ModEntry : Mod
 			if (++ticks > 60 * 300)
 				throw new TimeoutException("sleep timed out");
 			// 早上的升级、存档之类的菜单都点掉。
-			if (Game1.activeClickableMenu is LevelUpMenu or ShippingMenu && ticks % 30 == 0)
+			// 升级窗口点“确定”的坐标常常对不上，用手柄的开始键确认（原版就是这样处理的）。
+			if (Game1.activeClickableMenu is LevelUpMenu { isActive: true, isProfessionChooser: false } level && ticks % 30 == 0)
+			{
+				level.receiveGamePadButton(Microsoft.Xna.Framework.Input.Buttons.Start);
+			}
+			else if (Game1.activeClickableMenu is LevelUpMenu or ShippingMenu && ticks % 30 == 0)
 			{
 				ClickableComponent? ok = Helper.Reflection.GetField<ClickableTextureComponent>(Game1.activeClickableMenu, "okButton", required: false)?.GetValue();
 				if (ok != null)

@@ -68,4 +68,17 @@ public class I18nTests
 			Tr.Use(_ => null);
 		}
 	}
+
+	[Fact]
+	public void GlyphsSwapsOnlyWhatTheFontCannotDraw()
+	{
+		// 拉丁字体：有 ASCII 和 —，没有 – … “ ” 和中文标点。
+		bool latin(char c) => c < 0x80 || c == '—';
+		Assert.Equal("A—B ... \"x\"", Glyphs.Fix("A–B … “x”", latin));
+		Assert.Equal("Leah: hi", Glyphs.Fix("Leah：hi", latin).TrimEnd());
+		Assert.Equal(" 12", Glyphs.Fix("♥ 12", latin));
+		// 字体里有的不动，没有备选的字原样留着。
+		Assert.Equal("莉亚：“好”…", Glyphs.Fix("莉亚：“好”…", _ => true));
+		Assert.Equal("噂", Glyphs.Fix("噂", latin));
+	}
 }

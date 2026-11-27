@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AISV.Core.Companions;
+using HarmonyLib;
 using Microsoft.Xna.Framework;
 using StardewValley;
 using StardewValley.Buildings;
@@ -18,6 +19,16 @@ namespace AISV.Game.Companions;
 /// </summary>
 public static class FarmChoreExecutor
 {
+	/// <summary>代收庄稼时原版会把耕种经验算给 Game1.player（没有祝尼魔时）；替别人干的活不给玩家加经验。</summary>
+	private static int _harvesting;
+
+	public static void Apply(Harmony harmony)
+	{
+		harmony.Patch(AccessTools.Method(typeof(Farmer), nameof(Farmer.gainExperience)), prefix: new HarmonyMethod(typeof(FarmChoreExecutor), nameof(NoExperience)));
+	}
+
+	private static bool NoExperience() => _harvesting == 0;
+
 	public static bool NeedsWater(HoeDirt dirt) => dirt.crop != null && !dirt.crop.dead.Value && !dirt.isWatered() && dirt.needsWatering();
 
 	public static bool IsDebris(SObject o) => o.IsTwig() || o.IsBreakableStone() || o.IsWeeds();
@@ -256,7 +267,15 @@ public static class FarmChoreExecutor
 		{
 			before.UnionWith(here.debris);
 		}
-		dirt.crop.harvest((int)tile.X, (int)tile.Y, dirt, null, isForcedScytheHarvest: true);
+		_harvesting++;
+		try
+		{
+			dirt.crop.harvest((int)tile.X, (int)tile.Y, dirt, null, isForcedScytheHarvest: true);
+		}
+		finally
+		{
+			_harvesting--;
+		}
 		if (dirt.crop == null || !dirt.crop.RegrowsAfterHarvest())
 		{
 			dirt.destroyCrop(showAnimation: false);

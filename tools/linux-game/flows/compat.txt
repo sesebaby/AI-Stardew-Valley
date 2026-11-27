@@ -1,0 +1,30 @@
+# 兼容回归：在装了全套 mod 的实例（setup.sh <实例> full：SVE、东悬崖、里奇赛德、Law and Order、StardewThief、Squad……）上跑。
+# 先 load AISVTestSp2_455031485。看 console.log 里的 ERROR/WARN、selfcheck.txt 的兼容 mod 和补丁冲突、截图。
+wait free
+console aisv_selfcheck
+# SVE 会改 Penny 的日程：看今天的课在哪、几点。
+console aisv_child school
+console aisv_child stage Bean school
+console aisv_life tick
+console aisv_consequence fire trash Lewis
+warp Town 47 60
+wait free
+screenshot c-town
+talk Penny
+wait ticks 120
+screenshot c-talk
+close
+console aisv_shell today
+wait ticks 30
+screenshot c-today
+close
+console aisv_shell web
+wait ticks 30
+screenshot c-web
+close
+sleep
+wait free
+wait ticks 120
+screenshot c-morning
+console aisv_child school
+console aisv_selfcheck

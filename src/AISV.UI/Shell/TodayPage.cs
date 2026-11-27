@@ -443,7 +443,7 @@ internal sealed class TodayPage : ShellPage
 		int count = _today.Rows.Count;
 		string summary = count == 0 ? Tr.Get("shell.today.nothing", "今天没什么要赶的事。") : Tr.Get("shell.today.count", "今天有 {{n}} 件事", ("n", count));
 		int sw = (int)Hearth.Width(summary, 0.85f);
-		Hearth.InkBold(b, Hearth.Truncate(ShellText.Greeting() + (name.Length > 0 ? "，" + name : ""), w - sw - 60, 1.35f), new Vector2(x + 4, y), Hearth.Quill, 1.35f);
+		Hearth.InkBold(b, Hearth.Truncate(ShellText.Greeting(name), w - sw - 60, 1.35f), new Vector2(x + 4, y), Hearth.Quill, 1.35f);
 		int lh = Hearth.LineHeight(1.35f);
 		Hearth.Ink(b, ShellText.TopLine(), new Vector2(x + 6, y + lh + 4), Hearth.QuillSoft, 0.82f);
 		Rectangle chip = new Rectangle(x + w - sw - 36, y + 10, sw + 32, 40);

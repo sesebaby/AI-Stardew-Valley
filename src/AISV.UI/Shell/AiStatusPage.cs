@@ -27,6 +27,12 @@ internal sealed class AiStatusPage : ShellPage
 
 	private string _testText = "";
 
+	private bool _checking;
+
+	private string _checkText = "";
+
+	private bool _checkOk;
+
 	public AiStatusPage(ShellContext ctx) : base(ctx)
 	{
 	}
@@ -50,6 +56,23 @@ internal sealed class AiStatusPage : ShellPage
 			_testing = false;
 			_testOk = ok;
 			_testText = text;
+		});
+	}
+
+	private void Check()
+	{
+		if (_checking || Ctx.SelfCheck == null)
+		{
+			return;
+		}
+		_checking = true;
+		_checkText = "";
+		Ctx.SelfCheck((ok, bad) =>
+		{
+			_checking = false;
+			_checkOk = bad == 0;
+			_checkText = Tr.Get("aistatus.selfcheckDone", "自检完了：{{ok}} 项正常，{{bad}} 项要看看。结果在 mod 文件夹的 debug/selfcheck.txt，报问题时把它一起发过来。", ("ok", ok), ("bad", bad));
+			Game1.playSound(bad == 0 ? "newArtifact" : "cancel");
 		});
 	}
 
@@ -135,19 +158,35 @@ internal sealed class AiStatusPage : ShellPage
 			AiHealthLevel.Bad => Hearth.Ember,
 			_ => Hearth.QuillSoft
 		};
-		List<string> result = _testText.Length > 0 ? Hearth.WrapLines(ShellText.Clean(_testText), w - 48, 0.74f) : new List<string>();
+		List<(string Text, Color Color)> result = new List<(string, Color)>();
+		if (_testText.Length > 0)
+		{
+			result.AddRange(Hearth.WrapLines(ShellText.Clean(_testText), w - 48, 0.74f).Select(l => (l, _testOk == true ? Hearth.LeafDeep : Hearth.Ember)));
+		}
+		if (_checkText.Length > 0)
+		{
+			result.AddRange(Hearth.WrapLines(_checkText, w - 48, 0.74f).Select(l => (l, _checkOk ? Hearth.LeafDeep : Hearth.Amber)));
+		}
 		int lh = Hearth.LineHeight(0.74f);
 		Rectangle card = new Rectangle(x, y, w, 100 + result.Count * lh + (result.Count > 0 ? 8 : 0));
 		Hearth.Bordered(b, card, fill, ink * 0.5f);
 		Hearth.InkBold(b, health.Title, new Vector2(card.X + 24, card.Y + 18), ink, 1.05f);
-		Hearth.Ink(b, Hearth.Truncate(health.Hint, w - 250, 0.74f), new Vector2(card.X + 24, card.Y + 58), Hearth.QuillSoft, 0.74f);
-		Rectangle test = new Rectangle(card.Right - 20 - 180, card.Y + 26, 180, 48);
-		Hearth.PressPlate(b, test, _testing ? Tr.Get("gateway.testing", "正在测试……") : Tr.Get("gateway.test", "测试连接"), primary: true, hover: Hearth.Hover(test, _view), disabled: _testing);
+		string testLabel = _testing ? Tr.Get("gateway.testing", "正在测试……") : Tr.Get("gateway.test", "测试连接");
+		string checkLabel = _checking ? Tr.Get("aistatus.selfchecking", "自检中……") : Tr.Get("aistatus.selfcheck", "自检");
+		// 按钮跟着字宽（德语、俄语的字长）。
+		int testW = Math.Max(180, (int)Hearth.Width(testLabel) + 40);
+		int checkW = Math.Max(150, (int)Hearth.Width(checkLabel) + 40);
+		Rectangle test = new Rectangle(card.Right - 20 - testW, card.Y + 26, testW, 48);
+		Rectangle check = new Rectangle(test.X - 12 - checkW, test.Y, checkW, 48);
+		Hearth.Ink(b, Hearth.Truncate(health.Hint, check.X - card.X - 40, 0.74f), new Vector2(card.X + 24, card.Y + 58), Hearth.QuillSoft, 0.74f);
+		Hearth.PressPlate(b, test, testLabel, primary: true, hover: Hearth.Hover(test, _view), disabled: _testing);
 		hits.Add(test, Test, _view);
+		Hearth.PressPlate(b, check, checkLabel, primary: false, hover: Hearth.Hover(check, _view), disabled: _checking || Ctx.SelfCheck == null);
+		hits.Add(check, Check, _view);
 		int ry = card.Y + 94;
-		foreach (string line in result)
+		foreach ((string line, Color color) in result)
 		{
-			Hearth.Ink(b, line, new Vector2(card.X + 24, ry), _testOk == true ? Hearth.LeafDeep : Hearth.Ember, 0.74f);
+			Hearth.Ink(b, line, new Vector2(card.X + 24, ry), color, 0.74f);
 			ry += lh;
 		}
 		return card.Bottom;
@@ -160,10 +199,12 @@ internal sealed class AiStatusPage : ShellPage
 		Hearth.CardSlip(b, card);
 		Kit.SectionTitle(b, title, x + 20, y + 18);
 		int ry = y + 56;
+		// 左栏按最长的标签留宽（别的语言标签比中文长），最多占一半。
+		int valueX = Math.Min(w / 2, Math.Max(186, rows.Count == 0 ? 0 : rows.Max(r => (int)Hearth.Width(r.Label, 0.8f)) + 24));
 		foreach ((string label, string value) in rows)
 		{
-			Hearth.Ink(b, label, new Vector2(x + 24, ry + 8), Hearth.QuillSoft, 0.8f);
-			Hearth.Ink(b, Hearth.Truncate(ShellText.Clean(value), w - 240, 0.82f), new Vector2(x + 210, ry + 8), Hearth.Quill, 0.82f);
+			Hearth.Ink(b, Hearth.Truncate(label, valueX - 12, 0.8f), new Vector2(x + 24, ry + 8), Hearth.QuillSoft, 0.8f);
+			Hearth.Ink(b, Hearth.Truncate(ShellText.Clean(value), w - valueX - 54, 0.82f), new Vector2(x + 24 + valueX, ry + 8), Hearth.Quill, 0.82f);
 			ry += rowH;
 		}
 		return card.Bottom;

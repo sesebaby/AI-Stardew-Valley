@@ -72,6 +72,11 @@ internal sealed class AppsPage : ShellPage
 	/// <summary>调试用：按名字打开一个应用。</summary>
 	public bool OpenById(string id)
 	{
+		if (id.StartsWith("help:", StringComparison.OrdinalIgnoreCase))
+		{
+			Host.Push(new HelpPage(Ctx, id[5..]));
+			return true;
+		}
 		App? app = _apps.FirstOrDefault(a => a.Id == id);
 		app?.Open();
 		return app != null;

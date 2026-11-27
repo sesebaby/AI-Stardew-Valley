@@ -242,7 +242,7 @@ internal sealed class ResidentsPage : ShellPage
 			if (day != lastDay)
 			{
 				lastDay = day;
-				string label = Tr.Get("residents.date", "第 {{year}} 年{{season}} {{day}} 日", ("year", m.Year), ("season", HistoryFormatter.SeasonName(m.Season)), ("day", m.Day));
+				string label = Tr.Get("residents.date", "第 {{year}} 年{{season}} {{day}} 日", ("year", m.Year), ("season", ShellText.Season(m.Season)), ("day", m.Day));
 				int cw = Hearth.TagWidth(label, 0.7f);
 				Hearth.Tag(b, new Vector2(view.Center.X - cw / 2, y), label, Hearth.Seam, Hearth.QuillSoft, 0.7f);
 				y += 40;

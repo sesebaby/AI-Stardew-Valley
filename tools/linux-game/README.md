@@ -13,6 +13,8 @@ tools/linux-game/deploy.sh a           # 改完代码重新构建、放进实例
 tools/linux-game/stop.sh a             # 只停这个实例；别的会话也在跑游戏，不要按进程名杀
 ```
 
+发布前回归：`flows/release.txt`（精简实例，五块功能各走一遍、外壳各页截图、过一夜）和 `flows/compat.txt`（`setup.sh <实例> full` 的全套 mod 实例）。测试实例里先把 CJB Cheats 的 AutoWater 关掉，不然地总是浇过的。
+
 ## 需要的本机文件
 
 - `~/aisv-game`：游戏的本地副本（Windows 版 1.6.15，带 Linux 的 SDL2、openal）。
@@ -41,6 +43,7 @@ tools/linux-game/stop.sh a             # 只停这个实例；别的会话也在
 | `click x y`、`text <字>`、`key <键>`、`close`、`answer <序号>` | 操作当前菜单（answer 选问题对话框的第几个回答，从 0 数） |
 | `get <类型.成员...>`、`invoke <类型> <静态方法> [参数...]` | 读静态成员、调静态方法 |
 | `dump-asset <资源名> [类型全名]` | 导出资源（默认按字符串字典读，比如日程；别的类型写全名，比如 StardewValley.GameData.Weddings.WeddingData） |
+| `lang <语言代码>` | 换游戏语言（en、de、ja、ko、ru、pt……，看各语言下的界面和字体） |
 | `build-cabin x y`、`wallets separate\|shared` | 联机测试用 |
 | `save`、`title` | 存档、回标题 |
 
