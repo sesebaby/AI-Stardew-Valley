@@ -907,6 +907,7 @@ public sealed class SpousePlanner
 			KidBook?.Note(Kids.Key(c), Today, Tr.Get("spouse.plan.kidNote", "今天{{parent}}陪我在院子里玩了好久", ("parent", spouse.displayName)));
 		}
 		Farm farm = Game1.getFarm();
+		TeensHelp(spouse, kids, farm);
 		if (!CanShowWorker(spouse) || Game1.isRaining || kids.Any(k => k.IsInvisible))
 		{
 			return;
@@ -927,6 +928,39 @@ public sealed class SpousePlanner
 			c.IsInvisible = true;
 		}
 		Hints.Hud(Tr.Get("spouse.plan.kidsOut", "{{npc}}带着孩子在院子里玩。", ("npc", Name(spouse))), 5000);
+	}
+
+	/// <summary>少年在家：跟着配偶浇几块地（每人最多 8 块）。</summary>
+	private void TeensHelp(NPC spouse, List<Child> kids, Farm farm)
+	{
+		List<Child> teens = kids.Where(k => KidGrowthService.Stage(k) == AISV.Core.Family.KidStages.Teen && !k.IsInvisible).ToList();
+		if (teens.Count == 0 || Game1.isRaining)
+		{
+			return;
+		}
+		int done = 0;
+		foreach (KeyValuePair<Vector2, StardewValley.TerrainFeatures.TerrainFeature> pair in farm.terrainFeatures.Pairs.ToList())
+		{
+			if (done >= 8 * teens.Count)
+			{
+				break;
+			}
+			if (pair.Value is StardewValley.TerrainFeatures.HoeDirt dirt && FarmChoreExecutor.NeedsWater(dirt) && FarmChoreExecutor.WaterTile(farm, pair.Key))
+			{
+				done++;
+			}
+		}
+		if (done == 0)
+		{
+			return;
+		}
+		string names = string.Join(Tr.Get("kids.traitJoin", "、"), teens.Select(t => t.displayName));
+		foreach (Child t in teens)
+		{
+			KidBook?.Note(Kids.Key(t), Today, Tr.Get("spouse.plan.teenNote", "今天和{{parent}}一起在地里浇了水", ("parent", spouse.displayName)));
+		}
+		Hints.Hud(Tr.Get("spouse.plan.teensHelp", "{{kids}}帮{{npc}}浇了 {{count}} 块地。", ("kids", names), ("npc", Name(spouse)), ("count", done)), 5000);
+		_log.Info($"配偶 {spouse.Name} 带着少年 {names} 浇了 {done} 块地。");
 	}
 
 	private void EndKids()

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AISV.Core.Ai;
+using AISV.Core.Companions;
 using AISV.Core.Config;
 using AISV.Core.Diagnostics;
 using AISV.Core.Dialogue;
@@ -96,6 +97,9 @@ public sealed class ChildRunaway
 
 	public Func<string, string> Display { get; set; } = n => n;
 
+	/// <summary>养育记录：跑出去、找得快慢。</summary>
+	public AISV.Core.Family.GrowthBook? Growth { get; set; }
+
 	public Action<string, int>? AdjustMood { get; set; }
 
 	/// <summary>记一件事给配偶（进八卦和聊天素材）：配偶名、这件事。</summary>
@@ -127,7 +131,8 @@ public sealed class ChildRunaway
 
 	private static Child? Candidate()
 	{
-		List<Child> kids = Game1.player.getChildren().Where(c => Kids.CanTalk(c) && c.currentLocation is FarmHouse && !c.IsInvisible).ToList();
+		// 少年不玩躲猫猫了。
+		List<Child> kids = Game1.player.getChildren().Where(c => Kids.CanTalk(c) && c.currentLocation is FarmHouse && !c.IsInvisible && KidGrowthService.Stage(c) != AISV.Core.Family.KidStages.Teen).ToList();
 		return kids.Count == 0 ? null : kids[Game1.random.Next(kids.Count)];
 	}
 
@@ -168,7 +173,7 @@ public sealed class ChildRunaway
 		};
 		standIn.AllowDynamicAppearance = false;
 		standIn.modData[NpcBusy.StandInKey] = HoldReason;
-		standIn.HideShadow = false;
+		KidGrowthService.Dress(standIn, child);
 		farm.characters.Add(standIn);
 		standIn.currentLocation = farm;
 		Wander(standIn, hide.Value);
@@ -185,6 +190,7 @@ public sealed class ChildRunaway
 			LastHint = Game1.timeOfDay
 		};
 		NpcBusy.Hold(child.Name, HoldReason);
+		Growth?.Note(Kids.Key(child), "runaway", Game1.Date.TotalDays);
 		Dictionary<string, int>? last = _store()?.Get(LastPath, LastDoc);
 		if (last != null)
 		{
@@ -342,6 +348,7 @@ public sealed class ChildRunaway
 		}
 		if (now >= RunawayRules.GiveUpAt)
 		{
+			Growth?.Note(r.Key, "slow", Game1.Date.TotalDays);
 			GiveUp();
 			return;
 		}
@@ -419,6 +426,7 @@ public sealed class ChildRunaway
 		}
 		r.Found = true;
 		int points = RunawayRules.FoundPoints(r.Started, Game1.timeOfDay);
+		Growth?.Note(r.Key, Clock.Minutes(Game1.timeOfDay) - Clock.Minutes(r.Started) <= 120 ? "quick" : "slow", Game1.Date.TotalDays);
 		r.StandIn.Halt();
 		r.StandIn.faceGeneralDirection(who.getStandingPosition(), 0, opposite: false, useTileCalculations: false);
 		r.StandIn.doEmote(32);

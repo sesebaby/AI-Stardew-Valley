@@ -103,6 +103,10 @@ public sealed partial class MartService
 		clone.AllowDynamicAppearance = false;
 		clone.modData[NpcBusy.StandInKey] = reason;
 		clone.modData["AIStardewValley.Core/Real"] = real.Name;
+		if (real is StardewValley.Characters.Child kid)
+		{
+			AISV.Game.Social.KidGrowthService.Dress(clone, kid);
+		}
 		where.characters.Add(clone);
 		clone.currentLocation = where;
 		return clone;

@@ -5,6 +5,7 @@ using AISV.Core.Ai;
 using AISV.Core.Config;
 using AISV.Core.Diagnostics;
 using AISV.Core.Dialogue;
+using AISV.Core.Family;
 using AISV.Game.Dialogue;
 using AISV.Game.Npcs;
 using HarmonyLib;
@@ -49,19 +50,32 @@ public sealed class ChildTalk
 
 	public ChildBook? Book { get; set; }
 
+	/// <summary>养育记录：聊天、送帽子各记一笔。</summary>
+	public GrowthBook? Growth { get; set; }
+
 	/// <summary>设置是"能来回聊"时，界面层接手开一场聊天。</summary>
 	public Action<Child>? ChatRequested { get; set; }
 
 	public void Apply(Harmony harmony)
 	{
 		_instance = this;
-		harmony.Patch(AccessTools.Method(typeof(Child), nameof(Child.checkAction)), postfix: new HarmonyMethod(typeof(ChildTalk), nameof(Postfix)));
+		harmony.Patch(AccessTools.Method(typeof(Child), nameof(Child.checkAction)), prefix: new HarmonyMethod(typeof(ChildTalk), nameof(Prefix)), postfix: new HarmonyMethod(typeof(ChildTalk), nameof(Postfix)));
 	}
 
-	private static void Postfix(Child __instance, Farmer who, bool __result)
+	/// <summary>手里拿着帽子去点孩子：记下来，戴上了就算送了一样东西。</summary>
+	private static void Prefix(Child __instance, Farmer who, out StardewValley.Objects.Hat? __state)
+	{
+		__state = who.IsLocalPlayer && who.CurrentItem is StardewValley.Objects.Hat h ? h : null;
+	}
+
+	private static void Postfix(Child __instance, Farmer who, bool __result, StardewValley.Objects.Hat? __state)
 	{
 		try
 		{
+			if (__state != null && __instance.hat.Value == __state)
+			{
+				_instance?.Growth?.Note(Kids.Key(__instance), "gift", Game1.Date.TotalDays);
+			}
 			// 游戏只在每天第一次搭话时返回 true（戴帽子返回 false），这里正好一天一次。
 			if (__result && who.IsLocalPlayer && Kids.CanTalk(__instance) && who.CurrentItem is not StardewValley.Objects.Hat && !NpcBusy.IsStandIn(__instance))
 			{
@@ -93,6 +107,7 @@ public sealed class ChildTalk
 		{
 			return;
 		}
+		Growth?.Note(Kids.Key(child), "chat", day);
 		if (c.ChildTalkMode == "Chat" && ChatRequested != null)
 		{
 			ChatRequested(child);
@@ -111,7 +126,7 @@ public sealed class ChildTalk
 			try
 			{
 				AiResult r = await ai.SendAsync(new ChatRequest(ChildPrompts.OpeningRequest, system, ChildPrompts.OpeningTurn(), 400, 0.9)).ConfigureAwait(false);
-				line = r.Ok ? ChildPrompts.Clean(r.Text) : null;
+				line = r.Ok ? ChildPrompts.Clean(r.Text, ctx.StageId) : null;
 			}
 			catch (Exception ex)
 			{

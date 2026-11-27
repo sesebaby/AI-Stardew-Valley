@@ -115,6 +115,11 @@ public sealed class ChildConversation
 					return;
 				}
 				_engine.Book.Add(ctx.Key, ctx.Day, "parent", text);
+				if (_remaining == _config().RepliesPerTalk)
+				{
+					// 这一场第一次接上话：算陪着玩了一回
+					_talk.Growth?.Note(ctx.Key, "play", ctx.Day);
+				}
 				_engine.Book.Add(ctx.Key, ctx.Day, "child", reply!);
 				_remaining--;
 				if (Game1.activeClickableMenu == menu)

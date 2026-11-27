@@ -454,6 +454,18 @@ public sealed class ModConfig
 	/// <summary>每天上午孩子跑出去玩的概率（0～100）。</summary>
 	public int ChildRunawayPercent { get; set; } = 3;
 
+	/// <summary>孩子学会走路以后还会长大：上学的年纪、少年（换样子、说话跟着变）。</summary>
+	public bool KidsGrowUp { get; set; } = true;
+
+	/// <summary>学会走路后再过几天到上学的年纪。</summary>
+	public int KidSchoolDays { get; set; } = AISV.Core.Family.GrowthRules.DefaultSchoolDays;
+
+	/// <summary>到上学的年纪后再过几天成少年。</summary>
+	public int KidTeenDays { get; set; } = AISV.Core.Family.GrowthRules.DefaultTeenDays;
+
+	/// <summary>孩子出门：上学的孩子在佩妮上课的日子去教室，少年周末去镇上逛。</summary>
+	public bool KidOutings { get; set; } = true;
+
 	/// <summary>婚后配偶每天有自己的安排：帮忙干农活、去镇上、看店、带孩子。</summary>
 	public bool SpousePlanner { get; set; } = true;
 
@@ -728,6 +740,8 @@ public sealed class ModConfig
 			_ => "Chat"
 		};
 		ChildRunawayPercent = System.Math.Clamp(ChildRunawayPercent, 0, 100);
+		KidSchoolDays = System.Math.Clamp(KidSchoolDays, 7, 336);
+		KidTeenDays = System.Math.Clamp(KidTeenDays, 7, 336);
 		SpouseHelpLevel = (SpouseHelpLevel ?? "").Trim().ToLowerInvariant() switch
 		{
 			"light" => "Light",

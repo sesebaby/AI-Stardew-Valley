@@ -26,6 +26,12 @@ public static class Kids
 
 	public static bool CanTalk(Child child) => child.Age >= 3;
 
+	/// <summary>长大以后的说话材料（阶段、阶段说法、长大那天写下的样子、性子），由 <see cref="KidGrowthService"/> 提供。</summary>
+	public static Func<Child, (string StageId, string StageText, string Grown, IReadOnlyList<string> Traits)>? Growth { get; set; }
+
+	/// <summary>家里情况里怎么说这个孩子多大。</summary>
+	public static string Describe(Child child) => KidGrowthService.Grown(child) ? AISV.Core.Family.KidStages.Label(KidGrowthService.Stage(child)) : StageName(child.Age);
+
 	/// <summary>是不是孩子：自己家的孩子（游戏的 Child），或者名单 / 年龄上算孩子的村民。</summary>
 	public static bool IsChild(NPC? npc) => npc is Child || (npc != null && ChildSafety.IsChild(npc.Name, npc.Age));
 
@@ -104,7 +110,7 @@ public static class Kids
 		}
 		foreach (Child sib in p.getChildren().Where(c => c.Name != null))
 		{
-			home.Add($"家里的孩子：{sib.Name}（{StageName(sib.Age)}，{(sib.Gender == Gender.Male ? "男孩" : "女孩")}）。");
+			home.Add($"家里的孩子：{sib.Name}（{Describe(sib)}，{(sib.Gender == Gender.Male ? "男孩" : "女孩")}）。");
 		}
 		if (home.Count == 0)
 		{
@@ -118,12 +124,16 @@ public static class Kids
 		Farmer p = Parent(child);
 		string place = child.currentLocation?.DisplayName ?? "";
 		string weather = Game1.isRaining ? "下雨" : Game1.isSnowing ? "下雪" : "晴";
+		(string stageId, string stageText, string grown, IReadOnlyList<string> traits) = Growth?.Invoke(child) ?? (AISV.Core.Family.KidStages.Toddler, StageText(child.Age), "", Array.Empty<string>());
 		return new ChildContext
 		{
 			Key = Key(child),
 			Name = child.Name ?? "",
 			Boy = child.Gender == Gender.Male,
-			Stage = StageText(child.Age),
+			Stage = stageText,
+			StageId = stageId,
+			Grown = grown,
+			Traits = traits,
 			ParentName = p.Name,
 			ParentRole = p.IsMale ? "爸爸" : "妈妈",
 			Home = Home(p, display, rewritten).Where(h => !h.Contains("家里的孩子：" + child.Name + "（")).ToList(),

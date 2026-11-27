@@ -11,6 +11,7 @@ using AISV.Core.Config;
 using AISV.Core.Consequences;
 using AISV.Core.Diagnostics;
 using AISV.Core.Dialogue;
+using AISV.Core.Family;
 using AISV.Core.Group;
 using AISV.Core.Messenger;
 using AISV.Core.Persona;
@@ -255,11 +256,30 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				Remember = (spouse, text) => _social.Gossip.AddLowKey(text, new[] { spouse }, "family", "runaway-" + GameState.Today.TotalDays, GameState.Today)
 			};
 			_conversations.StandInClicked = _runaway.TryFound;
-			helper.ConsoleCommands.Add("aisv_child", "孩子调试。\n用法：aisv_child runaway | end | list | talk | add [名字] [boy]", (_, args) =>
+			_growth = new GrowthBook(store);
+			_childTalk.Growth = _growth;
+			_runaway.Growth = _growth;
+			_kidGrowth = new KidGrowthService(() => _config, helper, _growth, _log)
+			{
+				Ai = _ai,
+				Talk = _childTalk,
+				KidBook = _childBook,
+				Display = _npcs.Names.Display,
+				Remember = (spouse, text) => _social.Gossip.AddLowKey(text, new[] { spouse }, "family", "kids-" + GameState.Today.TotalDays + "-" + text.GetHashCode(), GameState.Today),
+				Letter = (npc, trigger, subject, body) => _social.PostStoryLetter(npc, trigger, subject, body, null)
+			};
+			_kidGrowth.Apply(harmony);
+			Kids.Growth = _kidGrowth.Material;
+			helper.ConsoleCommands.Add("aisv_child", "孩子调试。\n用法：aisv_child runaway | end | list | talk | add [名字] [boy] | stage <名字> <toddler|school|teen> | grow | school | traits", (_, args) =>
 			{
 				if (!Context.IsWorldReady)
 				{
 					_log.Info("先进存档。");
+					return;
+				}
+				if (args.Length > 0 && args[0] is "stage" or "grow" or "school" or "traits")
+				{
+					_log.Info(ChildGrowthCommand(args));
 					return;
 				}
 				if (args.Length > 0 && args[0] == "list")
@@ -299,7 +319,11 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				}
 				_log.Info(_runaway.Force());
 			});
-			helper.Events.GameLoop.UpdateTicked += (_, _) => _runaway.OnUpdateTicked();
+			helper.Events.GameLoop.UpdateTicked += (_, _) =>
+			{
+				_runaway.OnUpdateTicked();
+				_kidGrowth.OnUpdateTicked();
+			};
 			_approaches = new ApproachCoordinator(source => source == MomentDirector.Source ? _config.EncountersOn : _awareness.Enabled, _dialogue.IsGeneratingFor, () => GenerationStatus.IsActive, () => _conversations.InDayTransition, _conversations.PresentPrepared, _log);
 			_awareness = new AwarenessSystem(() => _config, store, _npcs, _approaches, materials, _dialogue, helper.DirectoryPath, _log)
 			{
@@ -740,7 +764,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_shell.Stories = _stories;
 			string debugDir = Path.Combine(helper.DirectoryPath, "debug");
 			helper.ConsoleCommands.Add("aisv_story", "伴侣剧情调试，dump 写到 debug/。\n用法：aisv_story dump | marry <村民> | start <村民> [结构 1-5] | inject <村民> <结构> <文件> | prompt <村民> [结构] | theme <村民> <文字> | deliver <包> | advance <包> | scene <包> | due [天] | clear", (_, args) => _log.Info(Context.IsWorldReady ? _stories.Command(args, debugFile, debugDir) : "先进存档。"));
-			materials.Dealings = n => DialoguePrompts.Join(_squad.PromptLine(n), _gifts.PromptBlock(n), _commissions.PromptBlock(n), _errands.PromptBlock(n), _ledger.PromptBlock(n), _meetups.PromptBlock(n), _stories.PromptBlock(n), _farmHelp.PromptBlock(n), _adult.PromptBlock(n), MartPromptBlock(n), _spousePlan.PromptBlock(n), _life.PromptBlock(n));
+			materials.Dealings = n => DialoguePrompts.Join(_squad.PromptLine(n), _gifts.PromptBlock(n), _commissions.PromptBlock(n), _errands.PromptBlock(n), _ledger.PromptBlock(n), _meetups.PromptBlock(n), _stories.PromptBlock(n), _farmHelp.PromptBlock(n), _adult.PromptBlock(n), MartPromptBlock(n), _spousePlan.PromptBlock(n), _life.PromptBlock(n), _kidGrowth.PromptBlock(n));
 			_news = new WeeklyNewsService(() => _config, store, _social, _market, _commissions, _log) { Ai = _ai, Language = PromptLanguage };
 			_shell.News = _news;
 			_news.Money = _ledger.PaperLines;
@@ -852,6 +876,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				{
 					pets.OnTimeChanged();
 					_runaway.OnTimeChanged();
+					_kidGrowth.OnTimeChanged();
 					_mart.OnTimeChanged();
 					_spousePlan.OnTimeChanged();
 					_outings.OnTimeChanged();
@@ -972,6 +997,10 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private ChildRunaway _runaway = null!;
 
+	private GrowthBook? _growth;
+
+	private KidGrowthService _kidGrowth = null!;
+
 	private Harmony _harmony = null!;
 
 	private AISV.Game.Store.MartContent _martContent = null!;
@@ -998,6 +1027,39 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	private LifeService _life = null!;
 
 	/// <summary>聊天素材：这位村民最近在农夫的店里买过什么；Pierre 和 Morris 还知道自己的店现在怎么样。</summary>
+	/// <summary>aisv_child stage | grow | school | traits。</summary>
+	private string ChildGrowthCommand(string[] args)
+	{
+		switch (args[0])
+		{
+			case "stage" when args.Length >= 3:
+			{
+				if (!Context.IsMainPlayer)
+				{
+					return "阶段只能在房主那边改。";
+				}
+				if (Kids.All().FirstOrDefault(k => k.Name.Equals(args[1], StringComparison.OrdinalIgnoreCase)) is not StardewValley.Characters.Child kid || kid.Age < 3)
+				{
+					return "没有这个会走路的孩子：" + args[1];
+				}
+				_kidGrowth.SetStage(kid, KidStages.Parse(args[2]));
+				return $"{kid.Name} 现在是 {KidGrowthService.Stage(kid)}。";
+			}
+			case "grow":
+				// 调试：所有孩子按天数立刻长一档（和每天早上一样）
+				foreach (StardewValley.Characters.Child kid in Kids.All().Where(k => k.Age >= 3))
+				{
+					_kidGrowth.SetStage(kid, GrowthRules.Step(KidGrowthService.Stage(kid), KidStages.Teen));
+				}
+				return _kidGrowth.Describe();
+			case "school":
+				_kidGrowth.OnDayStarted();
+				return _kidGrowth.Describe();
+			default:
+				return _kidGrowth.Describe();
+		}
+	}
+
 	private string MartPromptBlock(string npc)
 	{
 		if (!_config.FarmerMart)
@@ -1114,6 +1176,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	{
 		Kids.RegisterFamily();
 		ChildRunaway.Sweep();
+		KidGrowthService.Sweep();
 		AISV.Game.Store.MartService.Sweep();
 		AISV.Game.World.HeartEventSource.Refresh(Helper, _log);
 		StepTimer timer = new StepTimer("AI星露谷 进存档");
@@ -1178,6 +1241,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		}
 		Kids.RegisterFamily();
 		_childBook?.Forget(Kids.All().Select(Kids.Key));
+		_growth?.Forget(Kids.All().Select(Kids.Key));
+		_kidGrowth.OnDayStarted();
 		AISV.Game.World.HeartEventSource.Refresh(Helper, _log);
 		HeadBubbles.Clear();
 		_eco.Invalidate();
@@ -1220,6 +1285,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 	private void OnDayEnding(object? sender, DayEndingEventArgs e)
 	{
 		_runaway.Cleanup();
+		_kidGrowth.Cleanup();
 		_spousePlan.Cleanup();
 		_mart.OnDayEnding();
 		if (_martContent.LastFine > 0)
@@ -1599,6 +1665,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		_martContent.OnAssetRequested(e);
 		_consequences.OnAssetRequested(e);
 		_life.OnAssetRequested(e);
+		_kidGrowth.OnAssetRequested(e);
 		_mart.EditShops(e);
 		Hints.EditMail(e);
 		_looks.OnAssetRequested(e);

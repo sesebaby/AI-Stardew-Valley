@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AISV.Core.Ai;
 using AISV.Core.Diagnostics;
+using AISV.Core.Family;
 using AISV.Core.Persona;
 using AISV.Core.Storage;
 using AISV.Core.Prompts;
@@ -24,6 +25,15 @@ public sealed class ChildContext
 
 	/// <summary>成长阶段的说法，比如"刚学会走路"。</summary>
 	public string Stage { get; init; } = "";
+
+	/// <summary>阶段（<see cref="KidStages"/>）：定说话的规矩和字数。</summary>
+	public string StageId { get; init; } = KidStages.Toddler;
+
+	/// <summary>长大那天写下的"现在是个什么样的孩子"（角色卡没写性格时用）。</summary>
+	public string Grown { get; init; } = "";
+
+	/// <summary>养出来的性子（说法）。</summary>
+	public IReadOnlyList<string> Traits { get; init; } = Array.Empty<string>();
 
 	public string ParentName { get; init; } = "";
 
@@ -167,10 +177,15 @@ public static class ChildPrompts
 
 	public const int MaxChars = 40;
 
-	/// <summary>没有角色卡时的默认性格。</summary>
+	/// <summary>没有角色卡时的默认性格（长大了用长大那天写的样子）。</summary>
 	public static string DefaultPersona(ChildContext c)
 	{
 		string kid = c.Boy ? "男孩" : "女孩";
+		if (c.StageId != KidStages.Toddler)
+		{
+			string grown = c.Grown.Length > 0 ? c.Grown : GrowthRules.FallbackPersona(c.Name, c.Boy, c.StageId, c.Traits.Count > 0 ? c.Traits : new[] { "curious" });
+			return $"{c.Name}是{c.ParentRole}{c.ParentName}的孩子，{kid}，{c.Stage}。{grown}";
+		}
 		return $"{c.Name}是{c.ParentRole}{c.ParentName}的孩子，{kid}，{c.Stage}。好奇心很重，什么都想摸一摸、问一问；最喜欢{c.ParentRole}陪着玩，高兴了会咯咯笑，困了会揉眼睛。";
 	}
 
@@ -179,6 +194,10 @@ public static class ChildPrompts
 		CharacterCard? card = c.Card;
 		StringBuilder sb = new StringBuilder();
 		sb.AppendLine(card?.Replaces == true ? card.Personality.Trim() : DefaultPersona(c));
+		if (c.Traits.Count > 0)
+		{
+			sb.AppendLine("从小养成的性子：" + string.Join("；", c.Traits.Select(GrowthRules.TraitText)));
+		}
 		if (!string.IsNullOrWhiteSpace(card?.Appearance))
 		{
 			sb.AppendLine("长相：" + card!.Appearance.Trim());
@@ -232,10 +251,11 @@ public static class ChildPrompts
 		}
 		sb.AppendLine();
 		sb.AppendLine("# 规矩（一定要守）");
-		sb.AppendLine("- 你是小孩：词很简单，句子短，可以重复、可以说错字、可以奶声奶气；只懂小孩懂的事（玩具、吃的、小动物、天气、爸爸妈妈、睡觉、讲故事）。");
-		sb.AppendLine("- 不谈恋爱、不谈成人话题、不谈钱和工作；大人问到这些就像小孩一样岔开，或者说听不懂。");
-		sb.AppendLine("- 不要像大人一样讲道理，也不要突然很懂事。");
-		sb.AppendLine($"- 只写你说出口的话，{MaxChars} 个字以内，不加引号，不写动作描写。");
+		foreach (string rule in GrowthRules.SpeechRules(c.StageId))
+		{
+			sb.AppendLine(rule);
+		}
+		sb.AppendLine($"- 只写你说出口的话，{GrowthRules.MaxChars(c.StageId)} 个字以内，不加引号，不写动作描写。");
 		return sb.ToString();
 	}
 
@@ -253,9 +273,9 @@ public static class ChildPrompts
 		return sb.ToString().Trim();
 	}
 
-	public static string? Clean(string? text)
+	public static string? Clean(string? text, string stage = KidStages.Toddler)
 	{
-		string t = TextTools.CleanForGame(TextTools.Truncate((text ?? "").Trim().Trim('"', '“', '”'), MaxChars));
+		string t = TextTools.CleanForGame(TextTools.Truncate((text ?? "").Trim().Trim('"', '“', '”'), GrowthRules.MaxChars(stage)));
 		return string.IsNullOrWhiteSpace(t) ? null : t;
 	}
 }
@@ -282,7 +302,7 @@ public sealed class ChildDialogue
 	{
 		string system = ChildPrompts.System(c, _book.Recent(c.Key, 12), opening: true);
 		AiResult r = await _ai.SendAsync(new ChatRequest(ChildPrompts.OpeningRequest, system, ChildPrompts.OpeningTurn(), 400, 0.9), ct).ConfigureAwait(false);
-		string? line = r.Ok ? ChildPrompts.Clean(r.Text) : null;
+		string? line = r.Ok ? ChildPrompts.Clean(r.Text, c.StageId) : null;
 		if (line == null)
 		{
 			_log.Debug($"孩子 {c.Name} 的开场没生成出来。");
@@ -294,6 +314,6 @@ public sealed class ChildDialogue
 	{
 		string system = ChildPrompts.System(c, _book.Recent(c.Key, 12), opening: false);
 		AiResult r = await _ai.SendAsync(new ChatRequest(ChildPrompts.ReplyRequest, system, ChildPrompts.ReplyTurn(c.ParentRole, lastLine, playerText), 400, 0.9), ct).ConfigureAwait(false);
-		return r.Ok ? ChildPrompts.Clean(r.Text) : null;
+		return r.Ok ? ChildPrompts.Clean(r.Text, c.StageId) : null;
 	}
 }

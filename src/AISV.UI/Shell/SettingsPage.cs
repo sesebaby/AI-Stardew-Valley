@@ -44,6 +44,9 @@ internal sealed class SettingsPage : ShellPage
 
 	private static readonly int[] RunawayChances = { 1, 3, 5, 10 };
 
+	/// <summary>孩子长一档要几天：一周、两周、一季、两季、一年。</summary>
+	private static readonly int[] GrowDays = { 7, 14, 28, 56, 112 };
+
 	private static readonly string[] ChildModes = { "Off", "Line", "Chat" };
 
 	private static readonly string[] HelpLevels = { "Light", "Normal", "Busy" };
@@ -99,6 +102,15 @@ internal sealed class SettingsPage : ShellPage
 	private static readonly string[] DramaLevels = { AISV.Core.Social.Drama.DramaRules.Cozy, AISV.Core.Social.Drama.DramaRules.Balanced, AISV.Core.Social.Drama.DramaRules.Dramatic };
 
 	private static readonly string[] SceneStyles = { AISV.Core.Scenes.SceneStyle.Natural, AISV.Core.Scenes.SceneStyle.AmbientOnly, AISV.Core.Scenes.SceneStyle.Cinematic };
+
+	private static string DaysLabel(int days) => days switch
+	{
+		7 => Tr.Get("shell.settings.days7", "一周"),
+		14 => Tr.Get("shell.settings.days14", "两周"),
+		28 => Tr.Get("shell.settings.days28", "一季"),
+		56 => Tr.Get("shell.settings.days56", "两季"),
+		_ => Tr.Get("shell.settings.days112", "一年")
+	};
 
 	private static int Nearest(int[] options, int value)
 	{
@@ -347,7 +359,11 @@ internal sealed class SettingsPage : ShellPage
 						new[] { Tr.Get("shell.settings.childOff", "不变"), Tr.Get("shell.settings.childLine", "每天一句"), Tr.Get("shell.settings.childChat", "能聊几句") },
 						c => Math.Max(0, Array.IndexOf(ChildModes, c.ChildTalkMode)), (c, i) => c.ChildTalkMode = ChildModes[i]),
 					new ToggleRow(Tr.Get("shell.settings.runaway", "孩子离家出走"), Tr.Get("shell.settings.runawayNote", "孩子偶尔跑到农场上躲起来玩，要你去找；靠近会听到笑声"), c => c.ChildRunaway, (c, v) => c.ChildRunaway = v),
-					new ChoiceRow(Tr.Get("shell.settings.runawayChance", "每天跑出去的机会"), Tr.Get("shell.settings.runawayChanceNote", "上午检查一次；同一个孩子至少隔两周"), RunawayChances.Select(n => n + "%").ToArray(), c => Nearest(RunawayChances, c.ChildRunawayPercent), (c, i) => c.ChildRunawayPercent = RunawayChances[i]) { Shown = c => c.ChildRunaway }
+					new ChoiceRow(Tr.Get("shell.settings.runawayChance", "每天跑出去的机会"), Tr.Get("shell.settings.runawayChanceNote", "上午检查一次；同一个孩子至少隔两周"), RunawayChances.Select(n => n + "%").ToArray(), c => Nearest(RunawayChances, c.ChildRunawayPercent), (c, i) => c.ChildRunawayPercent = RunawayChances[i]) { Shown = c => c.ChildRunaway },
+					new ToggleRow(Tr.Get("shell.settings.kidsGrow", "孩子会长大"), Tr.Get("shell.settings.kidsGrowNote", "会走路以后还会长到上学的年纪、再成少年：换样子，说话跟着长大；你陪得多少会养成不同的性子"), c => c.KidsGrowUp, (c, v) => c.KidsGrowUp = v),
+					new ChoiceRow(Tr.Get("shell.settings.kidSchoolDays", "多久到上学的年纪"), Tr.Get("shell.settings.kidSchoolDaysNote", "从学会走路算起"), GrowDays.Select(DaysLabel).ToArray(), c => Nearest(GrowDays, c.KidSchoolDays), (c, i) => c.KidSchoolDays = GrowDays[i]) { Shown = c => c.KidsGrowUp },
+					new ChoiceRow(Tr.Get("shell.settings.kidTeenDays", "多久成少年"), Tr.Get("shell.settings.kidTeenDaysNote", "从到上学的年纪算起"), GrowDays.Select(DaysLabel).ToArray(), c => Nearest(GrowDays, c.KidTeenDays), (c, i) => c.KidTeenDays = GrowDays[i]) { Shown = c => c.KidsGrowUp },
+					new ToggleRow(Tr.Get("shell.settings.kidOutings", "孩子出门"), Tr.Get("shell.settings.kidOutingsNote", "上学的孩子在佩妮上课的日子去教室（可以去看）；少年周末去镇上逛"), c => c.KidOutings, (c, v) => c.KidOutings = v) { Shown = c => c.KidsGrowUp }
 				}),
 				(Tr.Get("shell.settings.pets", "宠物"), new List<Row>
 				{

@@ -240,6 +240,14 @@ public static class GmcmSettings
 		api.AddBoolOption(manifest, () => get().ChildRunaway, v => get().ChildRunaway = v, () => Tr.Get("shell.settings.runaway", "孩子离家出走"),
 			() => Tr.Get("shell.settings.runawayNote", "孩子偶尔跑到农场上躲起来玩，要你去找；靠近会听到笑声"));
 		api.AddNumberOption(manifest, () => get().ChildRunawayPercent, v => get().ChildRunawayPercent = v, () => Tr.Get("shell.settings.runawayChance", "每天跑出去的机会"), min: 0, max: 100);
+		api.AddBoolOption(manifest, () => get().KidsGrowUp, v => get().KidsGrowUp = v, () => Tr.Get("shell.settings.kidsGrow", "孩子会长大"),
+			() => Tr.Get("shell.settings.kidsGrowNote", "会走路以后还会长到上学的年纪、再成少年：换样子，说话跟着长大；你陪得多少会养成不同的性子"));
+		api.AddNumberOption(manifest, () => get().KidSchoolDays, v => get().KidSchoolDays = v, () => Tr.Get("shell.settings.kidSchoolDays", "多久到上学的年纪"),
+			() => Tr.Get("shell.settings.kidSchoolDaysNote", "从学会走路算起"), min: 7, max: 336);
+		api.AddNumberOption(manifest, () => get().KidTeenDays, v => get().KidTeenDays = v, () => Tr.Get("shell.settings.kidTeenDays", "多久成少年"),
+			() => Tr.Get("shell.settings.kidTeenDaysNote", "从到上学的年纪算起"), min: 7, max: 336);
+		api.AddBoolOption(manifest, () => get().KidOutings, v => get().KidOutings = v, () => Tr.Get("shell.settings.kidOutings", "孩子出门"),
+			() => Tr.Get("shell.settings.kidOutingsNote", "上学的孩子在佩妮上课的日子去教室（可以去看）；少年周末去镇上逛"));
 		api.AddBoolOption(manifest, () => get().PetThoughts, v => get().PetThoughts = v, () => Tr.Get("shell.settings.petThoughts", "宠物的心里话"),
 			() => Tr.Get("shell.settings.petThoughtsNote", "你在宠物旁边时，它偶尔冒一句心里话（灰色泡泡）；暂时不能和宠物对话"));
 		api.AddNumberOption(manifest, () => get().PetThoughtsDaily, v => get().PetThoughtsDaily = v, () => Tr.Get("shell.settings.petDaily", "每只每天最多几句"), min: 1, max: 10);
