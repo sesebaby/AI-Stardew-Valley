@@ -637,6 +637,13 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_ledger.WireNet(_net);
 			_errands.Remote = () => _net.Linked;
 			_spousePlan.WireNet(_net);
+			_meetups.WireNet(_net);
+			_farmHelp.WireNet(_net);
+			_net.Synced += () =>
+			{
+				_meetups.Touch();
+				_farmHelp.Touch();
+			};
 			helper.Events.Multiplayer.ModMessageReceived += (_, e) => _net.OnMessageReceived(e);
 			helper.Events.Multiplayer.PeerDisconnected += (_, e) => _net.OnPeerDisconnected(e);
 			helper.Events.GameLoop.UpdateTicked += (_, _) => _net.OnUpdateTicked();

@@ -19,7 +19,8 @@ namespace AISV.Game.Companions;
 /// <summary>
 /// 约见：村民约你某天几点在某处见，你答应后日程改写让他走过去等。你走到身边算守约（+40，再待一小时），
 /// 他等到结束你没来算失约（-30），他那边去不了不怪你；下雨约在户外的改酒吧或者作罢；可以提前取消（当天 -10）。
-/// 只在主机上运行；同伴模块关掉时不约新的。
+/// 由房主排（村民在房主那边走动）；联机的农场帮手当面答应的约见交给房主排，结果在他自己那边生效（<see cref="CompanionNet"/>）。
+/// 同伴模块关掉时不约新的。
 /// </summary>
 public sealed class MeetupService
 {
@@ -46,6 +47,7 @@ public sealed class MeetupService
 		_schedules = schedules;
 		_log = log;
 		_schedules.Closed += OnOverlayClosed;
+		CompanionNet.StoodUp = n => StoodUp?.Invoke(n);
 	}
 
 	/// <summary>玩家答复过提议时（从账本拿掉）。</summary>
@@ -64,6 +66,9 @@ public sealed class MeetupService
 
 	public int Version { get; private set; }
 
+	/// <summary>房主发来了新的记录：界面重画。</summary>
+	public void Touch() => Version++;
+
 	public bool Enabled
 	{
 		get
@@ -81,7 +86,13 @@ public sealed class MeetupService
 
 	public Meetup? Find(string id) => Log?.Items.FirstOrDefault(m => m.Id == id);
 
-	public IReadOnlyList<Meetup> Upcoming() => All().Where(m => MeetupStates.IsOpen(m.State)).OrderBy(m => m.Day).ThenBy(m => m.Time).ToList();
+	/// <summary>这边的农夫还没到的约（联机时别的农夫的不算）。</summary>
+	public IReadOnlyList<Meetup> Upcoming() => OpenAll().Where(Mine).ToList();
+
+	/// <summary>所有农夫还没到的约（同一位村民同一时间只能去一处）。</summary>
+	private IReadOnlyList<Meetup> OpenAll() => All().Where(m => MeetupStates.IsOpen(m.State)).OrderBy(m => m.Day).ThenBy(m => m.Time).ToList();
+
+	private static bool Mine(Meetup m) => m.Farmer == CompanionNet.Me;
 
 	// ---------------- 生命周期 ----------------
 
@@ -101,6 +112,13 @@ public sealed class MeetupService
 			return;
 		}
 		_toConfirm.Clear();
+		_ready.Clear();
+		if (!Context.IsMainPlayer)
+		{
+			// 农场帮手：收尾、改地点都在房主那边；这边只提醒今天的约。
+			Remind();
+			return;
+		}
 		foreach (Meetup m in All().Where(m => MeetupStates.IsOpen(m.State) && m.Day < Today))
 		{
 			Close(m, MeetupStates.CalledOff, PlanReasons.Lost, Today - 1);
@@ -120,7 +138,16 @@ public sealed class MeetupService
 				MoveIndoorsForRain(m);
 			}
 		}
-		foreach (Meetup m in All().Where(m => MeetupStates.IsOpen(m.State) && m.Day == Today).OrderBy(m => m.Time))
+		Remind();
+	}
+
+	private void Remind()
+	{
+		if (!Enabled)
+		{
+			return;
+		}
+		foreach (Meetup m in Upcoming().Where(m => m.Day == Today))
 		{
 			Hud(Tr.Get("meetup.reminder", "今天 {{time}} 和{{npc}}约好在{{place}}见面。", ("time", Clock.Text(m.Time)), ("npc", NpcName(m.Npc)), ("place", PlaceLabel(m))));
 		}
@@ -138,26 +165,26 @@ public sealed class MeetupService
 		_schedules.Cancel(m.OverlayId, PlanReasons.RainMove);
 		string from = m.Place;
 		// 剧情的场景是按那个地方写的，不搬去酒吧。
-		if (m.Owner != MeetupRules.StoryOwner && npc != null && m.Time >= saloon.OpenTime && TryPlanOverlay(npc, m.Day, m.Time, saloon, out string? overlayId, out _))
+		if (m.Owner != MeetupRules.StoryOwner && npc != null && m.Time >= saloon.OpenTime && TryPlanOverlay(npc, m.Day, m.Time, saloon, m.Farmer, out string? overlayId, out _))
 		{
 			m.MovedFrom = from;
 			m.Place = saloon.Key;
 			m.OverlayId = overlayId!;
 			_log.Info($"约见 {m.Id}：下雨，从 {from} 改到酒吧。");
-			Hud(Tr.Get("meetup.movedForRain", "下雨了，{{npc}}说改在{{place}}见。", ("npc", NpcName(m.Npc)), ("place", MeetupPlaces.Label(saloon.Key))));
+			Tell(m, Tr.Get("meetup.movedForRain", "下雨了，{{npc}}说改在{{place}}见。", ("npc", NpcName(m.Npc)), ("place", MeetupPlaces.Label(saloon.Key))));
 			Version++;
 			MarkDirty();
 			return;
 		}
 		Close(m, MeetupStates.CalledOff, PlanReasons.Rain, Today);
-		Hud(Tr.Get("meetup.calledOffRain", "下雨了，{{npc}}说约在{{place}}的事改天再说。", ("npc", NpcName(m.Npc)), ("place", MeetupPlaces.Label(from, npc == null ? null : NpcName(m.Npc)))));
+		Tell(m, Tr.Get("meetup.calledOffRain", "下雨了，{{npc}}说约在{{place}}的事改天再说。", ("npc", NpcName(m.Npc)), ("place", MeetupPlaces.Label(from, npc == null ? null : NpcName(m.Npc)))));
 	}
 
 	// ---------------- 当面的提议：聊完问你 ----------------
 
 	public void Enqueue(PendingOffer offer)
 	{
-		if (Enabled && Context.IsMainPlayer && !_toConfirm.Contains(offer))
+		if (Enabled && (Context.IsMainPlayer || CompanionNet.Remote) && !_toConfirm.Contains(offer))
 		{
 			_toConfirm.Enqueue(offer);
 		}
@@ -165,15 +192,15 @@ public sealed class MeetupService
 
 	public void OnUpdateTicked()
 	{
-		if (Log == null || !Context.IsMainPlayer)
+		if (Log == null || !Context.IsMainPlayer && !CompanionNet.Remote)
 		{
 			return;
 		}
-		if (++_ticks % 30 == 0 && !Game1.eventUp)
+		if (++_ticks % 30 == 0 && !Game1.eventUp && Context.IsMainPlayer)
 		{
 			CheckKept();
 		}
-		if (_toConfirm.Count == 0)
+		if (_toConfirm.Count == 0 && _ready.Count == 0)
 		{
 			return;
 		}
@@ -185,9 +212,20 @@ public sealed class MeetupService
 		if (++_freeTicks >= FreeTicksBeforeAsking)
 		{
 			_freeTicks = 0;
-			Ask(_toConfirm.Dequeue());
+			if (_ready.Count > 0)
+			{
+				Resolved r = _ready.Dequeue();
+				Confirm(r.Offer, r.Day, r.Time, r.Place, r.Shifted);
+			}
+			else
+			{
+				Ask(_toConfirm.Dequeue());
+			}
 		}
 	}
+
+	/// <summary>农场帮手：房主算好了日子和地点，等你空下来再问。</summary>
+	private readonly Queue<Resolved> _ready = new Queue<Resolved>();
 
 	private void Ask(PendingOffer p)
 	{
@@ -197,11 +235,51 @@ public sealed class MeetupService
 			ResolveOffer?.Invoke(p.Id);
 			return;
 		}
+		if (CompanionNet.Remote)
+		{
+			AskHost(p, npc);
+			return;
+		}
 		if (!TryResolve(p, npc, out int day, out int time, out MeetupPlace place, out bool shifted, out string why))
 		{
 			ResolveOffer?.Invoke(p.Id);
 			_log.Info($"{npc.Name} 的约见（{p.When} {p.Time} {p.Where}）排不上：{why}。");
 			NoteCantArrange(npc.Name, why);
+			return;
+		}
+		Confirm(p, day, time, place.Key, shifted);
+	}
+
+	/// <summary>农场帮手：请房主算日子、地点能不能排上。</summary>
+	private void AskHost(PendingOffer p, NPC npc)
+	{
+		if (Refuses?.Invoke(npc.Name) == true)
+		{
+			ResolveOffer?.Invoke(p.Id);
+			NoteCantArrange(npc.Name, MeetupRules.StoodUpReason);
+			return;
+		}
+		CompanionNet.Net!.Ask<PendingOffer, Resolved>(ResolveOp, p, r =>
+		{
+			if (r == null || !r.Ok)
+			{
+				ResolveOffer?.Invoke(p.Id);
+				_log.Info($"{npc.Name} 的约见（{p.When} {p.Time} {p.Where}）房主那边排不上：{r?.Reason ?? MeetupRules.NoHostReason}。");
+				NoteCantArrange(npc.Name, r?.Reason ?? MeetupRules.NoHostReason);
+				return;
+			}
+			_ready.Enqueue(r with { Offer = p });
+		});
+	}
+
+	/// <summary>问你答不答应；答应了就排上（农场帮手请房主排）。</summary>
+	private void Confirm(PendingOffer p, int day, int time, string placeKey, bool shifted)
+	{
+		NPC? npc = Game1.getCharacterFromName(p.Npc);
+		MeetupPlace? place = MeetupPlaces.Get(placeKey);
+		if (npc == null || place == null)
+		{
+			ResolveOffer?.Invoke(p.Id);
 			return;
 		}
 		string when = MeetupRules.WhenText(day, Today) + " " + Clock.Text(time) + (shifted ? Tr.Get("meetup.earliestNote", "（走过去最快这个点到）") : "");
@@ -216,6 +294,21 @@ public sealed class MeetupService
 			ResolveOffer?.Invoke(p.Id);
 			if (answer != "yes")
 			{
+				return;
+			}
+			if (CompanionNet.Remote)
+			{
+				CompanionNet.Net!.Ask<ArrangeAsk, Arranged>(ArrangeOp, new ArrangeAsk(npc.Name, day, time, place.Key, p.Summary), a =>
+				{
+					if (a?.Ok == true)
+					{
+						Hud(Tr.Get("meetup.arranged", "约好了：{{when}}，{{place}}。", ("when", when), ("place", label)));
+					}
+					else
+					{
+						NoteCantArrange(npc.Name, a?.Reason ?? MeetupRules.NoHostReason);
+					}
+				});
 				return;
 			}
 			if (Arrange(npc.Name, day, time, place.Key, p.Summary, out string reason) == null)
@@ -236,7 +329,7 @@ public sealed class MeetupService
 	public static string NoText => Tr.Get("meetup.no", "改天吧");
 
 	/// <summary>把提议算成具体的日子、时间、地点并检查。今天的约不早于走过去能到的时间。</summary>
-	public bool TryResolve(PendingOffer p, NPC npc, out int day, out int time, out MeetupPlace place, out bool shifted, out string reason)
+	public bool TryResolve(PendingOffer p, NPC npc, out int day, out int time, out MeetupPlace place, out bool shifted, out string reason, long farmer = 0)
 	{
 		shifted = false;
 		reason = "";
@@ -247,7 +340,7 @@ public sealed class MeetupService
 		time = asked ?? MeetupRules.DefaultTime;
 		if (offset == 0)
 		{
-			int earliest = EarliestToday(npc, place);
+			int earliest = EarliestToday(npc, place, farmer);
 			if (!asked.HasValue || Clock.Minutes(time) < Clock.Minutes(earliest))
 			{
 				time = Math.Max(earliest, place.OpenTime);
@@ -259,7 +352,7 @@ public sealed class MeetupService
 				return false;
 			}
 		}
-		string? why = Check(npc, day, time, place);
+		string? why = Check(npc, day, time, place, farmer);
 		if (why != null)
 		{
 			reason = why;
@@ -268,10 +361,10 @@ public sealed class MeetupService
 		return true;
 	}
 
-	public int EarliestToday(NPC npc, MeetupPlace place)
+	public int EarliestToday(NPC npc, MeetupPlace place, long farmer = 0)
 	{
 		int walk = 60;
-		if (Resolve(place, npc, out string loc, out Point tile))
+		if (Resolve(place, npc, out string loc, out Point tile, farmer))
 		{
 			try
 			{
@@ -286,7 +379,7 @@ public sealed class MeetupService
 	}
 
 	/// <summary>地点在地图上的位置；找不到返回 false。</summary>
-	public static bool Resolve(MeetupPlace p, NPC npc, out string location, out Point tile)
+	public static bool Resolve(MeetupPlace p, NPC npc, out string location, out Point tile, long farmer = 0)
 	{
 		location = p.Location;
 		tile = new Point(p.X, p.Y);
@@ -309,7 +402,8 @@ public sealed class MeetupService
 		}
 		if (p.Key == MeetupPlaces.Farm)
 		{
-			FarmHouse? house = Game1.player == null ? null : Utility.getHomeOfFarmer(Game1.player);
+			Farmer? who = farmer == 0 ? Game1.player : CompanionNet.FarmerOf(farmer);
+			FarmHouse? house = who == null ? null : Utility.getHomeOfFarmer(who);
 			if (house == null)
 			{
 				return false;
@@ -341,7 +435,7 @@ public sealed class MeetupService
 
 	// ---------------- 排 ----------------
 
-	public string? Check(NPC npc, int day, int time, MeetupPlace place)
+	public string? Check(NPC npc, int day, int time, MeetupPlace place, long farmer = 0)
 	{
 		if (!Enabled)
 		{
@@ -351,7 +445,8 @@ public sealed class MeetupService
 		{
 			return MeetupRules.ChildReason;
 		}
-		if (Refuses?.Invoke(npc.Name) == true)
+		// 放鸽子太多次的冷落记在各人自己那边：农场帮手问之前自己查过。
+		if (farmer == 0 && Refuses?.Invoke(npc.Name) == true)
 		{
 			return MeetupRules.StoodUpReason;
 		}
@@ -367,16 +462,16 @@ public sealed class MeetupService
 		{
 			return MeetupRules.ClosedReason;
 		}
-		IReadOnlyList<Meetup> open = Upcoming();
+		IReadOnlyList<Meetup> open = OpenAll();
 		if (open.Any(m => string.Equals(m.Npc, npc.Name, StringComparison.OrdinalIgnoreCase)))
 		{
 			return MeetupRules.AlreadyReason;
 		}
-		if (open.Count(m => m.Day == day) >= MeetupRules.MaxPerDay)
+		if (open.Count(m => m.Day == day && m.Farmer == farmer) >= MeetupRules.MaxPerDay)
 		{
 			return MeetupRules.FullReason;
 		}
-		if (!Resolve(place, npc, out string loc, out Point tile))
+		if (!Resolve(place, npc, out string loc, out Point tile, farmer))
 		{
 			return PlanReasons.NoPlace;
 		}
@@ -384,7 +479,7 @@ public sealed class MeetupService
 		return reason.Length > 0 ? reason : null;
 	}
 
-	public Meetup? Arrange(string npcName, int day, int time, string placeKey, string summary, out string reason, string owner = "", string ownerRef = "")
+	public Meetup? Arrange(string npcName, int day, int time, string placeKey, string summary, out string reason, string owner = "", string ownerRef = "", long farmer = 0)
 	{
 		reason = "";
 		NPC? npc = Game1.getCharacterFromName(npcName);
@@ -394,13 +489,13 @@ public sealed class MeetupService
 			reason = PlanReasons.NoVillager;
 			return null;
 		}
-		string? why = Check(npc, day, time, place);
+		string? why = Check(npc, day, time, place, farmer);
 		if (why != null)
 		{
 			reason = why;
 			return null;
 		}
-		if (!TryPlanOverlay(npc, day, time, place, out string? overlayId, out reason))
+		if (!TryPlanOverlay(npc, day, time, place, farmer, out string? overlayId, out reason))
 		{
 			return null;
 		}
@@ -415,19 +510,20 @@ public sealed class MeetupService
 			Summary = summary ?? "",
 			CreatedDay = Today,
 			Owner = owner,
-			OwnerRef = ownerRef
+			OwnerRef = ownerRef,
+			Farmer = farmer
 		};
 		log.Items.Add(m);
-		_log.Info($"约见 {m.Id}：{npc.Name}，第 {day} 天 {time} 在 {place.Key}（{overlayId}）。");
+		_log.Info($"约见 {m.Id}：{npc.Name}{(farmer == 0 ? "" : "和 " + CompanionNet.FarmerOf(farmer)?.Name)}，第 {day} 天 {time} 在 {place.Key}（{overlayId}）。");
 		Version++;
 		MarkDirty();
 		return m;
 	}
 
-	private bool TryPlanOverlay(NPC npc, int day, int time, MeetupPlace place, out string? overlayId, out string reason)
+	private bool TryPlanOverlay(NPC npc, int day, int time, MeetupPlace place, long farmer, out string? overlayId, out string reason)
 	{
 		overlayId = null;
-		if (!Resolve(place, npc, out string loc, out Point tile))
+		if (!Resolve(place, npc, out string loc, out Point tile, farmer))
 		{
 			reason = PlanReasons.NoPlace;
 			return false;
@@ -441,15 +537,28 @@ public sealed class MeetupService
 	public bool CancelByPlayer(string id)
 	{
 		Meetup? m = Find(id);
-		if (m == null || !MeetupStates.IsOpen(m.State))
+		if (m == null || !MeetupStates.IsOpen(m.State) || !Mine(m))
 		{
 			return false;
 		}
+		if (CompanionNet.Remote)
+		{
+			// 房主那边取消；这边先划掉，等下一次同步。
+			CompanionNet.Net!.ToHost(CancelOp, new IdAsk(id));
+			m.State = MeetupStates.CancelledByPlayer;
+			Version++;
+			return true;
+		}
+		return CancelFor(m);
+	}
+
+	private bool CancelFor(Meetup m)
+	{
 		_schedules.Cancel(m.OverlayId, PlanReasons.FarmerCancelled);
 		Close(m, MeetupStates.CancelledByPlayer, PlanReasons.FarmerCancelled, Today);
 		if (m.Day == Today)
 		{
-			ChangeFriendship(m.Npc, MeetupRules.SameDayCancelFriendship);
+			CompanionNet.Send(m.Farmer, new CompanionEffect(m.Npc) { Friendship = MeetupRules.SameDayCancelFriendship });
 		}
 		return true;
 	}
@@ -471,13 +580,17 @@ public sealed class MeetupService
 
 	private void CheckKept()
 	{
-		Farmer? player = Game1.player;
-		if (player?.currentLocation == null || !Enabled)
+		if (!Enabled)
 		{
 			return;
 		}
 		foreach (Meetup m in All().Where(m => MeetupStates.IsOpen(m.State) && m.Day == Today))
 		{
+			Farmer? player = CompanionNet.FarmerOf(m.Farmer);
+			if (player?.currentLocation == null)
+			{
+				continue;
+			}
 			ScheduleOverlay? o = _schedules.Find(m.OverlayId);
 			if (o == null || !OverlayStates.IsHolding(o.State) || Clock.Minutes(Game1.timeOfDay) < Clock.Minutes(m.Time) - MeetupRules.KeptEarlyMinutes)
 			{
@@ -520,9 +633,8 @@ public sealed class MeetupService
 		}
 		if (!story)
 		{
-			ChangeFriendship(m.Npc, MeetupRules.KeptFriendship);
 			npc.doEmote(Character.happyEmote);
-			Say(npc, Tr.Get("meetup.keptLines", "你来啦！|正等你呢。|准时，不错嘛。|我也刚到。"));
+			CompanionNet.Send(m.Farmer, new CompanionEffect(m.Npc) { Friendship = MeetupRules.KeptFriendship, Line = Pick(Tr.Get("meetup.keptLines", "你来啦！|正等你呢。|准时，不错嘛。|我也刚到。")) });
 		}
 		_schedules.SetEnd(o.Id, Math.Min(o.End, Clock.Add(Game1.timeOfDay, MeetupRules.StayAfterKeptMinutes)));
 		_log.Info($"约见 {m.Id}：{Game1.timeOfDay} 在 {m.Place} 见到了 {m.Npc}。");
@@ -545,11 +657,7 @@ public sealed class MeetupService
 		if (o.State == OverlayStates.Done || o.CancelReason is PlanReasons.DayEnded or PlanReasons.Missed)
 		{
 			Close(m, MeetupStates.Missed, o.CancelReason.Length > 0 ? o.CancelReason : "the farmer didn't come", o.Day);
-			ChangeFriendship(m.Npc, MeetupRules.MissedFriendship);
-			if (m.Owner != MeetupRules.StoryOwner)
-			{
-				StoodUp?.Invoke(m.Npc);
-			}
+			CompanionNet.Send(m.Farmer, new CompanionEffect(m.Npc) { Friendship = MeetupRules.MissedFriendship, StoodUp = m.Owner != MeetupRules.StoryOwner });
 			return;
 		}
 		if (o.CancelReason is PlanReasons.RainMove or PlanReasons.FarmerCancelled)
@@ -559,7 +667,7 @@ public sealed class MeetupService
 		Close(m, MeetupStates.CalledOff, o.CancelReason, o.Day);
 		if (o.Day == Today && Context.IsWorldReady && o.CancelReason != PlanReasons.HeartEvent)
 		{
-			Hud(Tr.Get("meetup.calledOff", "{{npc}}今天去不了{{place}}了，改天再约吧。", ("npc", NpcName(m.Npc)), ("place", PlaceLabel(m))));
+			Tell(m, Tr.Get("meetup.calledOff", "{{npc}}今天去不了{{place}}了，改天再约吧。", ("npc", NpcName(m.Npc)), ("place", PlaceLabel(m))));
 		}
 	}
 
@@ -581,20 +689,65 @@ public sealed class MeetupService
 		}
 	}
 
-	private static void ChangeFriendship(string npc, int points)
-	{
-		NPC? n = Game1.getCharacterFromName(npc);
-		if (n != null && Game1.player != null && points != 0)
-		{
-			Game1.player.changeFriendship(points, n);
-		}
-	}
-
 	public string PromptBlock(string npc)
 	{
 		string display = NpcName(npc);
-		return MeetupRules.PromptBlock(All().Where(m => string.Equals(m.Npc, npc, StringComparison.OrdinalIgnoreCase)), Today, key => MeetupPlaces.Label(key, display));
+		return MeetupRules.PromptBlock(All().Where(m => Mine(m) && string.Equals(m.Npc, npc, StringComparison.OrdinalIgnoreCase)), Today, key => MeetupPlaces.Label(key, display));
 	}
+
+	// ---------------- 联机 ----------------
+
+	public const string ResolveOp = "meetup.resolve";
+
+	public const string ArrangeOp = "meetup.arrange";
+
+	public const string CancelOp = "meetup.cancel";
+
+	/// <summary>房主算好的日子和地点（<see cref="Offer"/> 只在农场帮手这边填）。</summary>
+	public sealed record Resolved(bool Ok, int Day, int Time, string Place, bool Shifted, string Reason)
+	{
+		public PendingOffer Offer { get; init; } = new PendingOffer();
+	}
+
+	public sealed record ArrangeAsk(string Npc, int Day, int Time, string Place, string Summary);
+
+	public sealed record Arranged(bool Ok, string Reason);
+
+	public sealed record IdAsk(string Id);
+
+	/// <summary>房主替农场帮手算、排、取消。</summary>
+	public void WireNet(AISV.Game.Net.NetSync net)
+	{
+		CompanionNet.Wire(net, _log);
+		net.On<PendingOffer>(ResolveOp, (from, p) =>
+		{
+			if (!Context.IsMainPlayer || Game1.getCharacterFromName(p.Npc) is not NPC npc)
+			{
+				return new Resolved(false, 0, 0, "", false, PlanReasons.NoVillager);
+			}
+			bool ok = TryResolve(p, npc, out int day, out int time, out MeetupPlace place, out bool shifted, out string reason, from);
+			return new Resolved(ok, day, time, place.Key, shifted, reason);
+		});
+		net.On<ArrangeAsk>(ArrangeOp, (from, a) =>
+		{
+			if (!Context.IsMainPlayer)
+			{
+				return new Arranged(false, MeetupRules.OffReason);
+			}
+			Meetup? m = Arrange(a.Npc, a.Day, a.Time, a.Place, a.Summary, out string reason, farmer: from);
+			return new Arranged(m != null, reason);
+		});
+		net.On<IdAsk>(CancelOp, (from, a) =>
+		{
+			if (Context.IsMainPlayer && Find(a.Id) is Meetup m && m.Farmer == from && MeetupStates.IsOpen(m.State))
+			{
+				CancelFor(m);
+			}
+		});
+	}
+
+	/// <summary>告诉约见的那位农夫（房主自己的直接弹提示）。</summary>
+	private static void Tell(Meetup m, string text) => CompanionNet.Send(m.Farmer, new CompanionEffect(m.Npc) { Hud = text });
 
 	// ---------------- 文字 ----------------
 
@@ -610,10 +763,10 @@ public sealed class MeetupService
 
 	private static void Hud(string text) => Game1.addHUDMessage(new HUDMessage(TextTools.CleanForGame(text), HUDMessage.newQuest_type));
 
-	private static void Say(NPC npc, string lines)
+	private static string Pick(string lines)
 	{
 		string[] options = lines.Split('|');
-		NpcSpeech.Say(npc, TextTools.CleanForGame(options[Game1.random.Next(options.Length)]));
+		return TextTools.CleanForGame(options[Game1.random.Next(options.Length)]);
 	}
 
 	private void MarkDirty() => _store()?.MarkDirty(MeetupLog.Path);

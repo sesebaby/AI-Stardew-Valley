@@ -50,6 +50,9 @@ public sealed class Meetup
 	public string Owner { get; set; } = "";
 
 	public string OwnerRef { get; set; } = "";
+
+	/// <summary>和哪位农夫约的（联机；0 = 房主，旧存档也是 0）。</summary>
+	public long Farmer { get; set; }
 }
 
 public sealed class MeetupLog
@@ -190,6 +193,9 @@ public static class MeetupRules
 	public const string AlreadyReason = "already has a plan with you";
 
 	public const string StoodUpReason = "was stood up too often lately";
+
+	/// <summary>联机的农场帮手问房主，房主没回话。</summary>
+	public const string NoHostReason = "the host didn't answer";
 	public const string FullReason = "you already have three plans that day";
 	public const string TooLateReason = "too late to get there today";
 
@@ -374,6 +380,10 @@ public static class MeetupRules
 	/// <summary>排不上的原因，说给玩家听。</summary>
 	public static string Explain(string reason)
 	{
+		if (reason == NoHostReason)
+		{
+			return Tr.Get("meetup.why.noHost", "房主那边没有回话");
+		}
 		if (reason.Contains("festival"))
 		{
 			return Tr.Get("meetup.why.festival", "那天镇上过节");

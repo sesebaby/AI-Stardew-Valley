@@ -145,6 +145,7 @@ public sealed class ModEntry : Mod
 			case "money": Game1.player.Money = int.Parse(a[0]); return Nothing();
 			case "friend": _result = Friend(a[0], int.Parse(a[1])); return Nothing();
 			case "marry": _result = Marry(a[0]); return Nothing();
+			case "answer": Answer(int.Parse(a[0])); return Nothing();
 			case "hold": return Hold(a[0], a.Length > 1 ? int.Parse(a[1]) : 1);
 			case "dump-texture": return DumpTexture(a[0], a[1]);
 			case "wallets": Game1.player.team.useSeparateWallets.Value = a[0] == "separate"; return Nothing();
@@ -500,6 +501,15 @@ public sealed class ModEntry : Mod
 		}
 		f.Points = points;
 		return JToken.FromObject(new { npc, points = f.Points });
+	}
+
+	/// <summary>选问题对话框里的第几个回答（从 0 数）。</summary>
+	private static void Answer(int index)
+	{
+		if (Game1.activeClickableMenu is not DialogueBox box || !box.isQuestion)
+			throw new InvalidOperationException("no question dialogue");
+		box.selectedResponse = index;
+		box.receiveLeftClick(box.x + 64, box.y + 64);
 	}
 
 	/// <summary>直接把这边的农夫和某位村民记成已婚（只改记录，不搬家、不演婚礼）。</summary>

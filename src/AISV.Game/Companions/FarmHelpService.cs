@@ -39,7 +39,7 @@ public interface ISquadCrew
 /// <summary>
 /// 约好时间上门帮工：接受时付钱；到点走到农舍门前，定下要干的活，你在农场时由 Squad 当场干，不在时按进度替他干；
 /// 干完、到点或你让他先回去时，没干完的按比例退钱。来不了、下雨不用浇水、没活可干全额退钱。
-/// 只在主机上运行。
+/// 由房主排和跑；联机的农场帮手当面答应的帮工交给房主排，来他家门前、钱和提示在他自己那边（<see cref="CompanionNet"/>）。
 /// </summary>
 public sealed class FarmHelpService
 {
@@ -78,6 +78,9 @@ public sealed class FarmHelpService
 
 	public int Version { get; private set; }
 
+	/// <summary>房主发来了新的记录：界面重画。</summary>
+	public void Touch() => Version++;
+
 	public bool Enabled
 	{
 		get
@@ -91,7 +94,13 @@ public sealed class FarmHelpService
 
 	private static int Today => Game1.Date?.TotalDays ?? 0;
 
-	public IReadOnlyList<FarmHelpJob> All() => Log?.Items.ToList() ?? new List<FarmHelpJob>();
+	/// <summary>这边的农夫约的（联机时别的农夫的不算）。</summary>
+	public IReadOnlyList<FarmHelpJob> All() => Every().Where(Mine).ToList();
+
+	/// <summary>所有农夫约的。</summary>
+	private IReadOnlyList<FarmHelpJob> Every() => Log?.Items.ToList() ?? new List<FarmHelpJob>();
+
+	private static bool Mine(FarmHelpJob j) => j.Farmer == CompanionNet.Me;
 
 	public FarmHelpJob? Find(string id) => Log?.Items.FirstOrDefault(j => j.Id == id);
 
@@ -108,7 +117,13 @@ public sealed class FarmHelpService
 		{
 			return;
 		}
-		foreach (FarmHelpJob j in All().Where(j => FarmHelpStates.IsOpen(j.State) && j.Day < Today))
+		if (!Context.IsMainPlayer)
+		{
+			// 农场帮手：收尾在房主那边；这边只提醒今天谁来。
+			Remind();
+			return;
+		}
+		foreach (FarmHelpJob j in Every().Where(j => FarmHelpStates.IsOpen(j.State) && j.Day < Today))
 		{
 			if (j.State == FarmHelpStates.Working)
 			{
@@ -127,15 +142,22 @@ public sealed class FarmHelpService
 		{
 			return;
 		}
-		foreach (FarmHelpJob j in All().Where(j => j.State == FarmHelpStates.Scheduled && j.Day == Today).OrderBy(j => j.Start))
+		foreach (FarmHelpJob j in Every().Where(j => j.State == FarmHelpStates.Scheduled && j.Day == Today).OrderBy(j => j.Start))
 		{
 			if (j.Task == "water" && (Game1.isRaining || Game1.IsRainingHere(Game1.getFarm())))
 			{
 				Close(j, FarmHelpStates.CalledOff, PlanReasons.Rain, j.Price, Today);
 				_schedules.Cancel(j.OverlayId, PlanReasons.Rain);
-				Hud(Tr.Get("farmhelp.rainOff", "下雨了，地都湿了，{{npc}}今天不用来浇水了。", ("npc", MeetupService.NpcName(j.Npc))) + FarmHelpRules.RefundText(j.Price));
-				continue;
+				Tell(j, Tr.Get("farmhelp.rainOff", "下雨了，地都湿了，{{npc}}今天不用来浇水了。", ("npc", MeetupService.NpcName(j.Npc))) + FarmHelpRules.RefundText(j.Price));
 			}
+		}
+		Remind();
+	}
+
+	private void Remind()
+	{
+		foreach (FarmHelpJob j in All().Where(j => j.State == FarmHelpStates.Scheduled && j.Day == Today).OrderBy(j => j.Start))
+		{
 			Hud(Tr.Get("farmhelp.reminder", "今天 {{time}}，{{npc}}来农场帮你{{task}}。", ("time", Clock.Text(j.Start)), ("npc", MeetupService.NpcName(j.Npc)), ("task", FarmHelpRules.TaskLabel(j.Task))));
 		}
 	}
@@ -147,7 +169,7 @@ public sealed class FarmHelpService
 		{
 			return;
 		}
-		foreach (FarmHelpJob j in All().Where(j => j.State == FarmHelpStates.Working))
+		foreach (FarmHelpJob j in Every().Where(j => j.State == FarmHelpStates.Working))
 		{
 			Finish(j, PlanReasons.DayEnded);
 		}
@@ -158,18 +180,22 @@ public sealed class FarmHelpService
 	/// <summary>Squad 问提议之前先问这里：是约好时间上门的就由这里问，返回 true。</summary>
 	public bool TryHandle(PendingOffer p, NPC npc)
 	{
-		if (Log == null || !Enabled || !Context.IsMainPlayer || !FarmHelpRules.IsFarmVisit(p.Type, p.Task, p.When, p.Time, Game1.timeOfDay, out int offset, out int time))
+		if (Log == null || !Enabled || !Context.IsMainPlayer && !CompanionNet.Remote || !FarmHelpRules.IsFarmVisit(p.Type, p.Task, p.When, p.Time, Game1.timeOfDay, out int offset, out int time))
 		{
 			return false;
 		}
-		Ask(p, npc, Today + offset, time);
+		if (CompanionNet.Remote)
+		{
+			CompanionNet.Net!.Ask<JobAsk, Answer>(CheckOp, new JobAsk(npc.Name, p.Task, Today + offset, time, p.Price, p.Summary), a => Ask(p, npc, Today + offset, time, a == null ? FarmHelpRules.NoHostReason : a.Ok ? null : a.Reason));
+			return true;
+		}
+		Ask(p, npc, Today + offset, time, Check(npc, p.Task, Today + offset, time));
 		return true;
 	}
 
-	private void Ask(PendingOffer p, NPC npc, int day, int time)
+	private void Ask(PendingOffer p, NPC npc, int day, int time, string? why)
 	{
 		string name = MeetupService.NpcName(npc.Name);
-		string? why = Check(npc, p.Task, day, time);
 		if (why != null)
 		{
 			ResolveOffer?.Invoke(p.Id);
@@ -187,10 +213,34 @@ public sealed class FarmHelpService
 		Game1.currentLocation.createQuestionDialogue(TextTools.CleanForGame(question), answers, (who, answer) =>
 		{
 			ResolveOffer?.Invoke(p.Id);
-			if (answer == "yes")
+			if (answer != "yes")
+			{
+				return;
+			}
+			if (!CompanionNet.Remote)
 			{
 				Hud(PayAndArrange(who, npc.Name, p.Task, day, time, price, p.Summary, out _));
+				return;
 			}
+			if (price > 0 && who.Money < price)
+			{
+				Hud(Tr.Get("farmhelp.notEnoughMoney", "钱不够：要 {{price}}g。", ("price", price)));
+				return;
+			}
+			CompanionNet.Net!.Ask<JobAsk, Answer>(ArrangeOp, new JobAsk(npc.Name, p.Task, day, time, price, p.Summary), a =>
+			{
+				if (a?.Ok != true)
+				{
+					Hud(CantArrangeText(name, a?.Reason ?? FarmHelpRules.NoHostReason));
+					return;
+				}
+				if (price > 0)
+				{
+					Game1.player.Money -= price;
+					Game1.playSound("purchaseClick");
+				}
+				Hud(Tr.Get("farmhelp.arranged", "说好了：{{when}} {{time}}，{{npc}}来农场帮你{{task}}。", ("when", MeetupService.WhenText(day)), ("time", Clock.Text(time)), ("npc", name), ("task", FarmHelpRules.TaskLabel(p.Task))));
+			});
 		});
 	}
 
@@ -281,7 +331,7 @@ public sealed class FarmHelpService
 
 	// ---------------- 排 ----------------
 
-	public string? Check(NPC npc, string task, int day, int time)
+	public string? Check(NPC npc, string task, int day, int time, long farmer = 0)
 	{
 		if (Log == null || !Enabled)
 		{
@@ -307,12 +357,12 @@ public sealed class FarmHelpService
 		{
 			return FarmHelpRules.SoonReason;
 		}
-		IReadOnlyList<FarmHelpJob> open = Open();
+		List<FarmHelpJob> open = Every().Where(j => FarmHelpStates.IsOpen(j.State)).ToList();
 		if (open.Any(j => j.Day == day && string.Equals(j.Npc, npc.Name, StringComparison.OrdinalIgnoreCase)))
 		{
 			return FarmHelpRules.ComingReason;
 		}
-		if (open.Count(j => j.Day == day) >= FarmHelpRules.MaxPerDay)
+		if (open.Count(j => j.Day == day && j.Farmer == farmer) >= FarmHelpRules.MaxPerDay)
 		{
 			return FarmHelpRules.FullReason;
 		}
@@ -322,7 +372,7 @@ public sealed class FarmHelpService
 		{
 			return shop;
 		}
-		if (!TryPorch(out Point porch))
+		if (!TryPorch(out Point porch, farmer))
 		{
 			return FarmHelpRules.NoHouseReason;
 		}
@@ -330,7 +380,7 @@ public sealed class FarmHelpService
 		return reason.Length > 0 ? reason : null;
 	}
 
-	public FarmHelpJob? Arrange(string npcName, string task, int day, int time, int price, string summary, out string reason)
+	public FarmHelpJob? Arrange(string npcName, string task, int day, int time, int price, string summary, out string reason, long farmer = 0)
 	{
 		reason = "";
 		NPC? npc = Game1.getCharacterFromName(npcName);
@@ -339,13 +389,13 @@ public sealed class FarmHelpService
 			reason = PlanReasons.NoVillager;
 			return null;
 		}
-		string? why = Check(npc, task, day, time);
+		string? why = Check(npc, task, day, time, farmer);
 		if (why != null)
 		{
 			reason = why;
 			return null;
 		}
-		TryPorch(out Point porch);
+		TryPorch(out Point porch, farmer);
 		int end = FarmHelpRules.EndOf(task, time);
 		ScheduleOverlay? o = _schedules.Plan(npc.Name, FarmHelpRules.Owner, day, time, end, "Farm", porch.X, porch.Y, 2, out reason);
 		if (o == null)
@@ -363,7 +413,8 @@ public sealed class FarmHelpService
 			Price = Math.Max(0, price),
 			OverlayId = o.Id,
 			Summary = summary ?? "",
-			CreatedDay = Today
+			CreatedDay = Today,
+			Farmer = farmer
 		};
 		log.Items.Add(j);
 		_log.Info($"帮工 {j.Id}：{npc.Name} 第 {day} 天 {time}～{end} 来{task}（{j.Price}g，{o.Id} → 农场 {o.X},{o.Y}）。");
@@ -372,11 +423,12 @@ public sealed class FarmHelpService
 		return j;
 	}
 
-	/// <summary>农舍门前旁边一格（不挡门）。</summary>
-	private static bool TryPorch(out Point porch)
+	/// <summary>这位农夫家门前旁边一格（不挡门）。</summary>
+	private static bool TryPorch(out Point porch, long farmer = 0)
 	{
 		porch = Point.Zero;
-		FarmHouse? house = Game1.player == null ? null : Utility.getHomeOfFarmer(Game1.player);
+		Farmer? who = farmer == 0 ? Game1.player : CompanionNet.FarmerOf(farmer);
+		FarmHouse? house = who == null ? null : Utility.getHomeOfFarmer(who);
 		if (house == null || Game1.getFarm() == null)
 		{
 			return false;
@@ -395,7 +447,7 @@ public sealed class FarmHelpService
 		{
 			return;
 		}
-		foreach (FarmHelpJob j in All().Where(j => FarmHelpStates.IsOpen(j.State) && j.Day == Today))
+		foreach (FarmHelpJob j in Every().Where(j => FarmHelpStates.IsOpen(j.State) && j.Day == Today))
 		{
 			try
 			{
@@ -426,7 +478,7 @@ public sealed class FarmHelpService
 			return;
 		}
 		int now = Game1.timeOfDay;
-		foreach (FarmHelpJob j in All().Where(j => j.State == FarmHelpStates.Working))
+		foreach (FarmHelpJob j in Every().Where(j => j.State == FarmHelpStates.Working))
 		{
 			try
 			{
@@ -463,12 +515,12 @@ public sealed class FarmHelpService
 		{
 			return false;
 		}
-		List<string> targets = FindTargets(j.Task, farm, out Point center, out int radius);
+		List<string> targets = FindTargets(j.Task, farm, j.Farmer, out Point center, out int radius);
 		if (targets.Count == 0)
 		{
 			Close(j, FarmHelpStates.NothingToDo, PlanReasons.NothingToDo, j.Price, Today);
-			Say(npc, Tr.Get("farmhelp.nothingLines", "嗯？看起来没什么要我干的嘛。|地里都弄好了啊，那我先回去了。"));
-			Hud(Tr.Get("farmhelp.nothing", "{{npc}}来了一看，没什么要干的，就回去了。", ("npc", MeetupService.NpcName(j.Npc))) + FarmHelpRules.RefundText(j.Price));
+			Say(j, npc, Tr.Get("farmhelp.nothingLines", "嗯？看起来没什么要我干的嘛。|地里都弄好了啊，那我先回去了。"));
+			Tell(j, Tr.Get("farmhelp.nothing", "{{npc}}来了一看，没什么要干的，就回去了。", ("npc", MeetupService.NpcName(j.Npc))) + FarmHelpRules.RefundText(j.Price));
 			_schedules.Cancel(j.OverlayId, PlanReasons.NothingToDo);
 			return true;
 		}
@@ -480,9 +532,10 @@ public sealed class FarmHelpService
 		j.StartedAt = Game1.timeOfDay;
 		j.State = FarmHelpStates.Working;
 		j.Progress = CountDone(j);
-		j.UsedSquad = Crew?.StartSiteWork(npc, j.Task, "Farm", center, radius) ?? false;
+		// 小队招人是招到房主名下：给农场帮手干的活按进度替他干。
+		j.UsedSquad = j.Farmer == 0 && (Crew?.StartSiteWork(npc, j.Task, "Farm", center, radius) ?? false);
 		_log.Info($"帮工 {j.Id}：{j.Npc} {Game1.timeOfDay} 开始{j.Task}，{j.Target} 处，中心 ({center.X},{center.Y}) 半径 {radius}，{(j.UsedSquad ? "Squad 当场干" : "按进度算")}。");
-		Say(npc, Tr.Get("farmhelp.arriveLines", "我来啦，这就开始干。|早啊，交给我吧。|来了来了，从哪儿开始？"));
+		Say(j, npc, Tr.Get("farmhelp.arriveLines", "我来啦，这就开始干。|早啊，交给我吧。|来了来了，从哪儿开始？"));
 		Version++;
 		MarkDirty();
 		return true;
@@ -518,14 +571,17 @@ public sealed class FarmHelpService
 			}
 			if (reason != PlanReasons.DayEnded)
 			{
-				Say(npc, done >= j.Target ? Tr.Get("farmhelp.doneLines", "都弄好了，我回去啦。|活干完了，有空再叫我。|好了！今天就到这儿。") : Tr.Get("farmhelp.partLines", "没全弄完，剩下的不多了。|今天先到这儿吧，我回去了。"));
+				Say(j, npc, done >= j.Target ? Tr.Get("farmhelp.doneLines", "都弄好了，我回去啦。|活干完了，有空再叫我。|好了！今天就到这儿。") : Tr.Get("farmhelp.partLines", "没全弄完，剩下的不多了。|今天先到这儿吧，我回去了。"));
 			}
 		}
 		if (reason != PlanReasons.DayEnded || done > 0)
 		{
-			Hud(Tr.Get("farmhelp.finished", "{{npc}}帮你{{task}}：做完 {{done}}/{{target}}。", ("npc", MeetupService.NpcName(j.Npc)), ("task", FarmHelpRules.TaskLabel(j.Task)), ("done", done), ("target", j.Target)) + FarmHelpRules.RefundText(j.Refund));
+			Tell(j, Tr.Get("farmhelp.finished", "{{npc}}帮你{{task}}：做完 {{done}}/{{target}}。", ("npc", MeetupService.NpcName(j.Npc)), ("task", FarmHelpRules.TaskLabel(j.Task)), ("done", done), ("target", j.Target)) + FarmHelpRules.RefundText(j.Refund));
 		}
-		Remember(j);
+		if (j.Farmer == 0)
+		{
+			Remember(j);
+		}
 		_log.Info($"帮工 {j.Id}：{j.Npc} 结束（{reason}），{Game1.timeOfDay}，做完 {done}/{j.Target}（替他干了 {j.RemoteDone}），退 {j.Refund}g / {j.Price}g。");
 	}
 
@@ -533,17 +589,30 @@ public sealed class FarmHelpService
 	public bool CancelByPlayer(string id)
 	{
 		FarmHelpJob? j = Find(id);
-		if (j == null || j.State != FarmHelpStates.Scheduled)
+		if (j == null || j.State != FarmHelpStates.Scheduled || !Mine(j))
 		{
 			return false;
 		}
+		if (CompanionNet.Remote)
+		{
+			// 房主那边取消、退钱；这边先划掉，等下一次同步。
+			CompanionNet.Net!.ToHost(CancelOp, new MeetupService.IdAsk(id));
+			j.State = FarmHelpStates.CancelledByPlayer;
+			Version++;
+			return true;
+		}
+		CancelFor(j);
+		return true;
+	}
+
+	private void CancelFor(FarmHelpJob j)
+	{
 		Close(j, FarmHelpStates.CancelledByPlayer, PlanReasons.FarmerCancelled, j.Price, Today);
 		_schedules.Cancel(j.OverlayId, PlanReasons.FarmerCancelled);
-		if (j.Day == Today && Game1.getCharacterFromName(j.Npc) is NPC npc)
+		if (j.Day == Today)
 		{
-			Game1.player.changeFriendship(FarmHelpRules.SameDayCancelFriendship, npc);
+			CompanionNet.Send(j.Farmer, new CompanionEffect(j.Npc) { Friendship = FarmHelpRules.SameDayCancelFriendship });
 		}
-		return true;
 	}
 
 	/// <summary>调试：人没走到也直接开工。</summary>
@@ -568,11 +637,11 @@ public sealed class FarmHelpService
 
 	public void DebugClear()
 	{
-		foreach (FarmHelpJob j in All().Where(j => j.State == FarmHelpStates.Working))
+		foreach (FarmHelpJob j in Every().Where(j => j.State == FarmHelpStates.Working))
 		{
 			Finish(j, PlanReasons.Cleared);
 		}
-		foreach (FarmHelpJob j in All().Where(j => j.State == FarmHelpStates.Scheduled))
+		foreach (FarmHelpJob j in Every().Where(j => j.State == FarmHelpStates.Scheduled))
 		{
 			Close(j, FarmHelpStates.CalledOff, PlanReasons.Cleared, 0, Today);
 			_schedules.Cancel(j.OverlayId, PlanReasons.Cleared);
@@ -588,7 +657,7 @@ public sealed class FarmHelpService
 		{
 			return;
 		}
-		FarmHelpJob? j = All().FirstOrDefault(x => x.OverlayId == o.Id);
+		FarmHelpJob? j = Every().FirstOrDefault(x => x.OverlayId == o.Id);
 		if (j == null || !FarmHelpStates.IsOpen(j.State))
 		{
 			return;
@@ -605,7 +674,7 @@ public sealed class FarmHelpService
 		Close(j, FarmHelpStates.CalledOff, o.CancelReason.Length > 0 ? o.CancelReason : "didn't make it", j.Price, o.Day);
 		if (o.Day == Today && Context.IsWorldReady && o.CancelReason != PlanReasons.DayEnded)
 		{
-			Hud(Tr.Get("farmhelp.calledOff", "{{npc}}今天来不了农场了。", ("npc", MeetupService.NpcName(j.Npc))) + FarmHelpRules.RefundText(j.Refund));
+			Tell(j, Tr.Get("farmhelp.calledOff", "{{npc}}今天来不了农场了。", ("npc", MeetupService.NpcName(j.Npc))) + FarmHelpRules.RefundText(j.Refund));
 		}
 	}
 
@@ -615,9 +684,9 @@ public sealed class FarmHelpService
 		j.Reason = reason;
 		j.ClosedDay = Math.Max(day, j.Day);
 		j.Refund = Math.Max(0, Math.Min(j.Price, refund));
-		if (j.Refund > 0 && Game1.player != null)
+		if (j.Refund > 0)
 		{
-			Game1.player.Money += j.Refund;
+			CompanionNet.Send(j.Farmer, new CompanionEffect(j.Npc) { Money = j.Refund });
 		}
 		_log.Info($"帮工 {j.Id}：{j.Npc} {state}（{reason}），退 {j.Refund}g。");
 		Version++;
@@ -626,7 +695,7 @@ public sealed class FarmHelpService
 
 	// ---------------- 活和进度 ----------------
 
-	private static List<string> FindTargets(string task, Farm farm, out Point center, out int radius)
+	private static List<string> FindTargets(string task, Farm farm, long farmer, out Point center, out int radius)
 	{
 		center = Point.Zero;
 		radius = 8;
@@ -641,7 +710,7 @@ public sealed class FarmHelpService
 			}
 			else
 			{
-				TryPorch(out center);
+				TryPorch(out center, farmer);
 			}
 			return animals.Select(a => a.myID.Value.ToString()).ToList();
 		}
@@ -713,13 +782,13 @@ public sealed class FarmHelpService
 		return farm == null ? 0 : j.Targets.Count(t => IsDone(j, t, farm));
 	}
 
-	/// <summary>那块地没有农夫就按速度全干；你在农场看着、Squad 在当场干时，只替屏幕外的干，速度减半。</summary>
+	/// <summary>那块地没有农夫就按速度全干；有农夫在农场时只替谁都看不到的地方干，速度减半。</summary>
 	private void RemoteWork(FarmHelpJob j)
 	{
 		Farm farm = Game1.getFarm();
-		bool farmerOnFarm = Game1.getOnlineFarmers().Any(f => f.currentLocation == farm);
+		List<Farmer> onFarm = Game1.getOnlineFarmers().Where(f => f.currentLocation == farm).ToList();
 		int budget = FarmHelpRules.RateOf(j.Task);
-		if (farmerOnFarm && j.UsedSquad && j.Task != "animals")
+		if (onFarm.Count > 0 && j.Task != "animals")
 		{
 			budget = Math.Max(1, budget / 2);
 		}
@@ -745,11 +814,11 @@ public sealed class FarmHelpService
 				did++;
 				continue;
 			}
-			if (!TryTile(target, out Vector2 tile) || (farmerOnFarm && (!j.UsedSquad || Utility.isOnScreen(tile * 64f, 64))))
+			if (!TryTile(target, out Vector2 tile) || onFarm.Any(f => InView(f, tile)))
 			{
 				continue;
 			}
-			if (DoTile(j.Task, farm, tile))
+			if (DoTile(j, farm, tile))
 			{
 				did++;
 			}
@@ -761,18 +830,21 @@ public sealed class FarmHelpService
 		}
 	}
 
-	private bool DoTile(string task, Farm farm, Vector2 tile) => task switch
+	/// <summary>那位农夫的屏幕大概看得到这格（本机用真实视口，别人按一屏 20×13 格估）。</summary>
+	private static bool InView(Farmer f, Vector2 tile) => f.IsLocalPlayer ? Utility.isOnScreen(tile * 64f, 64) : Math.Abs(f.Tile.X - tile.X) <= 11 && Math.Abs(f.Tile.Y - tile.Y) <= 8;
+
+	private bool DoTile(FarmHelpJob j, Farm farm, Vector2 tile) => j.Task switch
 	{
 		"water" => FarmChoreExecutor.WaterTile(farm, tile),
-		"harvest" => FarmChoreExecutor.HarvestTile(farm, tile, Store),
-		"clear" => FarmChoreExecutor.ClearTile(farm, tile, Store),
+		"harvest" => FarmChoreExecutor.HarvestTile(farm, tile, item => Store(item, j.Farmer)),
+		"clear" => FarmChoreExecutor.ClearTile(farm, tile, item => Store(item, j.Farmer)),
 		_ => false
 	};
 
 	/// <summary>放进小队箱子；满了放背包，再不行放门前。</summary>
-	private void Store(Item item)
+	private void Store(Item item, long farmer)
 	{
-		Farmer player = Game1.player;
+		Farmer player = CompanionNet.FarmerOf(farmer) ?? Game1.player;
 		if (Crew?.IsAvailable == true)
 		{
 			StardewValley.Inventories.Inventory chest = player.team.GetOrCreateGlobalInventory(SquadChestPrefix + player.UniqueMultiplayerID);
@@ -794,11 +866,12 @@ public sealed class FarmHelpService
 				return;
 			}
 		}
-		if (player.addItemToInventoryBool(item))
+		// 别的农夫的背包只能他自己那边放：放不进箱子就放在他家门前。
+		if (player == Game1.player && player.addItemToInventoryBool(item))
 		{
 			return;
 		}
-		TryPorch(out Point porch);
+		TryPorch(out Point porch, farmer);
 		Game1.createItemDebris(item, new Vector2(porch.X * 64 + 32, porch.Y * 64 + 32), -1, Game1.getFarm());
 	}
 
@@ -821,14 +894,52 @@ public sealed class FarmHelpService
 
 	private static void Hud(string text) => Game1.addHUDMessage(new HUDMessage(TextTools.CleanForGame(text), HUDMessage.newQuest_type));
 
-	private static void Say(NPC npc, string lines)
+	/// <summary>帮工冒一句（只画在雇他的那位农夫那边，人在旁边才看得见）。</summary>
+	private static void Say(FarmHelpJob j, NPC npc, string lines)
 	{
-		if (Game1.player?.currentLocation != npc.currentLocation)
-		{
-			return;
-		}
 		string[] options = lines.Split('|');
-		NpcSpeech.Say(npc, TextTools.CleanForGame(options[Game1.random.Next(options.Length)]));
+		CompanionNet.Send(j.Farmer, new CompanionEffect(npc.Name) { Line = TextTools.CleanForGame(options[Game1.random.Next(options.Length)]) });
+	}
+
+	/// <summary>告诉雇他的那位农夫（房主自己的直接弹提示）。</summary>
+	private static void Tell(FarmHelpJob j, string text) => CompanionNet.Send(j.Farmer, new CompanionEffect(j.Npc) { Hud = text });
+
+	// ---------------- 联机 ----------------
+
+	public const string CheckOp = "farmhelp.check";
+
+	public const string ArrangeOp = "farmhelp.arrange";
+
+	public const string CancelOp = "farmhelp.cancel";
+
+	public sealed record JobAsk(string Npc, string Task, int Day, int Time, int Price, string Summary);
+
+	public sealed record Answer(bool Ok, string Reason);
+
+	/// <summary>房主替农场帮手查、排、取消（钱在他自己那边付）。</summary>
+	public void WireNet(AISV.Game.Net.NetSync net)
+	{
+		net.On<JobAsk>(CheckOp, (from, a) =>
+		{
+			string? why = !Context.IsMainPlayer || Game1.getCharacterFromName(a.Npc) is not NPC npc ? PlanReasons.NoVillager : Check(npc, a.Task, a.Day, a.Time, from);
+			return new Answer(why == null, why ?? "");
+		});
+		net.On<JobAsk>(ArrangeOp, (from, a) =>
+		{
+			if (!Context.IsMainPlayer)
+			{
+				return new Answer(false, FarmHelpRules.OffReason);
+			}
+			FarmHelpJob? j = Arrange(a.Npc, a.Task, a.Day, a.Time, a.Price, a.Summary, out string reason, from);
+			return new Answer(j != null, reason);
+		});
+		net.On<MeetupService.IdAsk>(CancelOp, (from, a) =>
+		{
+			if (Context.IsMainPlayer && Find(a.Id) is FarmHelpJob j && j.Farmer == from && j.State == FarmHelpStates.Scheduled)
+			{
+				CancelFor(j);
+			}
+		});
 	}
 
 	private void MarkDirty() => _store()?.MarkDirty(FarmHelpLog.Path);

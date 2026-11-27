@@ -62,7 +62,8 @@ public sealed class OfferDesk
 
 	private bool SquadReady => Crew?.IsAvailable == true;
 
-	private bool ProposalsOn => _config().VillagersOfferHelp && _meetups.Enabled && Context.IsMainPlayer;
+	/// <summary>村民会提出约见、上门帮工（联机的农场帮手当面聊时也会，交给房主排）。</summary>
+	private bool ProposalsOn => _config().VillagersOfferHelp && _meetups.Enabled && (Context.IsMainPlayer || CompanionNet.Remote);
 
 	private static int Today => Game1.Date?.TotalDays ?? 0;
 
@@ -83,7 +84,8 @@ public sealed class OfferDesk
 	/// <summary>回复 JSON 里的提议字段：只列这位村民眼下的交情够得着的。</summary>
 	public string Json(bool texting, string npc, int hearts)
 	{
-		if (!ProposalsOn)
+		// 发消息、居民群里的提议只在房主那边（要当场排日程）。
+		if (!ProposalsOn || texting && !Context.IsMainPlayer)
 		{
 			return "";
 		}
@@ -100,7 +102,7 @@ public sealed class OfferDesk
 	}
 
 	/// <summary>居民群这一轮的约见说明。</summary>
-	public string GroupRule() => ProposalsOn ? OfferPrompts.GroupRule(SquadReady) : "";
+	public string GroupRule() => ProposalsOn && Context.IsMainPlayer ? OfferPrompts.GroupRule(SquadReady) : "";
 
 	// ---------------- 当面 ----------------
 
@@ -128,7 +130,8 @@ public sealed class OfferDesk
 			proposal.Summary = PromptSafe((reaction.Reaction ?? "").Trim(), MaxTextSummary);
 		}
 		PendingOffer? offer = Ledger.Review(npc.Name, proposal, Today, hearts, IsPartner(npc.Name), ChildSafety.IsChild(npc.Name, npc.Age), out string reason);
-		if (offer != null && type == OfferLedger.Meetup && !_meetups.TryResolve(offer, npc, out _, out _, out _, out _, out reason))
+		// 农场帮手这边排不了日程：先收下，问你之前由房主算能不能排上。
+		if (offer != null && type == OfferLedger.Meetup && Context.IsMainPlayer && !_meetups.TryResolve(offer, npc, out _, out _, out _, out _, out reason))
 		{
 			Ledger.Resolve(offer.Id);
 			offer = null;

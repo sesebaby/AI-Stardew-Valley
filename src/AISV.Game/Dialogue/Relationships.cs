@@ -85,6 +85,26 @@ public sealed class Relationships
 		_log.Debug($"{npcName} 的好感 +{friendship}：{before} → {f.Points}。");
 	}
 
+	/// <summary>
+	/// 直接改原版好感（不经过敌意）。村民在世界里走 changeFriendship；
+	/// 找不到人时（农场帮手那边只载入了自己所在的地图）直接改并照游戏的上限。
+	/// </summary>
+	public static void ChangeFriendship(Farmer player, string npcName, int amount)
+	{
+		if (amount == 0)
+		{
+			return;
+		}
+		if (Game1.getCharacterFromName(npcName) is NPC npc)
+		{
+			player.changeFriendship(amount, npc);
+		}
+		else if (player.friendshipData.TryGetValue(npcName, out Friendship? f))
+		{
+			AddWithoutNpc(player, npcName, f, amount);
+		}
+	}
+
 	private static void AddWithoutNpc(Farmer player, string npcName, Friendship f, int amount)
 	{
 		if (f.IsDivorced())

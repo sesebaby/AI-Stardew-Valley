@@ -1484,12 +1484,13 @@ public sealed class SocialSystem
 	/// <summary>全村共用的数据：联机时只有房主写。</summary>
 	/// <summary>
 	/// 全村共用的文档：只有房主写盘；联机时房主把它们发给农场帮手（<see cref="Net.NetSync"/>），农场帮手那边的改动不算数。
-	/// 信、"看到听到"、做错事的后果、心里的感受这些是各位农夫自己的，各存各的。
+	/// 约见、帮工由房主排，记录里写着是哪位农夫的。信、"看到听到"、做错事的后果、心里的感受这些是各位农夫自己的，各存各的。
 	/// </summary>
 	public static readonly string[] VillageDocuments =
 	{
 		GossipBook.PromptPath, GossipBook.FeedPath, GossipBook.StatePath, SocialWeb.Path, PersonalityBook.Path, StoryArcBook.Path, ResolvedLore.Path, ExpulsionBook.Path, ShopDetachBook.Path,
-		AISV.Core.Life.LifeBook.Path, AISV.Core.News.WeeklyNewsBook.Path, AISV.Core.World.Ledger.LedgerBook.Path, AISV.Core.World.Commissions.CommissionLog.Path
+		AISV.Core.Life.LifeBook.Path, AISV.Core.News.WeeklyNewsBook.Path, AISV.Core.World.Ledger.LedgerBook.Path, AISV.Core.World.Commissions.CommissionLog.Path,
+		AISV.Core.Companions.MeetupLog.Path, AISV.Core.Companions.FarmHelpLog.Path
 	};
 
 	/// <summary>

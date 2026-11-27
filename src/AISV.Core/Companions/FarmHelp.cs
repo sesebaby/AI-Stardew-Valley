@@ -22,6 +22,9 @@ public sealed class FarmHelpJob
 {
 	public string Id { get; set; } = "";
 
+	/// <summary>给哪位农夫干（联机；0 = 房主，旧存档也是 0）。</summary>
+	public long Farmer { get; set; }
+
 	public string Npc { get; set; } = "";
 
 	public string Task { get; set; } = "";
@@ -101,6 +104,9 @@ public static class FarmHelpRules
 	public const int MinNoticeMinutes = 60;
 
 	public const string OffReason = "farm help is off";
+
+	/// <summary>联机的农场帮手问房主，房主没回话。</summary>
+	public const string NoHostReason = "the host didn't answer";
 	public const string ChildReason = "children don't do farm work";
 	public const string TaskReason = "can't do that as a farm visit";
 	public const string DaysReason = "only today or tomorrow";
@@ -235,6 +241,10 @@ public static class FarmHelpRules
 
 	public static string Explain(string reason)
 	{
+		if (reason == NoHostReason)
+		{
+			return Tr.Get("farmhelp.why.noHost", "房主那边没有回话");
+		}
 		if (reason.Contains("shop"))
 		{
 			return Tr.Get("farmhelp.why.shop", "那时要看店");

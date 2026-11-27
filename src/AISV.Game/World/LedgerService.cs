@@ -1270,10 +1270,7 @@ public sealed partial class LedgerService
 
 	private static void ChangeFriendship(string npcName, int delta)
 	{
-		if (Game1.getCharacterFromName(npcName) is NPC npc && Game1.player.friendshipData.ContainsKey(npcName))
-		{
-			Game1.player.changeFriendship(delta, npc);
-		}
+		Relationships.ChangeFriendship(Game1.player, npcName, delta);
 	}
 
 	/// <summary>农场帮手这边：房主说这笔债该怎么办了。</summary>

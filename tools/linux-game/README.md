@@ -38,7 +38,7 @@ tools/linux-game/stop.sh a             # 只停这个实例；别的会话也在
 | `dump-texture <资源名> <文件>` | 把贴图存成 png（找原版素材的位置） |
 | `sleep` | 上床睡到第二天（联机时每个实例都要发） |
 | `talk <村民>`、`near <村民>`、`give <村民>` | 走到村民旁边点他 / 只站过去 / 把手上的东西给他 |
-| `click x y`、`text <字>`、`key <键>`、`close` | 操作当前菜单 |
+| `click x y`、`text <字>`、`key <键>`、`close`、`answer <序号>` | 操作当前菜单（answer 选问题对话框的第几个回答，从 0 数） |
 | `get <类型.成员...>`、`invoke <类型> <静态方法> [参数...]` | 读静态成员、调静态方法 |
 | `dump-asset <资源名> [类型全名]` | 导出资源（默认按字符串字典读，比如日程；别的类型写全名，比如 StardewValley.GameData.Weddings.WeddingData） |
 | `build-cabin x y`、`wallets separate\|shared` | 联机测试用 |

@@ -384,10 +384,9 @@ public sealed class CommissionService
 
 	private static void ChangeFriendship(string npc, int points)
 	{
-		NPC? n = Game1.getCharacterFromName(npc);
-		if (n != null && Game1.player != null)
+		if (Game1.player != null)
 		{
-			Game1.player.changeFriendship(points, n);
+			Relationships.ChangeFriendship(Game1.player, npc, points);
 		}
 	}
 
