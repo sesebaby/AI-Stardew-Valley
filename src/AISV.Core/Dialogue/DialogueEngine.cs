@@ -1485,7 +1485,7 @@ public sealed class DialogueEngine
 	/// <summary>去掉重复的句子，超过回复字数就截断。</summary>
 	private string Tidy(string text)
 	{
-		text = TextTools.CollapseRepeats(text);
+		text = TextTools.CollapseRepeats(TextTools.StripStage(text));
 		int limit = _ai.ReplyChars;
 		return text.Length > limit ? TextTools.Truncate(text, limit) : text;
 	}

@@ -165,6 +165,10 @@ public class CompanionTests
 	{
 		Assert.Equal("你好吗", TextTools.CleanForGame(" 你\u2B50好\u2600吗\U0001F600 "));
 		Assert.Equal("星露谷，100g！", TextTools.CleanForGame("星露谷，100g！"));
+		Assert.Equal("钩子又卷了。你也钓鱼？", TextTools.CleanForGame("（磕了磕烟斗）钩子又卷了。*轻笑* 你也钓鱼？"));
+		Assert.Equal("这本书（第二册）不错", TextTools.CleanForGame("这本书（第二册）不错"));
+		Assert.Equal("嫌闷就直说。", TextTools.StripStage("杯子上还沾着水，他擦了两下没抬头。“嫌闷就直说。”"));
+		Assert.Equal("她说“好”就走了。", TextTools.StripStage("她说“好”就走了。"));
 	}
 
 	[Fact]

@@ -157,8 +157,27 @@ public static class TextTools
 				sb.Append(c);
 			}
 		}
-		return Glyphs.Fix(sb.ToString().Trim());
+		return Glyphs.Fix(StripStage(sb.ToString()));
 	}
+
+	/// <summary>去掉开头或句末后面的一小段括号、星号动作；整句都是动作时原样留着。</summary>
+	public static string StripStage(string? text)
+	{
+		string raw = (text ?? "").Trim();
+		// “他擦了两下杯子。“……””这种旁白加引号：只留引号里的话。
+		Match told = Narrated.Match(raw);
+		if (told.Success)
+		{
+			raw = told.Groups[1].Value.Trim();
+		}
+		string clean = StageDirection.Replace(raw, "").Trim();
+		return clean.Length > 0 ? clean : raw;
+	}
+
+	// 开头或句末后面一小段括号、星号里的动作（“（磕了磕烟斗）”“*轻笑*”）：提示词不让写，AI 偶尔还写，显示前去掉。
+	private static readonly Regex StageDirection = new Regex(@"(?:^|(?<=[。！？!?…]))\s*(?:（[^（）\n]{1,20}）|\([^()\n]{1,20}\)|\*[^*\n]{1,20}\*)\s*", RegexOptions.Compiled);
+
+	private static readonly Regex Narrated = new Regex(@"^[^“”""]{0,60}[他她][^“”""]{0,60}[。，：:]\s*[“""]([^“”""]{2,})[”""]\s*$", RegexOptions.Compiled);
 
 	/// <summary>超长时尽量在句末断开（句末在后一半里），其次在空格处（后 30% 里），否则硬截加省略号。</summary>
 	public static string Truncate(string? text, int maxLength)

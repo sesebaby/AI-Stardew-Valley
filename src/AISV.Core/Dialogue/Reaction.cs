@@ -206,7 +206,7 @@ public static class ReactionParser
 	{
 		r.FriendshipPoints = Math.Clamp(r.FriendshipPoints, allowNegative ? -100 : 0, 100);
 		r.Emotion = Emotion.Normalize(r.Emotion);
-		r.Reaction = TextTools.Truncate(r.Reaction?.Trim() ?? "", Math.Max(0, maxLength));
+		r.Reaction = TextTools.Truncate(TextTools.StripStage(r.Reaction), Math.Max(0, maxLength));
 		if (r.ActionResponse != null)
 		{
 			r.ActionResponse.NpcReply ??= "";
