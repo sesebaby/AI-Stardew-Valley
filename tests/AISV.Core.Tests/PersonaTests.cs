@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using AISV.Core.Diagnostics;
 using AISV.Core.Persona;
 using AISV.Core.Prompts;
@@ -14,7 +15,7 @@ public class PersonaTests
 	{
 		NpcPersona p = PersonaResolver.Resolve(new PersonaInput { Name = "Abigail" }, year: 2);
 		Assert.Equal(PersonaSource.BuiltIn, p.Source);
-		Assert.Contains("杂货店老板家的独女", p.Personality);
+		Assert.Contains("皮埃尔和卡洛琳的独女", p.Personality);
 		Assert.Equal(PersonaSource.BuiltIn, PersonaResolver.Resolve(new PersonaInput { Name = "Mr. Qi" }, 2).Source);
 	}
 
@@ -53,6 +54,39 @@ public class PersonaTests
 		Assert.Contains("乔迪和肯特的大儿子", supplemented.Personality);
 		Assert.EndsWith("补充背景：会弹钢琴。", supplemented.Personality);
 		Assert.Equal("山姆哥", supplemented.DisplayNameOverride);
+	}
+
+	[Fact]
+	public void EveryVillagerHasOwnVoiceUnlessCardSaysOtherwise()
+	{
+		foreach (string name in BuiltInPersonas.VanillaNames.Concat(BuiltInPersonas.SveNames))
+		{
+			string? voice = BuiltInVoices.Of(name);
+			Assert.False(string.IsNullOrWhiteSpace(voice), name);
+			Assert.Contains("例句：", voice);
+			Assert.DoesNotContain("（", voice![voice.IndexOf("例句：")..]);
+			string card = BuiltInPersonas.VanillaPersonality(name) ?? BuiltInPersonas.SvePersonality(name)!;
+			Assert.True(card.Length >= 400, $"{name} 只有 {card.Length} 字");
+			foreach (string part in new[] { "身份：", "外貌：", "为人：", "日常：", "喜欢：", "讨厌：", "心里在意的：", "小习惯：", "镇上人怎么看：", "跟人相处：" })
+			{
+				Assert.Contains(part, card);
+			}
+			string full = PersonaResolver.Resolve(new PersonaInput { Name = name }, 2).Personality;
+			Assert.True(full.Length <= PersonaPrompt.PersonalityMaxChars, name);
+			// 大人的卡里不能有让孩子保护误判的字眼。
+			if (!ChildSafety.IsListed(name) && name != "Apples")
+			{
+				Assert.False(ChildSafety.IsChildCoded(name, ChildSafety.AgeAdult, full), name);
+			}
+		}
+		Assert.NotNull(BuiltInVoices.Of("Mr. Qi"));
+		Assert.Contains("说话：话很少", PersonaResolver.Resolve(new PersonaInput { Name = "Sebastian" }, 2).Personality);
+		Assert.Contains("说话：", PersonaResolver.Resolve(new PersonaInput { Name = "Sophia" }, 2).Personality);
+
+		NpcPersona own = PersonaResolver.Resolve(new PersonaInput { Name = "Sebastian", Card = new CharacterCard { Speech = "话痨" } }, 2);
+		Assert.DoesNotContain("话很少", own.Personality);
+		Assert.EndsWith("说话方式：话痨。", own.Personality);
+		Assert.DoesNotContain("话很少", PersonaResolver.Resolve(new PersonaInput { Name = "Sebastian", Card = new CharacterCard { Personality = "新人设" } }, 2).Personality);
 	}
 
 	[Fact]

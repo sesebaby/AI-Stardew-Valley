@@ -73,6 +73,11 @@ public static class PersonaResolver
 		else
 		{
 			(text, source) = Default(input, pack);
+			// 内置说话方式跟着内置人设走；卡上写了说话方式就用卡上的。
+			if (source is PersonaSource.BuiltIn or PersonaSource.Sve && string.IsNullOrWhiteSpace(card?.Speech) && BuiltInVoices.Of(name) is string voice)
+			{
+				text += " 说话：" + voice;
+			}
 			if (card != null)
 			{
 				text = Supplement(text, card);

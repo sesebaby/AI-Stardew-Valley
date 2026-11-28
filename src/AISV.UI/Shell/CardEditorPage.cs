@@ -223,7 +223,7 @@ internal sealed class CardEditorPage : ShellPage
 		Hearth.Tag(b, new Vector2(r.Right - 16 - Hearth.TagWidth(src, 0.66f), r.Y + 13), src, Hearth.Slip, Hearth.QuillSoft, 0.66f);
 		Rectangle copy = new Rectangle(body.X + 12, body.Bottom - 48, body.Width - 24, 44);
 		_leftView = new Rectangle(body.X, body.Y, body.Width, copy.Y - 8 - body.Y);
-		Prose(b, _leftView, _left, _default.Personality, Hearth.QuillSoft);
+		Prose(b, _leftView, _left, Fielded(_default.Personality), Hearth.QuillSoft);
 		Hearth.PressPlate(b, copy, Tr.Get("card.copyDefault", "抄进性格栏再改"), hover: Hearth.Hover(copy), scale: 0.75f);
 		hits.Add(copy, () =>
 		{
@@ -233,7 +233,14 @@ internal sealed class CardEditorPage : ShellPage
 				Host.Notice(Tr.Get("card.personalityNotEmpty", "性格栏里已经有字了；先清空再抄"));
 				return;
 			}
-			p.Text = _default.Personality.Length > p.MaxChars ? _default.Personality.Substring(0, p.MaxChars) : _default.Personality;
+			// 内置说话方式单独抄进"说话方式"栏，两样分开改。
+			(string nature, string voice) = SplitVoice(_default.Personality);
+			p.Text = nature.Length > p.MaxChars ? nature.Substring(0, p.MaxChars) : nature;
+			TextArea speech = _slots[5].Area;
+			if (voice.Length > 0 && speech.Text.Trim().Length == 0)
+			{
+				speech.Text = voice;
+			}
 			_fields.Focus(p);
 			Game1.playSound("coin");
 		});
@@ -263,6 +270,18 @@ internal sealed class CardEditorPage : ShellPage
 		_rightView = new Rectangle(body.X, body.Y, body.Width, (int)cp.Y - 6 - body.Y);
 		Prose(b, _rightView, _right, text, Hearth.Quill);
 		Hearth.Ink(b, count, cp, _preview.Personality.Length > 2400 ? Hearth.Rust : Hearth.QuillPale, 0.66f);
+	}
+
+	private static readonly System.Text.RegularExpressions.Regex FieldLabel = new System.Text.RegularExpressions.Regex("(?<=[。；]) ?(?=(外貌|为人|日常|喜欢|讨厌|心里在意的|小习惯|镇上人怎么看|跟人相处|说话|说话方式|补充背景|社交标签)：)");
+
+	/// <summary>默认设定一项一行，好读。</summary>
+	internal static string Fielded(string text) => FieldLabel.Replace(text, "\n");
+
+	/// <summary>拆出默认设定末尾的内置说话方式（" 说话：……"）。</summary>
+	internal static (string Nature, string Voice) SplitVoice(string text)
+	{
+		int at = text.IndexOf(" 说话：", StringComparison.Ordinal);
+		return at < 0 ? (text, "") : (text.Substring(0, at).Trim(), text.Substring(at + 4).Trim());
 	}
 
 	private static void Prose(SpriteBatch b, Rectangle view, Scroller scroll, string text, Color color)
