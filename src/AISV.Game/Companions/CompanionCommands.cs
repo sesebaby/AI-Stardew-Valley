@@ -68,8 +68,9 @@ public sealed class CompanionCommands
 		{
 			case "arrange" when args.Length >= 4:
 			{
-				// arrange <村民> <地点> <时间> [天数偏移]
-				Meetup? m = _meetups.Arrange(args[1], Today + Int(args, 4, 0), Int(args, 3, 1400), args[2], "调试", out string why);
+				// arrange <村民> <地点> <时间> [天数偏移] [约好的事…]
+				string summary = args.Length > 5 ? string.Join(" ", args.Skip(5)) : "调试";
+				Meetup? m = _meetups.Arrange(args[1], Today + Int(args, 4, 0), Int(args, 3, 1400), args[2], summary, out string why);
 				return m == null ? "排不上：" + why : $"约好了 {m.Id}（{m.OverlayId}）";
 			}
 			case "offer" when args.Length >= 2:
