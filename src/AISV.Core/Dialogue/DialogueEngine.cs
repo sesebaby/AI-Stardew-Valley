@@ -574,7 +574,7 @@ public sealed class DialogueEngine
 		string canon = DialoguePrompts.CanonOpening(m.VanillaLine, config.FeedGameLineToAi);
 		string focus = hasFocus ? m.OpeningFocus.Trim() : "";
 		string personality = PersonaPrompt.PersonalityBlock(npc, m.Personality);
-		string usage = PersonaPrompt.UsageRules(npc, m.CardRewritten);
+		string usage = PersonaPrompt.UsageRules(npc, m.CardRewritten, PersonaPrompt.BondTone(m.Hearts, m.IsAdultRomanticPartner, m.IsSpouse));
 		string replyChars = _ai.ReplyChars.ToString();
 
 		// 新看过的心事件（和上次聊天时比），够 4 心就先聊它。
@@ -708,7 +708,7 @@ public sealed class DialogueEngine
 			["DONT_REPEAT"] = _recent.OpeningBlock(npc),
 			["BOND_LEVEL"] = FriendshipTone.Describe(m.Hearts, m.EnmityHearts),
 			["FOCUS_BLOCK"] = topicBlock,
-			["LINE_LIMIT"] = replyChars,
+			["LINE_LIMIT"] = PersonaPrompt.LineLimit(_ai.ReplyChars, m.Hearts, m.IsAdultRomanticPartner || m.IsSpouse).ToString(),
 			["SPEAK_IN"] = _language()
 		});
 		AiResult result = await _ai.SendAsync(new ChatRequest(OpeningRequest, prompt, DialoguePrompts.OpeningUserTurn(m.PromptName, todayNumber, config.RepliesPerTalk), OpeningTokens, Temperature), ct).ConfigureAwait(false);
@@ -735,7 +735,7 @@ public sealed class DialogueEngine
 			["FARMER_NAME"] = m.PlayerName,
 			["HEART_COUNT"] = m.Hearts.ToString(),
 			["NATURE"] = PersonaPrompt.PersonalityBlock(m.NpcName, m.Personality),
-			["PLAY_THE_ROLE"] = PersonaPrompt.UsageRules(m.NpcName, m.CardRewritten),
+			["PLAY_THE_ROLE"] = PersonaPrompt.UsageRules(m.NpcName, m.CardRewritten, PersonaPrompt.BondTone(m.Hearts, m.IsAdultRomanticPartner, m.IsSpouse)),
 			["HOW_THEY_CHANGED"] = m.PersonalityEvolution,
 			["PLANNING_OPTIONS"] = options,
 			["WORLD_BRIEF"] = world,
@@ -762,7 +762,7 @@ public sealed class DialogueEngine
 			["FARMER_NAME"] = m.PlayerName,
 			["HEART_COUNT"] = m.Hearts.ToString(),
 			["NATURE"] = PersonaPrompt.PersonalityBlock(m.NpcName, m.Personality),
-			["PLAY_THE_ROLE"] = PersonaPrompt.UsageRules(m.NpcName, m.CardRewritten),
+			["PLAY_THE_ROLE"] = PersonaPrompt.UsageRules(m.NpcName, m.CardRewritten, PersonaPrompt.BondTone(m.Hearts, m.IsAdultRomanticPartner, m.IsSpouse)),
 			["HOW_THEY_CHANGED"] = m.PersonalityEvolution,
 			["ITEM_NAME"] = c.WantedItemName,
 			["REQUEST_TEXT"] = requestText,
@@ -809,7 +809,7 @@ public sealed class DialogueEngine
 			{
 				["VILLAGER"] = m.PromptName,
 				["NATURE"] = PersonaPrompt.PersonalityBlock(npc, m.Personality),
-				["PLAY_THE_ROLE"] = PersonaPrompt.UsageRules(npc, m.CardRewritten),
+				["PLAY_THE_ROLE"] = PersonaPrompt.UsageRules(npc, m.CardRewritten, PersonaPrompt.BondTone(m.Hearts, m.IsAdultRomanticPartner, m.IsSpouse)),
 				["HOW_THEY_CHANGED"] = m.PersonalityEvolution,
 				["FARMER_NAME"] = m.PlayerName,
 				["HEART_COUNT"] = m.Hearts.ToString(),
@@ -901,7 +901,7 @@ public sealed class DialogueEngine
 			["MOOD_NOW"] = festival ? m.VillageState + m.Mood + m.SocialDrama : m.VillageState + m.Mood + m.Favors + m.ItemRequest + m.Arc + m.SocialDrama,
 			["HOW_THEY_FEEL"] = m.EmotionalProfile,
 			["HOW_THEY_CHANGED"] = m.PersonalityEvolution,
-			["PLAY_THE_ROLE"] = PersonaPrompt.UsageRules(npc, m.CardRewritten),
+			["PLAY_THE_ROLE"] = PersonaPrompt.UsageRules(npc, m.CardRewritten, PersonaPrompt.BondTone(m.Hearts, m.IsAdultRomanticPartner, m.IsSpouse)),
 			["JUST_GIVEN"] = m.Gift,
 			["FROM_MODS"] = DialoguePrompts.Combine(m.ModContext, DialoguePrompts.DramaTone(config, m.AdultRelationshipDrama && !m.IsChildCoded && !ChildSafety.IsChildCoded(npc, null, m.Personality))),
 			["WORLD_BRIEF"] = DialoguePrompts.Join(m.WorldContext, m.CanonicalLore, DialoguePrompts.CanonFollowup(state?.GameLineHint, config.FeedGameLineToAi)),
@@ -914,7 +914,7 @@ public sealed class DialogueEngine
 			["DONT_REPEAT_REPLY"] = _recent.ReactionBlock(npc),
 			["BIRTHDAY_BLOCK"] = m.ReplyBirthday,
 			["CHANNEL_BLOCK"] = m.ChannelSection,
-			["LINE_LIMIT"] = replyLimit.ToString(),
+			["LINE_LIMIT"] = PersonaPrompt.LineLimit(replyLimit, m.Hearts, m.IsAdultRomanticPartner || m.IsSpouse).ToString(),
 			["SPEAK_IN"] = language
 		});
 		string user = DialoguePrompts.ReplyUserTurn(m.PromptName, m.PlayerName, line, wrapped, m.MaxReplyChars > 0 ? replyLimit : 0);
@@ -1124,7 +1124,7 @@ public sealed class DialogueEngine
 				["YEAR_NUM"] = m.Year.ToString(),
 				["SKY"] = m.Weather,
 				["NATURE"] = PersonaPrompt.PersonalityBlock(npc, m.Personality),
-				["PLAY_THE_ROLE"] = PersonaPrompt.UsageRules(npc, m.CardRewritten),
+				["PLAY_THE_ROLE"] = PersonaPrompt.UsageRules(npc, m.CardRewritten, PersonaPrompt.BondTone(m.Hearts, m.IsAdultRomanticPartner, m.IsSpouse)),
 				["HOW_THEY_CHANGED"] = m.PersonalityEvolution,
 				["HOW_THEY_FEEL"] = m.EmotionalProfile,
 				["JUST_GIVEN"] = m.Gift,
@@ -1402,7 +1402,7 @@ public sealed class DialogueEngine
 			["HEART_COUNT"] = m.Hearts.ToString(),
 			["PAST_LIFE"] = m.PlayerProfile,
 			["NATURE"] = PersonaPrompt.PersonalityBlock(npc, m.Personality),
-			["PLAY_THE_ROLE"] = PersonaPrompt.UsageRules(npc, m.CardRewritten),
+			["PLAY_THE_ROLE"] = PersonaPrompt.UsageRules(npc, m.CardRewritten, PersonaPrompt.BondTone(m.Hearts, m.IsAdultRomanticPartner, m.IsSpouse)),
 			["HOW_THEY_CHANGED"] = m.PersonalityEvolution,
 			["NPC_DIALOGUE"] = line,
 			["LOG_TEXT"] = HistoryText(npc, _log.Recent(npc, window), today, m.PlayerName, window, m.ContextType, m.ContextId),

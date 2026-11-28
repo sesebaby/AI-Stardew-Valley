@@ -567,6 +567,9 @@ public sealed class ModConfig
 	/// <summary>心愿达成后可能换工作（账本、聊天里跟着变）。</summary>
 	public bool LifeJobs { get; set; } = true;
 
+	/// <summary>村民随经历成长：经历攒够了就让 AI 在原本的底色上重写"现在的他"（每天最多两位）。</summary>
+	public bool VillagerGrowth { get; set; } = true;
+
 	/// <summary>小超市收银小游戏：顾客排到柜台前等你来收银找零（关掉就自动结账）。</summary>
 	public bool MartCheckoutGame { get; set; } = true;
 

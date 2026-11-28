@@ -329,7 +329,8 @@ internal sealed class SettingsPage : ShellPage
 					new ToggleRow(Tr.Get("shell.settings.lifeOn", "村民有自己的心愿"), Tr.Get("shell.settings.lifeOnNote", "村民慢慢做成自己想做的事，走到某一步会托你帮忙，达成时请你去看；暗生好感的村民可能交往"), c => c.LifeOn, (c, v) => c.LifeOn = v),
 					new ChoiceRow(Tr.Get("shell.settings.lifeGoals", "同时几位在忙"), Tr.Get("shell.settings.lifeGoalsNote", "每周看一次，有空位时再有一位村民开始新的心愿"), LifeGoalCounts.Select(n => n.ToString()).ToArray(), c => Nearest(LifeGoalCounts, c.LifeGoalsAtOnce), (c, i) => c.LifeGoalsAtOnce = LifeGoalCounts[i]) { Shown = c => c.LifeOn },
 					new ToggleRow(Tr.Get("shell.settings.lifeWeddings", "村民之间的婚礼"), Tr.Get("shell.settings.lifeWeddingsNote", "交往久了可能订婚，一周后在镇广场办婚礼；关掉就只交往。还要开着“村民之间可能产生好感”"), c => c.LifeWeddings, (c, v) => c.LifeWeddings = v) { Shown = c => c.LifeOn },
-					new ToggleRow(Tr.Get("shell.settings.lifeJobs", "心愿达成后换工作"), Tr.Get("shell.settings.lifeJobsNote", "有的村民做成以后换了工作，账本和聊天里跟着变"), c => c.LifeJobs, (c, v) => c.LifeJobs = v) { Shown = c => c.LifeOn }
+					new ToggleRow(Tr.Get("shell.settings.lifeJobs", "心愿达成后换工作"), Tr.Get("shell.settings.lifeJobsNote", "有的村民做成以后换了工作，账本和聊天里跟着变"), c => c.LifeJobs, (c, v) => c.LifeJobs = v) { Shown = c => c.LifeOn },
+					new ToggleRow(Tr.Get("shell.settings.growth", "村民随经历成长"), Tr.Get("shell.settings.growthNote", "交情深了、做成心愿、结婚换工作以后，村民会在原来的脾气上慢慢变一点；整个改写过性格的村民不动"), c => c.VillagerGrowth, (c, v) => c.VillagerGrowth = v)
 				})
 			}),
 			new Category(Tr.Get("shell.settings.home", "家里"), Tr.Get("shell.settings.homeDesc", "配偶、孩子和宠物。"), new List<(string, List<Row>)>

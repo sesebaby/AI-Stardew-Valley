@@ -721,6 +721,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				Persona = n => _npcs.Persona(n, StardewValley.Game1.getCharacterFromName(n)).Personality,
 				Display = _npcs.Names.Display
 			};
+			_villagerGrowth = new VillagerGrowthService(() => _config, store, _social, _npcs, _life, _log) { Ai = _ai, Language = PromptLanguage };
+			_npcs.Growth = _villagerGrowth.Tail;
 			ScheduleOverlayService.Yielding.Add(LifeService.DateOwner);
 			VillageRelations.ExtraMarriage = _life.IsMarried;
 			VillageRelations.ExtraMarried = _life.IsWed;
@@ -752,6 +754,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				"别的农夫和 Lewis：" + _social.Gossip.OtherFarmersToday("Lewis", StardewValley.Game1.player.Name).Trim(),
 				"八卦动态：" + _social.Gossip.Feed().Count + " 条"
 			}) : "先进存档。"));
+			helper.ConsoleCommands.Add("aisv_growth", "村民成长调试。\n" + VillagerGrowthService.Usage, (_, args) => _log.Info(Context.IsWorldReady ? _villagerGrowth.Command(args) : "先进存档。"));
 			helper.ConsoleCommands.Add("aisv_life", "村民人生调试。\n" + LifeService.Usage, (_, args) => _log.Info(Context.IsWorldReady ? _life.Command(args) : "先进存档。"));
 			_selfCheck = new SelfCheck(helper, ModManifest, harmony, _ai, () => _config, _log) { Features = SelfCheckFeatures };
 			_shell.SelfCheck = done => _selfCheck.Run(done);
@@ -1104,6 +1107,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private LifeService _life = null!;
 
+	private VillagerGrowthService _villagerGrowth = null!;
+
 	/// <summary>聊天素材：这位村民最近在农夫的店里买过什么；Pierre 和 Morris 还知道自己的店现在怎么样。</summary>
 	private SelfCheck _selfCheck = null!;
 
@@ -1315,6 +1320,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		_favors.OnSaveLoaded();
 		_arcs.OnSaveLoaded();
 		_life.OnSaveLoaded();
+		_villagerGrowth.OnSaveLoaded();
 		_moments.OnSaveLoaded();
 		_eco.Invalidate();
 		_market.OnSaveLoaded();
@@ -1374,6 +1380,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 		_social.OnDayStarted();
 		_arcs.OnDayStarted();
 		_life.OnDayStarted();
+		_villagerGrowth.OnDayStarted();
 		_awareness.OnDayStarted();
 		_sensors.OnDayStarted();
 		_groups.OnDayStarted();

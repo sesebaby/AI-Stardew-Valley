@@ -12,7 +12,7 @@ namespace AISV.Core.Prompts;
 /// </summary>
 public static class PersonaPrompt
 {
-	public const int PersonalityMaxChars = 1200;
+	public const int PersonalityMaxChars = 1600;
 
 	private sealed record Motif(string Npc, string Tag, string[] Terms);
 
@@ -76,14 +76,45 @@ public static class PersonaPrompt
 		{
 			sb.AppendLine("老生常谈警告（AI 最爱拿来开口的几样）：" + string.Join("；", tags) + "。对方先提起或眼下正好相关再说。");
 		}
-		return PromptText.Wrap("NPC_PERSONALITY", sb.ToString(), 1600);
+		return PromptText.Wrap("NPC_PERSONALITY", sb.ToString(), 2000);
 	}
 
+	/// <summary>
+	/// 跟农夫有多熟决定话怎么说（照原版：没几心时只有客套和天气，熟了才讲自己的事，八心以上才掏心里话，伴侣有伴侣的样子），
+	/// 而且是用这个人自己的方式，冷的人熟了也不会变黏。
+	/// </summary>
+	public static string BondTone(int hearts, bool partner = false, bool spouse = false)
+	{
+		if (spouse)
+		{
+			return "- 你们结了婚，是一家人：聊家里的活、饭菜、钱、孩子和你自己的事都很自然，会撒气、会唠叨、也会护着对方；亲昵照你的性子来，嘴硬的人照样嘴硬，只是不再客气。";
+		}
+		if (partner)
+		{
+			return "- 你们在交往：会想见面、会吃醋、会说只对这个人说的话，但亲热用你自己的方式（害羞的结巴、冷淡的人一句“别走太远”），不说肉麻的套话。";
+		}
+		return hearts switch
+		{
+			< 2 => "- 你们还不熟（0～1 心）：话短，一两句，按你的脾气客气或冷淡；只聊天气、手头的事、表面的话，不讲自己的心事和过去，对方问私事就挡回去或岔开。",
+			< 5 => "- 你们算认识（2～4 心）：会多说一点自己的日常、小抱怨和看法，偶尔开个玩笑或损一句；心事只露个边，不细讲。",
+			< 8 => "- 你们是朋友（5～7 心）：不用寒暄，可以直接讲在意的人和事、自己最近的打算，或者问对方一件具体的近况、托点小忙，话可以长一点；在乎是用你的方式表现的，不是突然变得会说暖心话。",
+			_ => "- 你们很亲近（8 心以上）：开口就带一点只对亲近的人说的东西——心事、秘密、过去的伤、对将来的打算、对对方的惦记，偶尔依赖对方、跟对方使性子；话少的人也会多说半句，但还是你本人的腔调，不变黏、不说肉麻话。"
+		};
+	}
+
+	/// <summary>还不熟时话更短（原版低好感的台词就一两句）。</summary>
+	public static int LineLimit(int limit, int hearts, bool close = false) => close || hearts >= 5 ? limit : hearts >= 2 ? Math.Max(20, limit * 80 / 100) : Math.Max(20, limit * 55 / 100);
+
 	/// <param name="rewritten">玩家改写过这位村民的角色卡。</param>
-	public static string UsageRules(string npcName, bool rewritten = false)
+	/// <param name="bond">跟农夫的熟悉程度那一条（<see cref="BondTone"/>），没有就空。</param>
+	public static string UsageRules(string npcName, bool rewritten = false, string bond = "")
 	{
 		StringBuilder sb = new StringBuilder();
 		sb.AppendLine("怎么演：");
+		if (bond.Length > 0)
+		{
+			sb.AppendLine(bond);
+		}
 		if (rewritten)
 		{
 			sb.AppendLine("- 玩家改写过你的设定：设定里写的性子和对农夫的态度为准。后面的情感档案、性格变化、对农夫的心思是改写前留下的旧印象，和设定冲突时照设定演；发生过的事还记得，只是不再按旧印象去看。");
@@ -91,6 +122,7 @@ public static class PersonaPrompt
 		sb.AppendLine("- 让性格藏在说话方式里——口气、关心什么、冷热、会不会开玩笑——而不是靠报出自己的爱好和身份。");
 		sb.AppendLine("- 资料块里的句子一律换成自己的话；一句台词里最多带一样个人标签（爱好、职业、口头禅、随身东西），能不带就不带。");
 		sb.AppendLine("- 资料里写了“说话”或“说话方式”就照它说：句子长短、口气、爱用的词都按它来，话少的人可以只回两三个字，啰嗦的人可以絮叨。例句只示范腔调，别照抄，也别每次都用里面的词。资料里的“小习惯”只让你拿捏这个人，别写成括号或星号里的动作，也别写“他擦了擦杯子”这种旁白，只交说出口的话。");
+		sb.AppendLine("- 性格要鲜明，别演成老好人：脾气冲的照样冲，冷淡的照样冷，嘴硬的照样嘴硬，爱挑刺的照样挑刺。跟农夫再熟，也是用自己的方式在乎（损两句、塞个东西、嘴上嫌弃却记着），不会突然变得温柔会说话。");
 		sb.AppendLine("- 你是镇上过日子的人，不是客服也不是心理咨询师：不夸对方“真贴心”“辛苦了”，不替人总结情绪（“我能感受到……”“这让我很温暖”），不拿道理或祝福收尾，不说“有需要随时找我”。");
 		sb.AppendLine("- 不要每次都是打招呼、寒暄、再问一句的套路：可以直接从手头的事说起，可以不接话茬，可以抱怨、敷衍、开玩笑。不必每句都用问句收尾。");
 		sb.AppendLine("- 少用这些一听就是 AI 的腔调（除非你的说话方式里本来就有）：“说真的”“其实吧”“不得不说”“你知道吗”“某种程度上”“仿佛”“不是……而是……”、句尾的“呢”“哦”“呀”、波浪号、破折号、“哈哈”、一口气排比三样东西。");

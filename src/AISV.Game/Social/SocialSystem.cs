@@ -1490,7 +1490,7 @@ public sealed class SocialSystem
 	{
 		GossipBook.PromptPath, GossipBook.FeedPath, GossipBook.StatePath, SocialWeb.Path, PersonalityBook.Path, StoryArcBook.Path, ResolvedLore.Path, ExpulsionBook.Path, ShopDetachBook.Path,
 		AISV.Core.Life.LifeBook.Path, AISV.Core.News.WeeklyNewsBook.Path, AISV.Core.World.Ledger.LedgerBook.Path, AISV.Core.World.Commissions.CommissionLog.Path,
-		AISV.Core.Companions.MeetupLog.Path, AISV.Core.Companions.FarmHelpLog.Path
+		AISV.Core.Companions.MeetupLog.Path, AISV.Core.Companions.FarmHelpLog.Path, AISV.Core.Life.VillagerGrowthBook.Path
 	};
 
 	/// <summary>
@@ -1500,7 +1500,7 @@ public sealed class SocialSystem
 	private static readonly string[] BackgroundDocuments =
 	{
 		GossipBook.PromptPath, GossipBook.FeedPath, GossipBook.StatePath, PlayerDiary.Path, DailyRetry.Path,
-		LetterBook.Path, AiGiftLog.Path, SocialWeb.Path, PersonalityBook.Path, SocialDrama.Path, EmotionalMemory.Path, StoryArcBook.Path, ResolvedLore.Path, ExpulsionBook.Path, ShopDetachBook.Path
+		LetterBook.Path, AiGiftLog.Path, SocialWeb.Path, PersonalityBook.Path, SocialDrama.Path, EmotionalMemory.Path, StoryArcBook.Path, ResolvedLore.Path, ExpulsionBook.Path, ShopDetachBook.Path, AISV.Core.Life.VillagerGrowthBook.Path
 	};
 
 	/// <summary>后台活一件一件做；做完回主线程写回并写盘（存档换了就丢掉）。</summary>

@@ -68,10 +68,18 @@ public sealed class NpcDirectory
 
 	public bool IsEnabled(string name) => _eligibility.IsEnabled(name);
 
+	/// <summary>这个存档里的成长（接在人设后面）；村民名、角色卡 → 一段话。</summary>
+	public Func<string, CharacterCard?, string>? Growth { get; set; }
+
 	public NpcPersona Persona(string name, NPC? npc = null)
 	{
-		return PersonaResolver.Resolve(Input(name, npc), Game1.year);
+		NpcPersona p = BasePersona(name, npc);
+		string tail = Growth?.Invoke(name, _cards.Cached(name)) ?? "";
+		return tail.Length == 0 ? p : p with { Personality = p.Personality + tail };
 	}
+
+	/// <summary>不带成长的人设（写成长时当底稿）。</summary>
+	public NpcPersona BasePersona(string name, NPC? npc = null) => PersonaResolver.Resolve(Input(name, npc), Game1.year);
 
 	/// <summary>换一张角色卡（null 是默认人设）看看算出来是什么，编辑页用。</summary>
 	public NpcPersona Preview(string name, CharacterCard? card)

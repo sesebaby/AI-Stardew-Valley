@@ -223,7 +223,9 @@ internal sealed class CardEditorPage : ShellPage
 		Hearth.Tag(b, new Vector2(r.Right - 16 - Hearth.TagWidth(src, 0.66f), r.Y + 13), src, Hearth.Slip, Hearth.QuillSoft, 0.66f);
 		Rectangle copy = new Rectangle(body.X + 12, body.Bottom - 48, body.Width - 24, 44);
 		_leftView = new Rectangle(body.X, body.Y, body.Width, copy.Y - 8 - body.Y);
-		Prose(b, _leftView, _left, Fielded(_default.Personality), Hearth.QuillSoft);
+		// 这个存档里长出来的样子：只是看看，不进"抄进性格栏"。
+		string grown = _kidName == null ? Ctx.Npcs.Growth?.Invoke(_npc, Ctx.Npcs.Cards.Cached(_npc)) ?? "" : "";
+		Prose(b, _leftView, _left, Fielded(_default.Personality) + (grown.Length > 0 ? "\n\n" + Tr.Get("card.grown", "这个存档里的变化：") + grown.Substring(grown.IndexOf('：') + 1) : ""), Hearth.QuillSoft);
 		Hearth.PressPlate(b, copy, Tr.Get("card.copyDefault", "抄进性格栏再改"), hover: Hearth.Hover(copy), scale: 0.75f);
 		hits.Add(copy, () =>
 		{
