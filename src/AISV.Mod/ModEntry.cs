@@ -106,6 +106,58 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 
 	private GroupMaterial _groupMaterial = null!;
 
+	/// <summary>(村民, 要说什么) → AI 写一句开场白（约见见面、上门收债、帮工打招呼）。</summary>
+	private Func<StardewValley.NPC, string, Func<CancellationToken, Task<string?>>> _opening = null!;
+
+	/// <summary>约见的村民走到身边：AI 照约好的事写开场白，打开能回话的对话框；写不成用备用的话。</summary>
+	private void GreetOnMeetup(StardewValley.NPC npc, string fallback, string focus)
+	{
+		if (!_config.AiOn)
+		{
+			NpcSpeech.Say(npc, fallback);
+			return;
+		}
+		Func<CancellationToken, Task<string?>> write = _opening(npc, focus);
+		string name = npc.Name;
+		npc.Halt();
+		npc.faceGeneralDirection(StardewValley.Game1.player.getStandingPosition(), 0, false, false);
+		Task.Run(async () =>
+		{
+			string? line = null;
+			try
+			{
+				using CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+				line = await write(cts.Token).ConfigureAwait(false);
+			}
+			catch (Exception ex)
+			{
+				_log.Debug($"{name} 见面的开场白没写成：{ex.Message}");
+			}
+			AISV.Game.Dialogue.MainThread.Run(() =>
+			{
+				string said = string.IsNullOrWhiteSpace(line) ? fallback : line!;
+				if (said.Length > 0 && !_conversations.PresentPrepared(npc, said))
+				{
+					NpcSpeech.Say(npc, fallback);
+				}
+			});
+		});
+	}
+
+	/// <summary>陪着走到新地方，村民随口说一句（AI 写，20 字以内；写不成不说）。</summary>
+	private async Task<string?> MeetupRemarkAsync(StardewValley.NPC npc, string place)
+	{
+		if (!_config.AiOn)
+		{
+			return null;
+		}
+		string persona = _npcs.Persona(npc.Name, npc).Personality;
+		string system = $"这次只用{PromptLanguage()}回答。\n\n你是{npc.displayName}。{persona}\n你正陪着农夫一起走走，刚走到{place}。随口说一句眼前的感想，像朋友边走边聊，20 个字以内，不加引号、不写动作。";
+		AiResult r = await _ai.SendAsync(new ChatRequest("meetup_remark", system, "说一句。", 300, 0.9)).ConfigureAwait(false);
+		return r.Ok && !string.IsNullOrWhiteSpace(r.Text) ? TextTools.CleanForGame(TextTools.Truncate(r.Text.Trim().Trim('"', '“', '”'), 40)) : null;
+	}
+
+
 	private FestivalSystem _festivals = null!;
 
 	private GroupDirector _groups = null!;
@@ -219,6 +271,12 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			Relationships relationships = new Relationships(() => _config, states, _log);
 			_dialogue = new DialogueEngine(() => _config, _ai, _templates, log, new RecentLines(), _log, PromptLanguage);
 			MaterialFactory materials = new MaterialFactory(_npcs, relationships, log, store);
+			_opening = (npc, focus) =>
+			{
+				DialogueMaterial m = materials.Build(npc, npc.currentLocation?.NameOrUniqueName ?? "", openingFocus: focus);
+				GameDate today = GameState.Today;
+				return async ct => (await _dialogue.OpeningAsync(m, today, ct).ConfigureAwait(false))?.Dialogue;
+			};
 			_conversations = new ConversationController(() => _config, _ai, _dialogue, materials, relationships, _npcs, helper, _log);
 			_conversations.UseAccount(_account);
 			MainThread.Log = _log;
@@ -327,7 +385,13 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 				_runaway.OnUpdateTicked();
 				_kidGrowth.OnUpdateTicked();
 			};
-			_approaches = new ApproachCoordinator(source => source == MomentDirector.Source ? _config.EncountersOn : _awareness.Enabled, _dialogue.IsGeneratingFor, () => GenerationStatus.IsActive, () => _conversations.InDayTransition, _conversations.PresentPrepared, _log);
+			_approaches = new ApproachCoordinator(source => source switch
+			{
+				MomentDirector.Source => _config.EncountersOn,
+				LedgerService.ApproachSource => _ledger?.Enabled == true,
+				FarmHelpService.ApproachSource => _config.CompanionModuleOn,
+				_ => _awareness.Enabled
+			}, _dialogue.IsGeneratingFor, () => GenerationStatus.IsActive, () => _conversations.InDayTransition, _conversations.PresentPrepared, _log);
 			_awareness = new AwarenessSystem(() => _config, store, _npcs, _approaches, materials, _dialogue, helper.DirectoryPath, _log)
 			{
 				AdjustMood = _social.Moods.Adjust,
@@ -456,7 +520,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			};
 			_groups.PlayerSpoke += () => _talkClock.Talked();
 			_awareness.IsBusyElsewhere = n => fishing(n) || _groups.IsNpcInvolved(n) || SquadMark.IsControlled(n) || _schedules.IsHolding(n) || NpcBusy.Is(n);
-			_awareness.IsFollowing = SquadMark.IsControlled;
+			_awareness.IsFollowing = n => SquadMark.IsControlled(n) || _meetups?.IsWithMe(n) == true;
 			_residents = new ResidentsService(() => _config, store, _ai, groupAi, groupMaterial, _log) { IsViewing = () => ShellMenu.ViewingResidents };
 			_shell.Residents = _residents;
 			_messenger = new MessengerService(() => _config, _ai, _dialogue, materials, relationships, log, _npcs, new PhotoStore(helper.DirectoryPath, _log), _log)
@@ -516,8 +580,13 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			// 招募键不因为约见挡人：Squad 带走时约见自己取消。
 			_squad = new SquadBridge(helper, _log, () => _config, n => _approaches.IsNpcBusy(n) || fishing(n) || _groups.IsNpcInvolved(n) || _conversations.IsTalkingWith(n) || NpcBusy.Is(n), Relationships.RawHearts);
 			_schedules = new ScheduleOverlayService(() => _config, store, helper.Reflection, n => _conversations.IsTalkingWith(n, ConversationController.TalkGraceTicks) || _approaches.IsNpcBusy(n) || fishing(n) || _groups.IsNpcInvolved(n) || NpcBusy.IsBySources(n), _log);
-			_meetups = new MeetupService(() => _config, store, _schedules, _log);
-			_farmHelp = new FarmHelpService(() => _config, store, _schedules, _meetups, () => _social.Feelings, _log) { Crew = _squad };
+			_meetups = new MeetupService(() => _config, store, _schedules, _log)
+			{
+				Talking = n => _conversations.IsTalkingWith(n, 60),
+				Remark = MeetupRemarkAsync
+			};
+			CompanionNet.Greet = GreetOnMeetup;
+			_farmHelp = new FarmHelpService(() => _config, store, _schedules, _meetups, () => _social.Feelings, _log) { Crew = _squad, Approaches = _approaches, Opening = _opening };
 			_offers = new OfferDesk(() => _config, _meetups, _farmHelp, relationships.EffectiveHearts, _log);
 			_squad.Ledger = _offers.Ledger;
 			_squad.FarmVisit = (p, n) =>
@@ -573,6 +642,8 @@ public sealed class ModEntry : StardewModdingAPI.Mod
 			_ledger = new LedgerService(() => _config, store, _eco, _npcs, relationships, _log)
 			{
 				Ai = _ai,
+				Approaches = _approaches,
+				Opening = _opening,
 				Language = PromptLanguage,
 				PostLetter = _social.PostErrandLetter,
 				Text = _errands.Text,

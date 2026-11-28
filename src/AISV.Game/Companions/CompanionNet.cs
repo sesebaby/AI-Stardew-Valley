@@ -21,6 +21,11 @@ public sealed record CompanionEffect(string Npc)
 	public string Line { get; init; } = "";
 
 	public bool StoodUp { get; init; }
+
+	/// <summary>村民到你身边了：由 AI 按 <see cref="Focus"/> 写开场白、打开对话（写不成用 <see cref="Line"/>）。</summary>
+	public bool Talk { get; init; }
+
+	public string Focus { get; init; } = "";
 }
 
 /// <summary>
@@ -35,6 +40,9 @@ public static class CompanionNet
 
 	/// <summary>放鸽子算进做错事的后果（在被放鸽子的那位农夫那边算）。</summary>
 	public static Action<string>? StoodUp { get; set; }
+
+	/// <summary>村民主动开口：(村民, 备用的话, 要说什么) → AI 写开场白并打开对话框。</summary>
+	public static Action<NPC, string, string>? Greet { get; set; }
 
 	/// <summary>这边的农夫在记录里的编号：房主是 0。</summary>
 	public static long Me => Context.IsMainPlayer ? 0 : Game1.player?.UniqueMultiplayerID ?? 0;
@@ -79,7 +87,11 @@ public static class CompanionNet
 		{
 			Game1.player.Money += e.Money;
 		}
-		if (e.Line.Length > 0 && npc != null && npc.currentLocation == Game1.currentLocation)
+		if (e.Talk && Greet != null && npc != null && npc.currentLocation == Game1.currentLocation)
+		{
+			Greet(npc, e.Line, e.Focus);
+		}
+		else if (e.Line.Length > 0 && npc != null && npc.currentLocation == Game1.currentLocation)
 		{
 			NpcSpeech.Say(npc, e.Line);
 		}

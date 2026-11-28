@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using AISV.Core.Approach;
+using AISV.Core.Companions;
 using AISV.Core.Ai;
 using AISV.Core.Compat;
 using AISV.Core.Config;
@@ -14,8 +17,10 @@ using AISV.Core.Text;
 using AISV.Core.World.Commissions;
 using AISV.Core.World.Errands;
 using AISV.Core.World.Ledger;
+using AISV.Game.Approach;
 using AISV.Game.Dialogue;
 using AISV.Game.Npcs;
+using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.GameData.Shops;
@@ -103,6 +108,17 @@ public sealed partial class LedgerService
 	}
 
 	public IAiSender? Ai { get; set; }
+
+	public const string ApproachSource = "ledger";
+
+	/// <summary>上门收债时走过来找你（只管房主自己的债；没接上时照老办法直接扣）。</summary>
+	public ApproachCoordinator? Approaches { get; set; }
+
+	/// <summary>(村民, 要说什么) → AI 写那一句。</summary>
+	public Func<NPC, string, Func<CancellationToken, Task<string?>>>? Opening { get; set; }
+
+	/// <summary>今天要当面收的债：找到你再要，晚上 8 点还没找到就照老办法直接扣。</summary>
+	private readonly List<Debt> _collecting = new List<Debt>();
 
 	public Func<string>? Language { get; set; }
 
@@ -353,6 +369,7 @@ public sealed partial class LedgerService
 
 	public void OnSaveLoaded()
 	{
+		_collecting.Clear();
 		_session++;
 		_shopOpen = null;
 		_asking = false;
@@ -367,6 +384,7 @@ public sealed partial class LedgerService
 
 	public void OnDayStarted()
 	{
+		_collecting.Clear();
 		if (!Host || Book is not LedgerBook book || book.LastDailyDay == Today)
 		{
 			return;
@@ -482,6 +500,7 @@ public sealed partial class LedgerService
 		{
 			return;
 		}
+		SeekDebtor();
 		try
 		{
 			int time = Game1.timeOfDay;
@@ -1005,7 +1024,11 @@ public sealed partial class LedgerService
 					$"已经到期，你这次是最后通牒：三天之内还不上，你就自己上门去拿（先拿钱，不够拿他背包里的东西抵）。");
 				break;
 			case DebtAction.Collect:
-				if (d.Farmer == 0)
+				if (d.Farmer == 0 && Approaches != null)
+				{
+					_collecting.Add(d);
+				}
+				else if (d.Farmer == 0)
 				{
 					Collect(d);
 				}
@@ -1089,6 +1112,63 @@ public sealed partial class LedgerService
 	}
 
 	/// <summary>强要：先拿你身上的钱，不够拿背包里值钱的东西抵（按售价）。</summary>
+	/// <summary>每 10 分钟：要收债的人和你在同一张地图（或你在他那张地图上的屋里），就走过来当面要；到晚上 8 点还没碰上就直接扣。</summary>
+	private void SeekDebtor()
+	{
+		if (_collecting.Count == 0 || Approaches is not ApproachCoordinator ap || Game1.player?.currentLocation is not GameLocation here)
+		{
+			return;
+		}
+		foreach (Debt d in _collecting.ToList())
+		{
+			if (d.Owed <= 0)
+			{
+				_collecting.Remove(d);
+				continue;
+			}
+			if (Game1.timeOfDay >= CompanyRules.CollectGiveUpTime)
+			{
+				_collecting.Remove(d);
+				Collect(d);
+				continue;
+			}
+			NPC? npc = Game1.getCharacterFromName(d.Npc);
+			if (npc?.currentLocation == null || ap.IsNpcInvolved(d.Npc) || !Context.IsPlayerFree)
+			{
+				continue;
+			}
+			bool near = npc.currentLocation == here ? Vector2.Distance(npc.Tile, Game1.player.Tile) <= 30 : _config().SeekIndoors && Seeker.CanReach(npc, here);
+			if (!near)
+			{
+				continue;
+			}
+			Debt debt = d;
+			string id = $"ledger:collect:{d.Id}:{Today}";
+			string focus = $"你来找农夫收债：他欠你 {d.Owed}g，三天前你已经下了最后通牒，今天你亲自来拿（先拿钱，不够就拿他背包里的东西抵）。照你自己的性格说，把要拿走欠款这件事说清楚。";
+			EnqueueResult r = ap.Enqueue(new ApproachIntent(ApproachSource, id, d.Npc, id, npc.currentLocation.NameOrUniqueName, Game1.timeOfDay)
+			{
+				DistanceTiles = npc.currentLocation == here ? Vector2.Distance(npc.Tile, Game1.player.Tile) : 10,
+				Priority = 50,
+				TtlTicks = 3600,
+				MayEnter = _config().SeekIndoors,
+				UrgentApproach = true,
+				ShowAttentionMarker = true,
+				StartWhilePreparing = true,
+				PreparationTimeoutTicks = 600,
+				PrepareDialogue = Opening?.Invoke(npc, focus),
+				FallbackDialogue = Tr.Get("ledger.debt.collectLine", "说好的三天到了。欠我的 {{gold}}g，今天得给我。", ("gold", d.Owed)),
+				OnFinished = outcome =>
+				{
+					if (outcome == ApproachOutcome.Spoken && _collecting.Remove(debt))
+					{
+						Collect(debt);
+					}
+				}
+			});
+			_log.Debug($"账本：{d.Npc} 来找你收债（{r}）。");
+		}
+	}
+
 	private void Collect(Debt d)
 	{
 		if (Wallet(d.Npc) is not NpcWallet w)
@@ -1389,7 +1469,15 @@ public sealed partial class LedgerService
 				return Repay(npc, amount) ?? "还了。";
 			case "due" when (OpenDebt(npc) ?? Book?.Debts.FirstOrDefault(d => d.State == DebtStates.Open && string.Equals(d.Npc, npc, StringComparison.OrdinalIgnoreCase))) is Debt debt:
 				debt.DueDay = Math.Min(debt.DueDay, Today - 1);
-				if (debt.Style == DebtStyles.Demand && debt.WarnedDay >= 0 && debt.Farmer == 0)
+				if (debt.Style == DebtStyles.Demand && debt.WarnedDay >= 0 && debt.Farmer == 0 && Approaches != null)
+				{
+					if (!_collecting.Contains(debt))
+					{
+						_collecting.Add(debt);
+					}
+					SeekDebtor();
+				}
+				else if (debt.Style == DebtStyles.Demand && debt.WarnedDay >= 0 && debt.Farmer == 0)
 				{
 					Collect(debt);
 				}

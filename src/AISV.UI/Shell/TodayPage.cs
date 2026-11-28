@@ -266,6 +266,24 @@ internal sealed class TodayPage : ShellPage
 				Open = () => Host.Open(ShellMenu.Tab.World, world: ShellMenu.WorldTab.Help)
 			}));
 		}
+		foreach (Meetup m in Ctx.Meetups?.WithMe() ?? Array.Empty<Meetup>())
+		{
+			string id = m.Id;
+			plans.Add((m.KeptAt, new Row
+			{
+				Npc = m.Npc,
+				Text = Tr.Get("todayPage.company", "{{npc}}正陪着你", ("npc", Ctx.Display(m.Npc))),
+				Sub = Tr.Get("todayPage.companyUntil", "到 {{time}} · 点一下让对方先回去", ("time", Clock.Text(m.CompanyUntil))),
+				Chip = Tr.Get("todayPage.companyChip", "先到这儿吧"),
+				ChipFill = Hearth.RosePale,
+				ChipInk = Hearth.Rose,
+				Open = () =>
+				{
+					Ctx.Meetups?.EndCompany(id);
+					Game1.exitActiveMenu();
+				}
+			}));
+		}
 		if (Ctx.FarmHelp?.Enabled == true)
 		{
 			foreach (FarmHelpJob j in Ctx.FarmHelp.All().Where(j => j.Day == today))

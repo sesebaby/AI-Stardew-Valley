@@ -16,6 +16,8 @@ tools/linux-game/stop.sh a             # 只停这个实例；别的会话也在
 
 发布前回归：`flows/release.txt`（精简实例，五块功能各走一遍、外壳各页截图、过一夜）和 `flows/compat.txt`（`setup.sh <实例> full` 的全套 mod 实例）。测试实例里先把 CJB Cheats 的 AutoWater 关掉，不然地总是浇过的。
 
+调试走动：`h.py <实例> npc <村民>` 看村民在哪、谁在带着走、为什么走不动（freezeMotion、日程末尾动作）；`h.py <实例> font` 列出当前语言字体里有的字，用来查日语、韩语译文会不会缺字。
+
 真 AI 回归：`use-ai.sh <实例> real` 从 `~/.config/aisv/chat-gateway.env` 读网关（`AISV_LLM_BASE`、`AISV_LLM_KEY`、`AISV_LLM_MODEL`，OpenAI 兼容），密钥只放在这个文件里，不进仓库；再跑上面两个流程。挑回得快的模型（一句 2～3 秒），慢模型会让流程里的对话截图只截到一半。
 
 ## 需要的本机文件

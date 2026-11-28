@@ -138,6 +138,8 @@ public sealed class ModEntry : Mod
 			case "key": Game1.activeClickableMenu?.receiveKeyPress((Microsoft.Xna.Framework.Input.Keys)Enum.Parse(typeof(Microsoft.Xna.Framework.Input.Keys), a[0])); return Nothing();
 			case "close": return Close();
 			case "time": Game1.timeOfDay = int.Parse(a[0]); return Nothing();
+			case "npc": _result = NpcState(a[0]); return Nothing();
+			case "font": _result = JToken.FromObject(new string(Game1.smallFont.Characters.ToArray()) + new string(Game1.dialogueFont.Characters.Where(Game1.smallFont.Characters.Contains).ToArray())); return Nothing();
 			case "lang": LocalizedContentManager.CurrentLanguageCode = Enum.Parse<LocalizedContentManager.LanguageCode>(a[0]); return Nothing();
 			case "dump-asset": _result = JToken.FromObject(a.Length > 1
 				? typeof(StardewModdingAPI.IGameContentHelper).GetMethod("Load", new[] { typeof(string) })!.MakeGenericMethod(AccessTools.TypeByName(a[1])).Invoke(Helper.GameContent, new object[] { a[0] })!
@@ -553,5 +555,35 @@ public sealed class ModEntry : Mod
 			return o.ToString();
 		}
 	}
+
+	/// <summary>调试：村民此刻的状态（在哪、谁在带着走、为什么走不动）。</summary>
+	private static JToken NpcState(string name)
+	{
+		NPC? n = Game1.getCharacterFromName(name);
+		if (n == null)
+		{
+			return JValue.CreateNull();
+		}
+		bool Field(string f) => (bool?)AccessTools.Field(typeof(Character), f)?.GetValue(n) ?? false;
+		return JToken.FromObject(new
+		{
+			location = n.currentLocation?.NameOrUniqueName,
+			tile = $"{n.TilePoint.X},{n.TilePoint.Y}",
+			controller = n.controller?.GetType().FullName,
+			path = n.controller?.pathToEndPoint?.Count,
+			end = n.controller == null ? null : $"{n.controller.endPoint.X},{n.controller.endPoint.Y}",
+			temporary = n.temporaryController?.GetType().Name,
+			freezeMotion = Field("freezeMotion"),
+			n.movementPause,
+			n.speed,
+			endAnim = n.doingEndOfRouteAnimation.Value,
+			n.ignoreScheduleToday,
+			n.followSchedule,
+			n.IsInvisible,
+			n.isCharging,
+			n.IsWalkingInSquare
+		});
+	}
+
 }
 

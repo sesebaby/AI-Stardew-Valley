@@ -53,6 +53,9 @@ public sealed class Meetup
 
 	/// <summary>和哪位农夫约的（联机；0 = 房主，旧存档也是 0）。</summary>
 	public long Farmer { get; set; }
+
+	/// <summary>见到以后陪农夫走到几点（0 = 不陪）。</summary>
+	public int CompanyUntil { get; set; }
 }
 
 public sealed class MeetupLog
@@ -450,7 +453,7 @@ public static class MeetupRules
 	}
 
 	/// <summary>给 AI 的一段：和农夫约了什么、见没见到。</summary>
-	public static string PromptBlock(IEnumerable<Meetup> mine, int today, Func<string, string> placeLabel)
+	public static string PromptBlock(IEnumerable<Meetup> mine, int today, Func<string, string> placeLabel, int now = -1)
 	{
 		List<string> lines = new List<string>();
 		foreach (Meetup m in mine.OrderBy(m => m.Day))
@@ -460,6 +463,9 @@ public static class MeetupRules
 			{
 				case MeetupStates.Scheduled:
 					lines.Add($"- 你和农夫说好{RelativeDay(m.Day, today)} {Clock.Text(m.Time)} 在{place}碰面{(m.MovedFrom.Length > 0 ? "（下雨，改到屋里了）" : "")}。要是正到这个点、两个人都在那儿，你们这会儿就是在碰面。");
+					break;
+				case MeetupStates.Kept when m.ClosedDay == today && now >= 0 && m.CompanyUntil > now:
+					lines.Add($"- 农夫按说好的来{place}见了你{(m.Summary.Length > 0 ? "（约好的事：" + m.Summary + "）" : "")}，你们现在正一起走走，你跟在农夫身边，到 {Clock.Text(m.CompanyUntil)} 左右再各自回去。说话就像正陪着对方逛，可以聊眼前看到的。");
 					break;
 				case MeetupStates.Kept when today - m.ClosedDay <= 2:
 					lines.Add($"- {RelativeDay(m.ClosedDay, today)}农夫按说好的来{place}见了你，你挺高兴。");

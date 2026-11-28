@@ -294,6 +294,12 @@ public sealed class ModConfig
 	/// <summary>村民可以主动提议跟你去、帮你干活。</summary>
 	public bool VillagersOfferHelp { get; set; } = true;
 
+	/// <summary>约好见面后，村民看见你会迎上来、主动开口，之后陪你走一段。</summary>
+	public bool MeetupCompany { get; set; } = true;
+
+	/// <summary>村民找你（约见、收债、心事）时，你在附近的屋里也会推门进来找。</summary>
+	public bool SeekIndoors { get; set; } = true;
+
 	// ---- 按键 ----
 
 	/// <summary>打开"我的设定"。</summary>

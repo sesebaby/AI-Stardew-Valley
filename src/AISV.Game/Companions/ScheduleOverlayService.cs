@@ -74,6 +74,7 @@ public sealed class ScheduleOverlayService
 
 	public ScheduleOverlayService(Func<ModConfig> config, Func<DocumentStore?> store, IReflectionHelper reflection, Func<string, bool> isBusyElsewhere, ILog log)
 	{
+		Seeker.Unfreeze = Unfreeze;
 		_config = config;
 		_store = store;
 		_reflection = reflection;

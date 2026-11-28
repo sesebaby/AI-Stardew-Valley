@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using AISV.Core.Approach;
 using AISV.Core.Companions;
 using AISV.Core.Config;
 using AISV.Core.Diagnostics;
@@ -9,6 +12,7 @@ using AISV.Core.Persona;
 using AISV.Core.Social;
 using AISV.Core.Storage;
 using AISV.Core.Text;
+using AISV.Game.Approach;
 using AISV.Game.Dialogue;
 using AISV.Game.Npcs;
 using Microsoft.Xna.Framework;
@@ -74,6 +78,23 @@ public sealed class FarmHelpService
 
 	public ISquadCrew? Crew { get; set; }
 
+	public const string ApproachSource = "farmhelp";
+
+	/// <summary>到了先走过来打个招呼（房主自己请的；你在农场上时）。</summary>
+	public ApproachCoordinator? Approaches { get; set; }
+
+	/// <summary>(村民, 要说什么) → AI 写那一句。</summary>
+	public Func<NPC, string, Func<CancellationToken, Task<string?>>>? Opening { get; set; }
+
+	/// <summary>打过招呼（或不用打）的帮工：可以开工了。</summary>
+	private readonly HashSet<string> _greeted = new HashSet<string>();
+
+	/// <summary>正走过来打招呼的帮工。</summary>
+	private readonly HashSet<string> _greeting = new HashSet<string>();
+
+	/// <summary>提示过"在门口"的帮工。</summary>
+	private readonly HashSet<string> _atDoor = new HashSet<string>();
+
 	public Action<string>? ResolveOffer { get; set; }
 
 	public int Version { get; private set; }
@@ -113,6 +134,9 @@ public sealed class FarmHelpService
 	/// <summary>早上：过去没结的收尾；下雨不用来浇水；提醒今天谁来。日程改写先跑。</summary>
 	public void OnDayStarted()
 	{
+		_greeted.Clear();
+		_greeting.Clear();
+		_atDoor.Clear();
 		if (Log is not FarmHelpLog log)
 		{
 			return;
@@ -453,7 +477,7 @@ public sealed class FarmHelpService
 			{
 				if (j.State == FarmHelpStates.Scheduled)
 				{
-					if (_schedules.Find(j.OverlayId)?.State == OverlayStates.Arrived)
+					if (_schedules.Find(j.OverlayId) is ScheduleOverlay o && o.State == OverlayStates.Arrived && Greeted(j, o))
 					{
 						Begin(j);
 					}
@@ -535,9 +559,73 @@ public sealed class FarmHelpService
 		// 小队招人是招到房主名下：给农场帮手干的活按进度替他干。
 		j.UsedSquad = j.Farmer == 0 && (Crew?.StartSiteWork(npc, j.Task, "Farm", center, radius) ?? false);
 		_log.Info($"帮工 {j.Id}：{j.Npc} {Game1.timeOfDay} 开始{j.Task}，{j.Target} 处，中心 ({center.X},{center.Y}) 半径 {radius}，{(j.UsedSquad ? "Squad 当场干" : "按进度算")}。");
-		Say(j, npc, Tr.Get("farmhelp.arriveLines", "我来啦，这就开始干。|早啊，交给我吧。|来了来了，从哪儿开始？"));
+		if (!_greeting.Contains(j.Id))
+		{
+			Say(j, npc, Tr.Get("farmhelp.arriveLines", "我来啦，这就开始干。|早啊，交给我吧。|来了来了，从哪儿开始？"));
+		}
 		Version++;
 		MarkDirty();
+		return true;
+	}
+
+	/// <summary>
+	/// 开工前先打招呼：你在农场上就走过来说一句（AI 写，说今天来干什么）；你在屋里就提示在门口等，等一会儿还没出来先干活；
+	/// 你不在农场、联机的农场帮手请的、或者一小时还没碰上，直接开工。
+	/// </summary>
+	private bool Greeted(FarmHelpJob j, ScheduleOverlay o)
+	{
+		if (_greeted.Contains(j.Id))
+		{
+			return true;
+		}
+		NPC? npc = Game1.getCharacterFromName(j.Npc);
+		bool late = o.ArrivedAt >= 0 && Clock.Minutes(Game1.timeOfDay) - Clock.Minutes(o.ArrivedAt) >= CompanyRules.HelperGreetMinutes;
+		if (_greeting.Contains(j.Id))
+		{
+			if (late && Approaches?.IsNpcInvolved(j.Npc) != true)
+			{
+				_greeted.Add(j.Id);
+			}
+			return _greeted.Contains(j.Id);
+		}
+		if (j.Farmer != 0 || Approaches is not ApproachCoordinator ap || npc?.currentLocation is not Farm farm || late)
+		{
+			_greeted.Add(j.Id);
+			return true;
+		}
+		Farmer me = Game1.player;
+		if (me.currentLocation is FarmHouse && me.currentLocation == Utility.getHomeOfFarmer(me))
+		{
+			if (_atDoor.Add(j.Id))
+			{
+				Tell(j, Tr.Get("farmhelp.atDoor", "{{npc}}到了，在门口等你。", ("npc", MeetupService.NpcName(j.Npc))));
+			}
+			return false;
+		}
+		if (me.currentLocation != farm || !Context.IsPlayerFree)
+		{
+			_greeted.Add(j.Id);
+			return true;
+		}
+		string id = $"farmhelp:{j.Id}";
+		string task = FarmHelpRules.TaskLabel(j.Task);
+		EnqueueResult r = ap.Enqueue(new ApproachIntent(ApproachSource, id, j.Npc, id, "Farm", Game1.timeOfDay)
+		{
+			DistanceTiles = Vector2.Distance(npc.Tile, me.Tile),
+			Priority = 40,
+			TtlTicks = 3600,
+			StartWhilePreparing = true,
+			PreparationTimeoutTicks = 600,
+			PrepareDialogue = Opening?.Invoke(npc, $"你答应来农夫的农场帮忙干活（{task}），刚到。先走过去跟农夫打个招呼，说说今天打算怎么干，然后就去干活。"),
+			FallbackDialogue = Tr.Get("farmhelp.greetLine", "我来啦！今天帮你{{task}}，这就开始。", ("task", task)),
+			OnFinished = _ => _greeted.Add(j.Id)
+		});
+		if (r is EnqueueResult.Accepted or EnqueueResult.Replaced)
+		{
+			_greeting.Add(j.Id);
+			return false;
+		}
+		_greeted.Add(j.Id);
 		return true;
 	}
 

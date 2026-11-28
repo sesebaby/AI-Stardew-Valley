@@ -210,6 +210,10 @@ public static class GmcmSettings
 			() => Tr.Get("config.moduleCompanions.tip", "村民跟随、帮工、约见和约好时间上门帮忙（跟随和帮工需要安装 The Stardew Squad）。"));
 		api.AddBoolOption(manifest, () => get().VillagersOfferHelp, v => get().VillagersOfferHelp = v, () => Tr.Get("config.aiProposals", "村民主动提议"),
 			() => Tr.Get("config.aiProposals.tip", "聊天时村民可能说要跟你去、帮你干活，聊完你来决定。"));
+		api.AddBoolOption(manifest, () => get().MeetupCompany, v => get().MeetupCompany = v, () => Tr.Get("config.meetupCompany", "见面后陪你走一段"),
+			() => Tr.Get("config.meetupCompany.tip", "约好见面的村民看见你会迎上来先开口，之后跟着你走两小时左右，到点自己回家。"));
+		api.AddBoolOption(manifest, () => get().SeekIndoors, v => get().SeekIndoors = v, () => Tr.Get("config.seekIndoors", "进屋找你"),
+			() => Tr.Get("config.seekIndoors.tip", "约见、收债、有心事的村民找你时，你在附近的屋里也会推门进来；你家要够熟（4 心）才进。"));
 
 		api.AddSectionTitle(manifest, () => Tr.Get("config.seenAndHeard", "看到听到"));
 		api.AddBoolOption(manifest, () => get().NoticingOn, v => get().NoticingOn = v, () => Tr.Get("config.sh.enable", "村民会注意到你做的事"));

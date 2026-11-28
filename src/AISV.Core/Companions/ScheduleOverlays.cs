@@ -54,6 +54,8 @@ public static class PlanReasons
 	public const string TimeUp = "time's up";
 	public const string ModuleOff = "module off";
 	public const string LostTrack = "lost track of them";
+
+	public const string FarmerLeft = "the farmer went somewhere they won't follow";
 	public const string NoWay = "couldn't find the way";
 	public const string Error = "error";
 	public const string Cleared = "cleared";

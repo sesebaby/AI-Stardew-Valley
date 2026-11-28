@@ -585,6 +585,7 @@ public sealed class AwarenessSystem
 			StartWhilePreparing = true,
 			UrgentApproach = true,
 			ShowAttentionMarker = true,
+			MayEnter = _config().SeekIndoors,
 			AnnounceEmote = Emotes.Resolve(meter.Emote),
 			CanStartNow = () => !pending.Said,
 			CanPresent = _ => !pending.Said,
@@ -683,6 +684,7 @@ public sealed class AwarenessSystem
 			StartWhilePreparing = true,
 			UrgentApproach = true,
 			ShowAttentionMarker = true,
+			MayEnter = _config().SeekIndoors,
 			OnFinished = outcome => FinishReaction(e, outcome == ApproachOutcome.Spoken)
 		});
 		if (r is EnqueueResult.Accepted or EnqueueResult.Replaced)

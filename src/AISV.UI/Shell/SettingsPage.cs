@@ -308,7 +308,9 @@ internal sealed class SettingsPage : ShellPage
 				(Tr.Get("shell.settings.companionsGroup", "同伴"), new List<Row>
 				{
 					new ToggleRow(Tr.Get("shell.settings.moduleCompanions", "同伴模块"), Tr.Get("shell.settings.moduleCompanionsNote", "村民跟随、帮工、约好时间上门帮忙（跟随和帮工需要安装 The Stardew Squad）"), c => c.CompanionModuleOn, (c, v) => c.CompanionModuleOn = v),
-					new ToggleRow(Tr.Get("shell.settings.aiProposals", "村民主动提议"), Tr.Get("shell.settings.aiProposalsNote", "聊天时村民可能说要跟你去、帮你干活、约你见面，聊完你来决定"), c => c.VillagersOfferHelp, (c, v) => c.VillagersOfferHelp = v) { Shown = c => c.CompanionModuleOn }
+					new ToggleRow(Tr.Get("shell.settings.aiProposals", "村民主动提议"), Tr.Get("shell.settings.aiProposalsNote", "聊天时村民可能说要跟你去、帮你干活、约你见面，聊完你来决定"), c => c.VillagersOfferHelp, (c, v) => c.VillagersOfferHelp = v) { Shown = c => c.CompanionModuleOn },
+					new ToggleRow(Tr.Get("shell.settings.meetupCompany", "见面后陪你走一段"), Tr.Get("shell.settings.meetupCompanyNote", "约好见面的村民看见你会迎上来先开口，之后跟着你走两小时左右，到点自己回家"), c => c.MeetupCompany, (c, v) => c.MeetupCompany = v) { Shown = c => c.CompanionModuleOn },
+					new ToggleRow(Tr.Get("shell.settings.seekIndoors", "进屋找你"), Tr.Get("shell.settings.seekIndoorsNote", "约见、收债、有心事的村民找你时，你在附近的屋里也会推门进来；你家要够熟才进"), c => c.SeekIndoors, (c, v) => c.SeekIndoors = v)
 				}),
 				(Tr.Get("shell.settings.arcs", "小剧场"), new List<Row>
 				{

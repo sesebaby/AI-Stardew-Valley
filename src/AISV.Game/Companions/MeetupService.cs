@@ -17,12 +17,12 @@ using StardewValley.Locations;
 namespace AISV.Game.Companions;
 
 /// <summary>
-/// 约见：村民约你某天几点在某处见，你答应后日程改写让他走过去等。你走到身边算守约（+40，再待一小时），
+/// 约见：村民约你某天几点在某处见，你答应后日程改写让他走过去等。见到算守约（+40；他会迎上来、进屋找你、陪你走一段，见 MeetupService.Company.cs），
 /// 他等到结束你没来算失约（-30），他那边去不了不怪你；下雨约在户外的改酒吧或者作罢；可以提前取消（当天 -10）。
 /// 由房主排（村民在房主那边走动）；联机的农场帮手当面答应的约见交给房主排，结果在他自己那边生效（<see cref="CompanionNet"/>）。
 /// 同伴模块关掉时不约新的。
 /// </summary>
-public sealed class MeetupService
+public sealed partial class MeetupService
 {
 	private const int FreeTicksBeforeAsking = 20;
 
@@ -99,10 +99,15 @@ public sealed class MeetupService
 	public void OnSaveLoaded()
 	{
 		_toConfirm.Clear();
+		ClearCompany();
 		Version++;
 	}
 
-	public void OnReturnedToTitle() => _toConfirm.Clear();
+	public void OnReturnedToTitle()
+	{
+		_toConfirm.Clear();
+		ClearCompany();
+	}
 
 	/// <summary>早上：过去的收尾、下雨改地点、提醒今天的约。日程改写先跑。</summary>
 	public void OnDayStarted()
@@ -113,6 +118,7 @@ public sealed class MeetupService
 		}
 		_toConfirm.Clear();
 		_ready.Clear();
+		ClearCompany();
 		if (!Context.IsMainPlayer)
 		{
 			// 农场帮手：收尾、改地点都在房主那边；这边只提醒今天的约。
@@ -196,9 +202,10 @@ public sealed class MeetupService
 		{
 			return;
 		}
-		if (++_ticks % 30 == 0 && !Game1.eventUp && Context.IsMainPlayer)
+		if (++_ticks % 15 == 0 && !Game1.eventUp && Context.IsMainPlayer)
 		{
 			CheckKept();
+			TickCompany();
 		}
 		if (_toConfirm.Count == 0 && _ready.Count == 0)
 		{
@@ -597,7 +604,11 @@ public sealed class MeetupService
 				continue;
 			}
 			NPC? npc = Game1.getCharacterFromName(m.Npc);
-			if (npc?.currentLocation != player.currentLocation)
+			if (npc == null || Seek(m, npc, player, o) || !MeetupStates.IsOpen(m.State))
+			{
+				continue;
+			}
+			if (npc.currentLocation != player.currentLocation)
 			{
 				continue;
 			}
@@ -631,12 +642,19 @@ public sealed class MeetupService
 				_log.Warn($"约见 {m.Id} 的剧情没演成：{ex.Message}");
 			}
 		}
+		bool company = !story && CompanyOn && m.Owner != MeetupRules.StoryOwner;
 		if (!story)
 		{
 			npc.doEmote(Character.happyEmote);
-			CompanionNet.Send(m.Farmer, new CompanionEffect(m.Npc) { Friendship = MeetupRules.KeptFriendship, Line = Pick(Tr.Get("meetup.keptLines", "你来啦！|正等你呢。|准时，不错嘛。|我也刚到。")) });
+			CompanionNet.Send(m.Farmer, new CompanionEffect(m.Npc)
+			{
+				Friendship = MeetupRules.KeptFriendship,
+				Line = Pick(Tr.Get("meetup.keptLines", "你来啦！|正等你呢。|准时，不错嘛。|我也刚到。")),
+				Talk = company,
+				Focus = company ? GreetFocus(m) : ""
+			});
 		}
-		_schedules.SetEnd(o.Id, Math.Min(o.End, Clock.Add(Game1.timeOfDay, MeetupRules.StayAfterKeptMinutes)));
+		_schedules.SetEnd(o.Id, company ? StartCompany(m, npc) : Math.Min(o.End, Clock.Add(Game1.timeOfDay, MeetupRules.StayAfterKeptMinutes)));
 		_log.Info($"约见 {m.Id}：{Game1.timeOfDay} 在 {m.Place} 见到了 {m.Npc}。");
 		Version++;
 		MarkDirty();
@@ -692,7 +710,7 @@ public sealed class MeetupService
 	public string PromptBlock(string npc)
 	{
 		string display = NpcName(npc);
-		return MeetupRules.PromptBlock(All().Where(m => Mine(m) && string.Equals(m.Npc, npc, StringComparison.OrdinalIgnoreCase)), Today, key => MeetupPlaces.Label(key, display));
+		return MeetupRules.PromptBlock(All().Where(m => Mine(m) && string.Equals(m.Npc, npc, StringComparison.OrdinalIgnoreCase)), Today, key => MeetupPlaces.Label(key, display), Game1.timeOfDay);
 	}
 
 	// ---------------- 联机 ----------------
@@ -736,6 +754,13 @@ public sealed class MeetupService
 			}
 			Meetup? m = Arrange(a.Npc, a.Day, a.Time, a.Place, a.Summary, out string reason, farmer: from);
 			return new Arranged(m != null, reason);
+		});
+		net.On<IdAsk>(EndCompanyOp, (from, a) =>
+		{
+			if (Context.IsMainPlayer && Find(a.Id) is Meetup m && m.Farmer == from && _company.ContainsKey(a.Id))
+			{
+				EndOne(m, PlanReasons.FarmerCancelled, Tr.Get("meetup.byeEarly", "好，那今天就到这儿，下次再一起！|嗯，你去忙吧，今天很开心。"));
+			}
 		});
 		net.On<IdAsk>(CancelOp, (from, a) =>
 		{

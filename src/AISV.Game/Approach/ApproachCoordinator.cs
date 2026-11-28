@@ -64,6 +64,9 @@ public sealed class ApproachIntent
 	/// <summary>走得快一点。</summary>
 	public bool UrgentApproach { get; init; }
 
+	/// <summary>你在他那张地图上的某间屋里时，也推门进来找你（回去时从门口出去）。</summary>
+	public bool MayEnter { get; init; }
+
 	/// <summary>走过来时头顶显示"!"。</summary>
 	public bool ShowAttentionMarker { get; init; }
 
@@ -178,6 +181,9 @@ public sealed class ApproachCoordinator
 		public Vector2 ReturnLastPosition { get; set; }
 
 		public int ReturnLastProgressTick { get; set; }
+
+		/// <summary>进门找你（你在隔壁屋里时）。</summary>
+		public Seeker.Escort? Door { get; set; }
 	}
 
 	/// <summary>我们自己的寻路，用来和别的控制器区分开。</summary>
@@ -620,7 +626,8 @@ public sealed class ApproachCoordinator
 			return;
 		}
 		NPC? npc = FindNpc(intent.NpcName);
-		if (npc?.currentLocation == null || npc.currentLocation != Game1.currentLocation || LeaseRefusal(npc) != null)
+		bool nextDoor = npc?.currentLocation != null && npc.currentLocation != Game1.currentLocation && intent.MayEnter && Seeker.CanReach(npc, Game1.currentLocation);
+		if (npc?.currentLocation == null || npc.currentLocation != Game1.currentLocation && !nextDoor || LeaseRefusal(npc) != null)
 		{
 			_log.Debug($"{intent.NpcName} 没能出发：{(npc?.currentLocation != Game1.currentLocation ? "不在玩家所在的地图" : LeaseRefusal(npc!))}");
 			if (_preparingId == id)
@@ -748,9 +755,25 @@ public sealed class ApproachCoordinator
 	{
 		Farmer player = Game1.player;
 		GameLocation? location = a.Npc.currentLocation;
-		if (player == null || location == null || player.currentLocation != location)
+		if (player == null || location == null)
 		{
 			AbortActive("玩家换了地图");
+			return;
+		}
+		if (player.currentLocation != location)
+		{
+			// 你在隔壁的屋里：推门进来找你。
+			if (!a.Intent.MayEnter || !Seeker.CanReach(a.Npc, player.currentLocation))
+			{
+				AbortActive("玩家换了地图");
+				return;
+			}
+			a.Door ??= new Seeker.Escort(a.Npc);
+			if (a.Door.Tick(player, anywhere: false) is Seeker.Result.Refused or Seeker.Result.Lost)
+			{
+				AbortActive("进不了玩家所在的屋");
+			}
+			a.ArrivedAt = null;
 			return;
 		}
 		if (a.WaitingForDialogue && string.IsNullOrWhiteSpace(entry.Dialogue))
@@ -878,10 +901,21 @@ public sealed class ApproachCoordinator
 		a.ReturnStartedTick = _tick;
 		a.ReturnLastPosition = a.Npc.Position;
 		a.ReturnLastProgressTick = _tick;
+		a.Door?.Release();
 		GameLocation? location = a.Npc.currentLocation;
-		if (location == null || !Same(location.NameOrUniqueName, a.Lease.LocationName))
+		if (location == null)
 		{
 			Finish(a);
+			return;
+		}
+		if (!Same(location.NameOrUniqueName, a.Lease.LocationName))
+		{
+			// 进门找过你：走到门口出去（放回原位时回到原来那张地图）。
+			GameLocation? from = Game1.getLocationFromName(a.Lease.LocationName);
+			if (from == null || !Seeker.TryDoor(location, from, out Point exit, out _) || StartWalk(a.Npc, location, (exit.X, exit.Y)) <= 0)
+			{
+				Finish(a);
+			}
 			return;
 		}
 		(int X, int Y) home = ((int)MathF.Round(a.Lease.Position.X / 64f), (int)MathF.Round(a.Lease.Position.Y / 64f));
@@ -893,7 +927,8 @@ public sealed class ApproachCoordinator
 
 	private void TickReturn(Active a)
 	{
-		if (a.Npc.controller is not Walk || Vector2.Distance(a.Npc.Position, a.Lease.Position) <= 12f)
+		bool otherMap = a.Npc.currentLocation != null && !Same(a.Npc.currentLocation.NameOrUniqueName, a.Lease.LocationName);
+		if (a.Npc.controller is not Walk || !otherMap && Vector2.Distance(a.Npc.Position, a.Lease.Position) <= 12f)
 		{
 			Finish(a);
 			return;
@@ -946,6 +981,11 @@ public sealed class ApproachCoordinator
 			npc.Halt();
 			npc.speed = lease.Speed;
 			bool exact = false;
+			// 进门找过你：从门口出去，回到原来那张地图的原位。
+			if (npc.currentLocation != null && !Same(npc.currentLocation.NameOrUniqueName, lease.LocationName) && Game1.getLocationFromName(lease.LocationName) is GameLocation from)
+			{
+				Game1.warpCharacter(npc, from, new Vector2(MathF.Round(lease.Position.X / 64f), MathF.Round(lease.Position.Y / 64f)));
+			}
 			if (npc.currentLocation != null && Same(npc.currentLocation.NameOrUniqueName, lease.LocationName))
 			{
 				npc.Position = lease.Position;
