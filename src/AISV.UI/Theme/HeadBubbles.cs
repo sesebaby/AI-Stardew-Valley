@@ -92,7 +92,7 @@ public static class HeadBubbles
 		else if (npc != null)
 		{
 			Point p = npc.StandingPixel;
-			world = new Vector2(p.X, p.Y - (npc.Sprite?.SpriteHeight ?? 32) * 4 + 20);
+			world = new Vector2(p.X, p.Y - (npc.Sprite?.SpriteHeight ?? 32) * 4 * npc.Scale + 20);
 		}
 		else
 		{

@@ -21,6 +21,7 @@ using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.Characters;
 using StardewValley.Locations;
+using StardewValley.Menus;
 using StardewValley.Pathfinding;
 
 namespace AISV.Game.Social;
@@ -129,6 +130,7 @@ public sealed class KidGrowthService
 		_instance = this;
 		harmony.Patch(AccessTools.Method(typeof(Child), nameof(Child.reloadSprite)), postfix: new HarmonyMethod(typeof(KidGrowthService), nameof(AfterReloadSprite)));
 		harmony.Patch(AccessTools.Method(typeof(Child), nameof(Child.getMugShotSourceRect)), postfix: new HarmonyMethod(typeof(KidGrowthService), nameof(AfterMugShot)));
+		harmony.Patch(AccessTools.Method(typeof(SocialPage), nameof(SocialPage.CreateSpriteComponent)), postfix: new HarmonyMethod(typeof(KidGrowthService), nameof(AfterSocialSprite)));
 		harmony.Patch(AccessTools.Method(typeof(Child), nameof(Child.draw), new[] { typeof(SpriteBatch), typeof(float) }), prefix: new HarmonyMethod(typeof(KidGrowthService), nameof(BeforeDrawAlpha)));
 		harmony.Patch(AccessTools.Method(typeof(Child), nameof(Child.draw), new[] { typeof(SpriteBatch) }), prefix: new HarmonyMethod(typeof(KidGrowthService), nameof(BeforeDraw)));
 		harmony.CreateReversePatcher(AccessTools.Method(typeof(NPC), nameof(NPC.draw), new[] { typeof(SpriteBatch), typeof(float) }), new HarmonyMethod(typeof(KidGrowthService), nameof(NpcDraw))).Patch();
@@ -148,7 +150,10 @@ public sealed class KidGrowthService
 		}
 	}
 
-	/// <summary>长大了：换成这一档的图（每帧 22×32，按一格宽定位）和头像。</summary>
+	/// <summary>长大后的图按两倍精度画（每帧 44×64），游戏里缩一半画，个头和 22×32 一样，脸看得清。</summary>
+	public const float GrownScale = 0.5f;
+
+	/// <summary>长大了：换成这一档的图（每帧 44×64，按半尺寸画、按一格宽定位）和头像。</summary>
 	private static void AfterReloadSprite(Child __instance)
 	{
 		try
@@ -160,13 +165,18 @@ public sealed class KidGrowthService
 				{
 					__instance.forceOneTileWide.Value = false;
 					__instance.Portrait = null;
+					__instance.Scale = 1f;
+					__instance.Breather = true;
 				}
 				return;
 			}
 			string look = Look(__instance, stage);
 			__instance.Sprite.textureName.Value = AssetPrefix + look;
-			__instance.Sprite.SpriteWidth = 22;
-			__instance.Sprite.SpriteHeight = 32;
+			__instance.Sprite.SpriteWidth = 44;
+			__instance.Sprite.SpriteHeight = 64;
+			__instance.Scale = GrownScale;
+			// 原版呼吸是按 16 像素宽的图切胸口那块画的，放大的图对不上
+			__instance.Breather = false;
 			__instance.Sprite.UpdateSourceRect();
 			__instance.forceOneTileWide.Value = true;
 			__instance.Portrait = Game1.content.Load<Texture2D>(AssetPrefix + "portrait_" + look);
@@ -182,7 +192,16 @@ public sealed class KidGrowthService
 		string stage = Stage(__instance);
 		if (stage != KidStages.Toddler)
 		{
-			__result = new Rectangle(3, stage == KidStages.Teen ? 1 : 4, 16, 24);
+			__result = new Rectangle(6, stage == KidStages.Teen ? 2 : 8, 32, 48);
+		}
+	}
+
+	/// <summary>社交页按 4 倍画头像那一块：长大的图是两倍精度，缩一半。</summary>
+	private static void AfterSocialSprite(SocialPage.SocialEntry entry, ClickableTextureComponent __result)
+	{
+		if (entry.Character is Child c && Grown(c))
+		{
+			__result.scale = __result.baseScale = 4f * GrownScale;
 		}
 	}
 
@@ -217,7 +236,7 @@ public sealed class KidGrowthService
 		if (__instance.IsEmoting && !Game1.eventUp)
 		{
 			Vector2 at = __instance.getLocalPosition(Game1.viewport);
-			at.Y -= 32 + __instance.Sprite.SpriteHeight * 4 - 64 + lift;
+			at.Y -= 32 + __instance.Sprite.SpriteHeight * 4 * __instance.Scale - 64 + lift;
 			b.Draw(Game1.emoteSpriteSheet, at, new Rectangle(__instance.CurrentEmoteIndex * 16 % Game1.emoteSpriteSheet.Width, __instance.CurrentEmoteIndex * 16 / Game1.emoteSpriteSheet.Width * 16, 16, 16), Color.White, 0f, Vector2.Zero, 4f, SpriteEffects.None, __instance.StandingPixel.Y / 10000f);
 		}
 		if (__instance.hat.Value is StardewValley.Objects.Hat hat)
@@ -255,6 +274,7 @@ public sealed class KidGrowthService
 	public static void Dress(NPC standIn, Child real)
 	{
 		standIn.forceOneTileWide.Value = real.forceOneTileWide.Value;
+		standIn.Scale = real.Scale;
 		standIn.Breather = false;
 		standIn.HideShadow = false;
 		if (Grown(real))

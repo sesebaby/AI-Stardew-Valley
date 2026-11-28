@@ -56,7 +56,7 @@ public sealed class InteractChoiceMenu : IClickableMenu
 	private void Layout()
 	{
 		_buttons.Clear();
-		Vector2 head = Game1.GlobalToLocal(Game1.viewport, _npc.Position + new Vector2(32f, -_npc.Sprite.SpriteHeight * 4f + 8f));
+		Vector2 head = Game1.GlobalToLocal(Game1.viewport, _npc.Position + new Vector2(32f, -_npc.Sprite.SpriteHeight * 4f * _npc.Scale + 8f));
 		head = Utility.ModifyCoordinatesForUIScale(head);
 		int total = _choices.Count * Size + (_choices.Count - 1) * Gap;
 		int x = (int)head.X - total / 2;

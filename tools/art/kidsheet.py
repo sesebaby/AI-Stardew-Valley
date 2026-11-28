@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """开发专用：把生图工具画的孩子动作网格（4 列 × 6 行，排法和原版幼儿一样）整理成游戏贴图。
 
-python3 -I tools/art/kidsheet.py GRID.png OUT.png --height 26 [--colours 28]
+python3 -I tools/art/kidsheet.py GRID.png OUT.png --height 52 --scale 2 [--colours 28]
 python3 -I tools/art/kidsheet.py --portrait GRID.png OUT.png   头像：2×2 网格（平常、开心、难过、吃惊）拼成 128×128，每张 64×64
 python3 -I tools/art/kidsheet.py --dark IN.png OUT.png        深肤色版：皮肤和头发换深色（行走图、头像都行）
 
@@ -11,6 +11,7 @@ python3 -I tools/art/kidsheet.py --dark IN.png OUT.png        深肤色版：皮
 2. 生图画的是一格好几个屏幕像素的像素画：按第一帧站着的身高定一格多大（身高 / --height），每帧估出格线起点，\n   每格取中间最多的颜色（平滑缩放会把眼睛糊掉）；再去掉孤立的杂点。坐着太宽、举手太高的帧单独缩到放得下；
 3. 整张共用一套调色板（--colours 色），透明度只留全透和不透；
 4. 每帧脚踩在第 31 行，按头（身体最上面五分之一）的中心左右居中，所以甩手不会让身子晃。
+--scale 2：按两倍精度切（每帧 44×64，脚踩第 63 行），游戏里按半尺寸画，个头和 22×32 一样，脸上的五官不会被缩没。
 另存一张放大 6 倍的预览 OUT-preview.png，和原版幼儿并排看。
 """
 import cmath
@@ -269,10 +270,12 @@ def build(grid_path, out, height, colours):
 
 
 def preview(sheet, out, vanilla=None):
-    big = sheet.resize((sheet.width * 6, sheet.height * 6), Image.NEAREST)
+    zoom = 6 if sheet.width <= 128 else 3
+    big = sheet.resize((sheet.width * zoom, sheet.height * zoom), Image.NEAREST)
     if vanilla:
         v = Image.open(vanilla).convert("RGBA")
-        v = v.resize((v.width * 6, v.height * 6), Image.NEAREST)
+        f = big.height // v.height
+        v = v.resize((v.width * f, v.height * f), Image.NEAREST)
         canvas = Image.new("RGBA", (big.width * 2 + 24, big.height), (200, 220, 200, 255))
         canvas.alpha_composite(v, (0, 0))
         canvas.alpha_composite(big, (big.width + 24, 0))
@@ -350,7 +353,10 @@ def main():
         sheet = darken_skin(sys.argv[2], sys.argv[3])
         preview(sheet, sys.argv[3].replace(".png", "-preview.png"))
         return
-    sheet = build(sys.argv[1], sys.argv[2], int(arg("--height", "26")), int(arg("--colours", "28")))
+    global CELL_W, CELL_H, FEET
+    k = int(arg("--scale", "1"))
+    CELL_W, CELL_H, FEET = CELL_W * k, CELL_H * k, CELL_H * k - 1
+    sheet = build(sys.argv[1], sys.argv[2], int(arg("--height", str(26 * k))), int(arg("--colours", "28")))
     preview(sheet, sys.argv[2].replace(".png", "-preview.png"), arg("--vanilla", None))
 
 
